@@ -6,7 +6,7 @@
 <title>矿珍库 · 库存管理系统</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 <style>
 :root{
   --bg:#0e0d0b;--surface:#1a1915;--surface2:#242218;--border:#2e2c24;
@@ -385,7 +385,7 @@ tr.clickable{cursor:pointer;}
 // DATA
 let DB={products:[],logs:[],showItems:[]};
 let editingId=null,detailId=null,pendingPhotos=[];
-let catFilter='all',cameraStream=null,camTimer=null;
+let catFilter='all';
 
 function load(){try{const d=localStorage.getItem('minzhen_v2');if(d)DB=JSON.parse(d);}catch(e){}}
 function save(){try{localStorage.setItem('minzhen_v2',JSON.stringify(DB));}catch(e){toast('⚠️ 存储不足');}}
@@ -699,41 +699,44 @@ function renderShowList(){
   }).join('');
 }
 
-// 摄像头扫码
+// 摄像头扫码 (ZXing)
+let zxingReader=null;
 async function startCamera(){
   try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-    cameraStream=stream;
-    const v=document.getElementById('camera-video');v.srcObject=stream;
     document.getElementById('camera-wrap').style.display='block';
     document.getElementById('camera-start-wrap').style.display='none';
     document.getElementById('camera-scan-result').style.display='none';
-    scanFrame();
-  }catch(e){toast('无法访问摄像头：'+e.message);}
+    document.getElementById('camera-result-bar').textContent='将条形码或QR码对准框内…';
+
+    if(!zxingReader){
+      zxingReader=new ZXing.BrowserMultiFormatReader();
+    }
+
+    const videoEl=document.getElementById('camera-video');
+    await zxingReader.decodeFromConstraints(
+      {video:{facingMode:'environment'}},
+      videoEl,
+      (result,err)=>{
+        if(result){
+          const code=result.getText();
+          document.getElementById('camera-result-bar').textContent='✅ 扫到：'+code;
+          stopCamera();
+          showScanResult(code,'camera-scan-result');
+        }
+      }
+    );
+  }catch(e){
+    toast('无法访问摄像头：'+e.message);
+    document.getElementById('camera-wrap').style.display='none';
+    document.getElementById('camera-start-wrap').style.display='block';
+  }
 }
 function stopCamera(){
-  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
-  if(camTimer){clearTimeout(camTimer);camTimer=null;}
+  if(zxingReader){
+    try{zxingReader.reset();}catch(e){}
+  }
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
-}
-function scanFrame(){
-  const v=document.getElementById('camera-video');
-  if(!cameraStream){return;}
-  if(v.readyState<2){camTimer=setTimeout(scanFrame,200);return;}
-  const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
-  const ctx=c.getContext('2d');ctx.drawImage(v,0,0);
-  try{
-    const img=ctx.getImageData(0,0,c.width,c.height);
-    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
-    if(code){
-      document.getElementById('camera-result-bar').textContent='✅ 扫到：'+code.data;
-      stopCamera();
-      showScanResult(code.data,'camera-scan-result');
-      return;
-    }
-  }catch(e){}
-  camTimer=setTimeout(scanFrame,150);
 }
 
 // 手动扫码
