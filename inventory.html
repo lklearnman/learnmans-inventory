@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>矿珍库 · 库存管理系统</title>
+<title>矿珍库 · 云端库存管理</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#0e0d0b;--surface:#1a1915;--surface2:#242218;--border:#2e2c24;
@@ -21,6 +22,9 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 .logo{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--gold);letter-spacing:2px;}
 .header-stats{display:flex;gap:16px;font-size:12px;color:var(--text-dim);}
 .header-stats span{color:var(--gold);font-family:'DM Mono',monospace;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--jade);display:inline-block;margin-right:4px;}
+.sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite;}
+.sync-dot.error{background:var(--rose);}
 .nav-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
 .nav-tabs::-webkit-scrollbar{display:none;}
 .nav-tab{flex-shrink:0;padding:12px 18px;font-size:13px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
@@ -120,6 +124,9 @@ tr.clickable{cursor:pointer;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--gold-dim);color:var(--text);padding:12px 20px;border-radius:var(--radius);font-size:13px;z-index:999;transition:transform .3s;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .info-box{background:var(--surface2);border-left:3px solid var(--gold-dim);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;font-size:12px;color:var(--text-muted);margin-bottom:16px;}
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:14px;}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
@@ -135,10 +142,16 @@ tr.clickable{cursor:pointer;}
 </head>
 <body>
 
+<!-- 加载中 -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div style="color:var(--text-dim);font-size:13px;">连接云端数据库…</div>
+</div>
+
 <header class="app-header">
   <div class="logo">💎 矿珍库</div>
   <div class="header-stats">
-    <div>种类 <span id="hdr-total">0</span></div>
+    <div><span class="sync-dot" id="sync-dot"></span><span id="hdr-total">0</span> 种</div>
     <div>库存 <span id="hdr-qty">0</span></div>
     <div>展会 <span id="hdr-show">0</span></div>
   </div>
@@ -194,7 +207,7 @@ tr.clickable{cursor:pointer;}
       <div class="form-grid">
         <div class="form-group"><label>选择商品</label><select id="out-product"></select></div>
         <div class="form-group"><label>出库数量</label><input type="number" id="out-qty" value="1" min="1"></div>
-        <div class="form-group full"><label>备注（客户/原因）</label><input type="text" id="out-note" placeholder="可选"></div>
+        <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="客户/原因（可选）"></div>
       </div>
       <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
       <div class="divider"></div>
@@ -229,7 +242,7 @@ tr.clickable{cursor:pointer;}
   <div class="card">
     <div class="card-title">📱 摄像头扫码</div>
     <div id="camera-start-wrap">
-      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">用手机/电脑摄像头直接扫条形码或QR码，无需扫码枪</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">用手机摄像头扫条形码或QR码</p>
       <button class="btn btn-gold" onclick="startCamera()">📷 开启摄像头扫码</button>
     </div>
     <div id="camera-wrap" style="display:none;">
@@ -247,7 +260,6 @@ tr.clickable{cursor:pointer;}
     </div>
     <div id="camera-scan-result" style="display:none;margin-top:14px;"></div>
   </div>
-
   <div class="card">
     <div class="card-title">⌨️ 手动输入 / 扫码枪</div>
     <div style="display:flex;gap:8px;">
@@ -256,20 +268,18 @@ tr.clickable{cursor:pointer;}
     </div>
     <div id="scan-result" style="display:none;margin-top:14px;"></div>
   </div>
-
   <div class="card">
     <div class="card-title">🤖 AI拍照识别建品</div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">拍照或从相册选图，AI自动识别名称、类别、产地，快速建品</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">拍照或从相册选图，AI自动识别名称、类别、产地</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-gold" onclick="document.getElementById('ai-camera-input').click()">📷 拍照识别</button>
       <button class="btn btn-outline" onclick="document.getElementById('ai-library-input').click()">🖼️ 从相册选图</button>
     </div>
     <input type="file" id="ai-camera-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
     <input type="file" id="ai-library-input" accept="image/*" style="display:none" onchange="doAIRecognize(event)">
-    <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div>AI识别中，请稍候…</div>
+    <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div>AI识别中…</div>
     <div id="ai-result" style="display:none;margin-top:14px;"></div>
   </div>
-
   <div class="card">
     <div class="card-title">🏷️ 生成QR标签</div>
     <div class="form-group" style="margin-bottom:14px;">
@@ -297,10 +307,10 @@ tr.clickable{cursor:pointer;}
     <div class="card-title">💾 数据管理</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-outline btn-sm" onclick="exportData()">📥 导出备份</button>
-      <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📤 导入</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📤 导入旧数据</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
-      <button class="btn btn-rose btn-sm" onclick="clearAll()">🗑️ 清空全部</button>
     </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">💡 可导入之前本地版本的备份JSON文件</p>
   </div>
 </div>
 
@@ -311,7 +321,7 @@ tr.clickable{cursor:pointer;}
   <div class="modal">
     <div class="modal-title" id="modal-add-title">新建商品档案</div>
     <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
-    <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存，或点「建档并入库」一步完成。</div>
+    <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存。</div>
     <div class="form-grid">
       <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
@@ -345,7 +355,7 @@ tr.clickable{cursor:pointer;}
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
       <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
       <div class="form-group"><label>入库单价（可选）</label><input type="text" id="si-price" placeholder="¥ 留空不更新"></div>
-      <div class="form-group full"><label>备注（来源/批次等）</label><input type="text" id="si-note" placeholder="可选"></div>
+      <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="来源/批次（可选）"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-stockin')">取消</button>
@@ -382,16 +392,25 @@ tr.clickable{cursor:pointer;}
 <div class="toast" id="toast"></div>
 
 <script>
-// DATA
+// ===================== SUPABASE =====================
+const SUPABASE_URL='https://dvpkitoobvvskerxtraz.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2cGtpdG9vYnZ2c2tlcnh0cmF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MTUxMjIsImV4cCI6MjA5NDA5MTEyMn0.Ec9vRagr6AUWQPdU5efHuqD-5Woc-N3-VqPUP7A1zCw';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+// ===================== LOCAL CACHE =====================
 let DB={products:[],logs:[],showItems:[]};
 let editingId=null,detailId=null,pendingPhotos=[];
-let catFilter='all';
+let catFilter='all',zxingReader=null;
 
-function load(){try{const d=localStorage.getItem('minzhen_v2');if(d)DB=JSON.parse(d);}catch(e){}}
-function save(){try{localStorage.setItem('minzhen_v2',JSON.stringify(DB));}catch(e){toast('⚠️ 存储不足');}}
-load();
+// ===================== SYNC STATUS =====================
+function setSyncStatus(status){
+  const dot=document.getElementById('sync-dot');
+  dot.className='sync-dot';
+  if(status==='syncing')dot.classList.add('syncing');
+  if(status==='error')dot.classList.add('error');
+}
 
-// UTILS
+// ===================== UTILS =====================
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function fmt(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
 function fmtFull(ts){const d=new Date(ts);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
@@ -401,7 +420,57 @@ function allCats(){return[...new Set(DB.products.map(p=>p.cat||'未分类'))].so
 function catEmoji(cat){if(!cat)return'📦';const c=cat.toLowerCase();if(c.includes('首饰')||c.includes('项链')||c.includes('戒'))return'💍';if(c.includes('矿')||c.includes('标本'))return'🪨';if(c.includes('元石')||c.includes('宝石')||c.includes('水晶'))return'💎';if(c.includes('化石'))return'🦕';return'📦';}
 async function compressImage(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const mx=800;if(w>mx||h>mx){const s=Math.min(mx/w,mx/h);w=Math.round(w*s);h=Math.round(h*s);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.82;const go=()=>{const d=c.toDataURL('image/jpeg',q);if((d.length*3/4)/1024<=200||q<=0.2)res(d);else{q-=0.1;go();}};go();};img.src=e.target.result;};r.readAsDataURL(file);});}
 
-// TABS
+// ===================== SUPABASE CRUD =====================
+async function loadAll(){
+  setSyncStatus('syncing');
+  try{
+    const [p,l,s]=await Promise.all([
+      sb.from('products').select('*').order('created_at',{ascending:false}),
+      sb.from('logs').select('*').order('ts',{ascending:false}),
+      sb.from('show_items').select('*').order('ts',{ascending:false})
+    ]);
+    DB.products=(p.data||[]).map(dbToProduct);
+    DB.logs=(l.data||[]).map(dbToLog);
+    DB.showItems=(s.data||[]).map(dbToShow);
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('error');
+    toast('⚠️ 云端连接失败，请检查网络');
+  }
+  document.getElementById('loading-overlay').style.display='none';
+  renderInventory();
+}
+
+// DB field mapping
+function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
+function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos||[],createdAt:new Date(r.created_at).getTime()};}
+function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,ts:new Date(l.ts).toISOString()};}
+function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,ts:new Date(r.ts).getTime()};}
+function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
+function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
+
+async function upsertProduct(p){
+  setSyncStatus('syncing');
+  const{error}=await sb.from('products').upsert(productToDb(p));
+  if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');}
+  else setSyncStatus('ok');
+}
+async function deleteProduct(id){
+  await sb.from('logs').delete().eq('product_id',id);
+  await sb.from('show_items').delete().eq('product_id',id);
+  await sb.from('products').delete().eq('id',id);
+}
+async function insertLog(l){
+  await sb.from('logs').insert(logToDb(l));
+}
+async function upsertShow(s){
+  await sb.from('show_items').upsert(showToDb(s));
+}
+async function deleteShow(id){
+  await sb.from('show_items').delete().eq('id',id);
+}
+
+// ===================== TABS =====================
 function switchTab(name,el){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -420,7 +489,7 @@ function setIOMode(mode,el){
   if(mode==='out')renderOutSelects();
 }
 
-// INVENTORY
+// ===================== INVENTORY =====================
 function renderInventory(){
   const q=document.getElementById('inv-search').value.toLowerCase();
   const grid=document.getElementById('product-grid');
@@ -463,7 +532,7 @@ function updateHeader(){
   document.getElementById('hdr-show').textContent=DB.showItems.reduce((a,s)=>a+s.qty,0);
 }
 
-// 建品 MODAL
+// ===================== 建品 =====================
 function openAddModal(prefill){
   editingId=null;pendingPhotos=[];
   document.getElementById('modal-add-title').textContent='新建商品档案';
@@ -486,11 +555,7 @@ function openEditModal(id){
   renderPhotoPreviews();closeModal('modal-detail');
   document.getElementById('modal-add').classList.add('open');
 }
-function openAddThenStockIn(){
-  openAddModal();
-  // override save button action flag
-  document.getElementById('modal-add').dataset.stockin='1';
-}
+function openAddThenStockIn(){openAddModal();document.getElementById('modal-add').dataset.stockin='1';}
 async function handlePhotos(e){
   const files=[...e.target.files],rem=5-pendingPhotos.length;
   if(rem<=0){toast('最多5张');return;}
@@ -505,22 +570,32 @@ function buildProduct(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){toast('请填写商品名称');return null;}
   const sku=document.getElementById('f-sku').value.trim()||('MZ-'+uid().toUpperCase().slice(0,6));
-  return{id:editingId||uid(),name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+  const id=editingId||uid();
+  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
 }
-function saveProductOnly(){
+async function saveProductOnly(){
   const data=buildProduct();if(!data)return;
-  if(editingId){Object.assign(getProduct(editingId),data);toast('✅ 已更新');}
-  else{DB.products.unshift(data);toast('✅ 建档完成（库存0，请记得入库）');}
-  save();closeModal('modal-add');renderInventory();
+  if(editingId){
+    const idx=DB.products.findIndex(p=>p.id===editingId);
+    if(idx>=0)DB.products[idx]=data;
+    toast('✅ 已更新');
+  }else{
+    DB.products.unshift(data);
+    toast('✅ 建档完成（库存0）');
+  }
+  await upsertProduct(data);
+  closeModal('modal-add');renderInventory();
 }
-function saveProductAndStockIn(){
+async function saveProductAndStockIn(){
   if(editingId){saveProductOnly();return;}
   const data=buildProduct();if(!data)return;
-  DB.products.unshift(data);save();closeModal('modal-add');renderInventory();
+  DB.products.unshift(data);
+  await upsertProduct(data);
+  closeModal('modal-add');renderInventory();
   setTimeout(()=>openStockInModal(data.id),200);
 }
 
-// 入库 MODAL
+// ===================== 入库 =====================
 function openStockInModal(preId){
   const sel=document.getElementById('si-product');
   sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name}（${p.sku||'—'}）现库存:${p.qty}</option>`).join('');
@@ -537,7 +612,7 @@ function updateStockInInfo(){
   if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 单价：'+p.price:''}`;}
   else el.style.display='none';
 }
-function doStockIn(){
+async function doStockIn(){
   const pid=document.getElementById('si-product').value;
   const qty=parseInt(document.getElementById('si-qty').value)||0;
   const note=document.getElementById('si-note').value.trim();
@@ -547,15 +622,18 @@ function doStockIn(){
   const p=getProduct(pid);
   p.qty+=qty;
   if(price)p.price=price;
-  DB.logs.unshift({id:uid(),productId:pid,type:'in',qty,note,price,ts:Date.now()});
-  save();closeModal('modal-stockin');renderInventory();renderInLogs();toast(`✅ 入库 ${qty} 件，当前库存 ${p.qty} 件`);
+  const log={id:uid(),productId:pid,type:'in',qty,note,price,ts:Date.now()};
+  DB.logs.unshift(log);
+  await Promise.all([upsertProduct(p),insertLog(log)]);
+  closeModal('modal-stockin');renderInventory();renderInLogs();
+  toast(`✅ 入库 ${qty} 件，当前库存 ${p.qty} 件`);
 }
 
-// 出库
+// ===================== 出库 =====================
 function renderOutSelects(){
   document.getElementById('out-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
 }
-function doOut(){
+async function doOut(){
   const pid=document.getElementById('out-product').value;
   const qty=parseInt(document.getElementById('out-qty').value)||0;
   const note=document.getElementById('out-note').value.trim();
@@ -564,13 +642,15 @@ function doOut(){
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  DB.logs.unshift({id:uid(),productId:pid,type:'out',qty,note,ts:Date.now()});
-  save();renderOutSelects();renderInventory();renderOutLogs();
+  const log={id:uid(),productId:pid,type:'out',qty,note,ts:Date.now()};
+  DB.logs.unshift(log);
+  await Promise.all([upsertProduct(p),insertLog(log)]);
+  renderOutSelects();renderInventory();renderOutLogs();
   document.getElementById('out-qty').value=1;document.getElementById('out-note').value='';
   toast(`✅ 出库 ${qty} 件`);
 }
 
-// LOGS
+// ===================== LOGS =====================
 function renderInLogs(){
   const logs=DB.logs.filter(l=>l.type==='in').slice(0,100);
   document.getElementById('in-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l)).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">暂无入库记录</td></tr>`;
@@ -609,7 +689,7 @@ function openLogDetail(lid){
   document.getElementById('modal-log').classList.add('open');
 }
 
-// 商品详情
+// ===================== 商品详情 =====================
 function openDetail(id){
   const p=getProduct(id);if(!p)return;
   detailId=id;
@@ -643,30 +723,33 @@ function openDetail(id){
 }
 function editFromDetail(){openEditModal(detailId);}
 function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
-function quickOutFromDetail(){
+async function quickOutFromDetail(){
   const p=getProduct(detailId);if(!p)return;
   const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
   if(!n||n<=0)return;
   if(p.qty<n){toast('库存不足');return;}
   p.qty-=n;
-  DB.logs.unshift({id:uid(),productId:detailId,type:'out',qty:n,note:'详情页出库',ts:Date.now()});
-  save();renderInventory();closeModal('modal-detail');toast(`✅ 出库 ${n} 件`);
+  const log={id:uid(),productId:detailId,type:'out',qty:n,note:'详情页出库',ts:Date.now()};
+  DB.logs.unshift(log);
+  await Promise.all([upsertProduct(p),insertLog(log)]);
+  renderInventory();closeModal('modal-detail');toast(`✅ 出库 ${n} 件`);
 }
-function deleteFromDetail(){
+async function deleteFromDetail(){
   if(!confirm('确认删除此商品及其所有记录？'))return;
   DB.products=DB.products.filter(p=>p.id!==detailId);
   DB.logs=DB.logs.filter(l=>l.productId!==detailId);
   DB.showItems=DB.showItems.filter(s=>s.productId!==detailId);
-  save();closeModal('modal-detail');renderInventory();toast('已删除');
+  await deleteProduct(detailId);
+  closeModal('modal-detail');renderInventory();toast('已删除');
 }
 function viewPhoto(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;">`);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
-// 展会
+// ===================== 展会 =====================
 function renderShowSelects(){
   document.getElementById('show-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
 }
-function doShowOut(){
+async function doShowOut(){
   const pid=document.getElementById('show-product').value;
   const qty=parseInt(document.getElementById('show-qty').value)||0;
   const showName=document.getElementById('show-name-input').value.trim()||'展会';
@@ -674,20 +757,25 @@ function doShowOut(){
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  const sid=uid();
-  DB.showItems.push({id:sid,productId:pid,qty,showName,ts:Date.now()});
-  DB.logs.unshift({id:uid(),productId:pid,type:'show',qty,note:showName,ts:Date.now()});
-  save();renderShowList();renderInventory();updateHeader();toast(`✅ 带出 ${qty} 件`);
+  const si={id:uid(),productId:pid,qty,showName,ts:Date.now()};
+  const log={id:uid(),productId:pid,type:'show',qty,note:showName,ts:Date.now()};
+  DB.showItems.push(si);DB.logs.unshift(log);
+  await Promise.all([upsertProduct(p),upsertShow(si),insertLog(log)]);
+  renderShowList();renderInventory();updateHeader();toast(`✅ 带出 ${qty} 件`);
 }
-function doReturn(sid){
+async function doReturn(sid){
   const si=DB.showItems.find(s=>s.id===sid);if(!si)return;
   const n=parseInt(prompt(`归还数量（带出 ${si.qty} 件）：`,si.qty));
   if(!n||n<=0||n>si.qty)return;
   const p=getProduct(si.productId);if(p)p.qty+=n;
-  DB.logs.unshift({id:uid(),productId:si.productId,type:'return',qty:n,note:si.showName+' 归还',ts:Date.now()});
-  if(n>=si.qty)DB.showItems=DB.showItems.filter(s=>s.id!==sid);
-  else si.qty-=n;
-  save();renderShowList();renderInventory();updateHeader();toast(`✅ 归还 ${n} 件`);
+  const log={id:uid(),productId:si.productId,type:'return',qty:n,note:si.showName+' 归还',ts:Date.now()};
+  DB.logs.unshift(log);
+  const ops=[insertLog(log)];
+  if(p)ops.push(upsertProduct(p));
+  if(n>=si.qty){DB.showItems=DB.showItems.filter(s=>s.id!==sid);ops.push(deleteShow(sid));}
+  else{si.qty-=n;ops.push(upsertShow(si));}
+  await Promise.all(ops);
+  renderShowList();renderInventory();updateHeader();toast(`✅ 归还 ${n} 件`);
 }
 function renderShowList(){
   const el=document.getElementById('show-list');
@@ -699,23 +787,17 @@ function renderShowList(){
   }).join('');
 }
 
-// 摄像头扫码 (ZXing)
-let zxingReader=null;
+// ===================== 摄像头扫码 =====================
 async function startCamera(){
   try{
     document.getElementById('camera-wrap').style.display='block';
     document.getElementById('camera-start-wrap').style.display='none';
     document.getElementById('camera-scan-result').style.display='none';
     document.getElementById('camera-result-bar').textContent='将条形码或QR码对准框内…';
-
-    if(!zxingReader){
-      zxingReader=new ZXing.BrowserMultiFormatReader();
-    }
-
-    const videoEl=document.getElementById('camera-video');
+    if(!zxingReader)zxingReader=new ZXing.BrowserMultiFormatReader();
     await zxingReader.decodeFromConstraints(
       {video:{facingMode:'environment'}},
-      videoEl,
+      document.getElementById('camera-video'),
       (result,err)=>{
         if(result){
           const code=result.getText();
@@ -732,34 +814,22 @@ async function startCamera(){
   }
 }
 function stopCamera(){
-  if(zxingReader){
-    try{zxingReader.reset();}catch(e){}
-  }
+  if(zxingReader){try{zxingReader.reset();}catch(e){}}
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
 }
 
-// 手动扫码
+// ===================== 手动扫码 =====================
 function doScan(){
   const q=document.getElementById('scan-input').value.trim();if(!q)return;
   const code=q.includes('|')?q.split('|')[0]:q;
   showScanResult(code,'scan-result');
 }
 function showScanResult(code,targetId){
-  // QR codes from this app use format "SKU|ProductName"
   const parts=code.split('|');
   const sku=parts[0].trim();
   const nameFromQR=parts[1]?parts[1].trim():'';
-  
-  // Try matching by SKU, product ID, full code, or name from QR
-  const p=DB.products.find(pr=>
-    pr.sku===sku ||
-    pr.id===sku ||
-    pr.sku===code ||
-    pr.id===code ||
-    pr.name===code ||
-    (nameFromQR && pr.name===nameFromQR)
-  );
+  const p=DB.products.find(pr=>pr.sku===sku||pr.id===sku||pr.sku===code||pr.id===code||pr.name===code||(nameFromQR&&pr.name===nameFromQR));
   const el=document.getElementById(targetId);
   el.style.display='block';
   if(p){
@@ -783,25 +853,23 @@ function showScanResult(code,targetId){
   }else{
     el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;">
       <div style="color:var(--rose);margin-bottom:10px;">❌ 未找到商品「${code}」</div>
-      <button class="btn btn-gold btn-sm" onclick="openAddModal({sku:'${code}'})">新建此商品</button>
+      <button class="btn btn-gold btn-sm" onclick="openAddModal()">新建此商品</button>
     </div>`;
   }
 }
-function quickOutScan(pid,targetId){
+async function quickOutScan(pid,targetId){
   const p=getProduct(pid);if(!p)return;
   const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
   if(!n||n<=0)return;
   if(p.qty<n){toast('库存不足');return;}
   p.qty-=n;
-  DB.logs.unshift({id:uid(),productId:pid,type:'out',qty:n,note:'扫码出库',ts:Date.now()});
-  save();renderInventory();
-  // refresh result
-  const el=document.getElementById(targetId);
-  if(el)showScanResult(p.sku||p.id,targetId);
-  toast(`✅ 出库 ${n} 件`);
+  const log={id:uid(),productId:pid,type:'out',qty:n,note:'扫码出库',ts:Date.now()};
+  DB.logs.unshift(log);
+  await Promise.all([upsertProduct(p),insertLog(log)]);
+  renderInventory();showScanResult(p.sku||p.id,targetId);toast(`✅ 出库 ${n} 件`);
 }
 
-// AI识别
+// ===================== AI识别 =====================
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
   const st=document.getElementById('ai-status'),res=document.getElementById('ai-result');
@@ -813,7 +881,7 @@ async function doAIRecognize(e){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',max_tokens:600,
-        system:'你是一个专业的矿物、宝石、首饰库管助手。识别图片中的商品，返回JSON：{"name":"商品名称","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON，无其他文字。',
+        system:'你是专业矿物宝石首饰库管助手。识别图片商品，返回JSON：{"name":"商品名","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON。',
         messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'识别这个商品'}]}]
       })
     });
@@ -832,18 +900,18 @@ async function doAIRecognize(e){
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;">
         <button class="btn btn-gold btn-sm" onclick='useAIResult(${JSON.stringify(JSON.stringify(parsed))})'>用此结果建品 →</button>
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('ai-result').style.display='none';document.getElementById('ai-photo-input').value=''">重拍</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('ai-result').style.display='none'">重拍</button>
       </div>
     </div>`;
   }catch(err){
     st.style.display='none';res.style.display='block';
-    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）<br>请手动建品或重试。</div>`;
+    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）</div>`;
   }
   e.target.value='';
 }
 function useAIResult(j){try{openAddModal(JSON.parse(j));}catch(e){openAddModal();}}
 
-// QR
+// ===================== QR =====================
 function renderQRSelects(){
   document.getElementById('qr-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   generateQR();
@@ -870,7 +938,7 @@ function printQR(){
     <script>window.print();<\/script></body></html>`);
 }
 
-// STATS
+// ===================== STATS =====================
 function renderStats(){
   const t=DB.products.length,q=DB.products.reduce((a,p)=>a+p.qty,0);
   const so=DB.showItems.reduce((a,s)=>a+s.qty,0),lw=DB.products.filter(p=>p.qty<3).length;
@@ -891,31 +959,46 @@ function renderStats(){
   </div>`).join(''):`<div style="color:var(--jade-light);font-size:13px;padding:8px;">✅ 所有商品库存充足</div>`;
 }
 
-// DATA MGMT
+// ===================== 导入旧数据 =====================
 function exportData(){
   const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`minzhen_${new Date().toISOString().slice(0,10)}.json`;a.click();
 }
-function importData(e){
+async function importData(e){
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=ev=>{
+  r.onload=async ev=>{
     try{
       const d=JSON.parse(ev.target.result);
       if(!d.products)throw 0;
-      if(!confirm(`导入 ${d.products.length} 个商品？将与现有数据合并。`))return;
-      d.products.forEach(p=>{if(!getProduct(p.id))DB.products.push(p);});
-      (d.logs||[]).forEach(l=>{if(!DB.logs.find(x=>x.id===l.id))DB.logs.push(l);});
-      (d.showItems||[]).forEach(s=>{if(!DB.showItems.find(x=>x.id===s.id))DB.showItems.push(s);});
-      save();renderInventory();toast('✅ 导入成功');
+      if(!confirm(`导入 ${d.products.length} 个商品到云端？`))return;
+      toast('正在上传到云端…');
+      for(const p of d.products){
+        if(!getProduct(p.id)){
+          DB.products.push(p);
+          await upsertProduct(p);
+        }
+      }
+      for(const l of (d.logs||[])){
+        if(!DB.logs.find(x=>x.id===l.id)){
+          DB.logs.push(l);
+          await insertLog(l);
+        }
+      }
+      for(const s of (d.showItems||[])){
+        if(!DB.showItems.find(x=>x.id===s.id)){
+          DB.showItems.push(s);
+          await upsertShow(s);
+        }
+      }
+      renderInventory();toast(`✅ 已导入 ${d.products.length} 个商品到云端！`);
     }catch{toast('❌ 文件格式错误');}
   };
   r.readAsText(f);
 }
-function clearAll(){if(!confirm('确认清空所有数据？不可恢复！'))return;DB={products:[],logs:[],showItems:[]};save();renderInventory();toast('已清空');}
 
-// INIT
-renderInventory();
+// ===================== INIT =====================
+loadAll();
 </script>
 </body>
 </html>
