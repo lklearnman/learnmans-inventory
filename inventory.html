@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>矿珍库 · 库存管理系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+:root{
+  --bg:#0e0d0b;--surface:#1a1915;--surface2:#242218;--border:#2e2c24;
+  --gold:#c9a84c;--gold-light:#e8c96a;--gold-dim:#7a6230;
+  --jade:#4a9e7a;--jade-light:#6abf9a;--rose:#b05a6a;--rose-light:#d07880;
+  --text:#e8e4d8;--text-dim:#8a8474;--text-muted:#4a4840;
+  --radius:8px;--radius-lg:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+.app-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--gold);letter-spacing:2px;}
+.header-stats{display:flex;gap:16px;font-size:12px;color:var(--text-dim);}
+.header-stats span{color:var(--gold);font-family:'DM Mono',monospace;}
+.nav-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.nav-tabs::-webkit-scrollbar{display:none;}
+.nav-tab{flex-shrink:0;padding:12px 18px;font-size:13px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.main{padding:20px;max-width:900px;margin:0 auto;}
+.section{display:none;}.section.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.card-title{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--gold);margin-bottom:16px;}
+.search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-size:14px;font-family:'Noto Sans SC',sans-serif;}
+.search-input:focus{outline:none;border-color:var(--gold-dim);}
+.search-input::placeholder{color:var(--text-muted);}
+.btn{padding:10px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-family:'Noto Sans SC',sans-serif;font-weight:500;transition:all .18s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.btn-gold{background:var(--gold);color:#1a1400;}.btn-gold:hover{background:var(--gold-light);}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-dim);}.btn-outline:hover{border-color:var(--gold-dim);color:var(--text);}
+.btn-jade{background:var(--jade);color:#fff;}.btn-jade:hover{background:var(--jade-light);}
+.btn-rose{background:var(--rose);color:#fff;}.btn-rose:hover{background:var(--rose-light);}
+.btn-sm{padding:6px 11px;font-size:12px;}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;}
+.product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
+.product-card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
+.product-thumb{width:100%;aspect-ratio:1;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
+.product-thumb img{width:100%;height:100%;object-fit:cover;}
+.product-info{padding:10px;}
+.product-name{font-size:13px;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.product-sku{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
+.product-qty{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.75);color:var(--gold);font-size:11px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:20px;}
+.product-qty.low{color:var(--rose);}
+.product-qty.zero{color:var(--text-muted);}
+.category-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.75);font-size:10px;padding:2px 6px;border-radius:20px;color:var(--text-dim);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:500px){.form-grid{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:12px;color:var(--text-dim);}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-size:14px;font-family:'Noto Sans SC',sans-serif;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold-dim);}
+select option{background:var(--surface2);}
+textarea{resize:vertical;min-height:70px;}
+.photo-upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text-muted);font-size:13px;}
+.photo-upload-area:hover{border-color:var(--gold-dim);color:var(--text-dim);}
+.photo-preview-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.photo-preview-item{position:relative;width:72px;height:72px;border-radius:6px;overflow:hidden;border:1px solid var(--border);}
+.photo-preview-item img{width:100%;height:100%;object-fit:cover;}
+.photo-remove{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.8);color:#fff;border:none;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid rgba(46,44,36,.5);vertical-align:middle;}
+tr:hover td{background:var(--surface2);}
+tr.clickable{cursor:pointer;}
+.td-mono{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-in{background:rgba(74,158,122,.15);color:var(--jade-light);}
+.badge-out{background:rgba(176,90,106,.15);color:#d07880;}
+.badge-show{background:rgba(201,168,76,.15);color:var(--gold);}
+.badge-return{background:rgba(74,100,158,.15);color:#7a9ad0;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(5px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:580px;max-height:92vh;overflow-y:auto;padding:24px;position:relative;}
+.modal-title{font-family:'Noto Serif SC',serif;font-size:17px;color:var(--gold);margin-bottom:20px;padding-right:36px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
+.detail-photos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.detail-photo{width:90px;height:90px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.detail-field label{font-size:11px;color:var(--text-muted);display:block;margin-bottom:3px;}
+.detail-field .val{font-size:14px;color:var(--text);}
+.detail-field .val.mono{font-family:'DM Mono',monospace;font-size:13px;}
+.detail-field .val.big{font-size:24px;font-family:'DM Mono',monospace;color:var(--gold);}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;}
+.stat-num{font-family:'DM Mono',monospace;font-size:26px;color:var(--gold);display:block;}
+.stat-label{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.show-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;}
+.show-thumb{width:52px;height:52px;border-radius:6px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;}
+.show-thumb img{width:100%;height:100%;object-fit:cover;}
+.show-details{flex:1;min-width:0;}
+.camera-wrap-inner{position:relative;width:100%;max-width:400px;margin:0 auto;border-radius:var(--radius-lg);overflow:hidden;background:#000;}
+#camera-video{width:100%;display:block;}
+.camera-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.scan-frame{width:60%;aspect-ratio:1;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.4);}
+.scan-line{position:absolute;width:60%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:scanline 2s ease-in-out infinite;}
+@keyframes scanline{0%{top:20%;}50%{top:78%;}100%{top:20%;}}
+.camera-result-bar{background:rgba(0,0,0,.85);color:var(--text-dim);padding:8px 14px;font-size:12px;text-align:center;}
+.ai-status{font-size:12px;color:var(--text-muted);padding:8px 0;display:flex;align-items:center;gap:6px;}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:var(--jade);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.2;}}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.filter-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:12px;color:var(--text-dim);cursor:pointer;transition:all .15s;background:transparent;}
+.filter-chip.active{background:var(--gold);color:#1a1400;border-color:var(--gold);}
+.mode-switcher{display:flex;background:var(--surface2);border-radius:var(--radius);padding:3px;gap:3px;margin-bottom:18px;}
+.mode-btn{flex:1;padding:9px;text-align:center;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text-dim);transition:all .2s;}
+.mode-btn.active{background:var(--gold);color:#1a1400;font-weight:600;}
+.segment{display:none;}.segment.active{display:block;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid var(--gold-dim);color:var(--text);padding:12px 20px;border-radius:var(--radius);font-size:13px;z-index:999;transition:transform .3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.info-box{background:var(--surface2);border-left:3px solid var(--gold-dim);border-radius:0 var(--radius) var(--radius) 0;padding:10px 14px;font-size:12px;color:var(--text-muted);margin-bottom:16px;}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:480px){
+  .main{padding:12px;}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+  .detail-grid{grid-template-columns:1fr;}
+  .header-stats{display:none;}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">💎 矿珍库</div>
+  <div class="header-stats">
+    <div>种类 <span id="hdr-total">0</span></div>
+    <div>库存 <span id="hdr-qty">0</span></div>
+    <div>展会 <span id="hdr-show">0</span></div>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <div class="nav-tab active" onclick="switchTab('inventory',this)">📦 库存</div>
+  <div class="nav-tab" onclick="switchTab('inout',this)">↕️ 入库出库</div>
+  <div class="nav-tab" onclick="switchTab('show',this)">🎪 展会</div>
+  <div class="nav-tab" onclick="switchTab('scan',this)">📷 扫码</div>
+  <div class="nav-tab" onclick="switchTab('stats',this)">📊 统计</div>
+</nav>
+
+<div class="main">
+
+<!-- 库存 -->
+<div class="section active" id="sec-inventory">
+  <div class="search-row">
+    <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()">
+    <button class="btn btn-outline btn-sm" onclick="openAddModal()">＋ 建品</button>
+    <button class="btn btn-gold btn-sm" onclick="openStockInModal(null)">⬆️ 入库</button>
+  </div>
+  <div class="filter-row" id="cat-filters">
+    <button class="filter-chip active" onclick="setCatFilter('all',this)">全部</button>
+  </div>
+  <div id="product-grid" class="product-grid"></div>
+</div>
+
+<!-- 入库出库 -->
+<div class="section" id="sec-inout">
+  <div class="mode-switcher">
+    <div class="mode-btn active" onclick="setIOMode('in',this)">⬆️ 入库</div>
+    <div class="mode-btn" onclick="setIOMode('out',this)">⬇️ 出库</div>
+  </div>
+  <div class="segment active" id="seg-in">
+    <div class="card">
+      <div class="card-title">⬆️ 入库</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-gold" onclick="openStockInModal(null)">在现有商品上入库</button>
+        <button class="btn btn-outline" onclick="openAddThenStockIn()">新建商品并入库</button>
+      </div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-top:4px;">📋 入库记录（点击查看详情）</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>时间</th><th>商品</th><th>数量</th><th>备注</th></tr></thead>
+        <tbody id="in-log-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="segment" id="seg-out">
+    <div class="card">
+      <div class="card-title">⬇️ 出库</div>
+      <div class="form-grid">
+        <div class="form-group"><label>选择商品</label><select id="out-product"></select></div>
+        <div class="form-group"><label>出库数量</label><input type="number" id="out-qty" value="1" min="1"></div>
+        <div class="form-group full"><label>备注（客户/原因）</label><input type="text" id="out-note" placeholder="可选"></div>
+      </div>
+      <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
+      <div class="divider"></div>
+      <div class="card-title" style="margin-top:4px;">📋 出库记录（点击查看详情）</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>时间</th><th>商品</th><th>数量</th><th>备注</th></tr></thead>
+        <tbody id="out-log-tbody"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- 展会 -->
+<div class="section" id="sec-show">
+  <div class="card">
+    <div class="card-title">🎪 展会带货</div>
+    <div class="form-grid">
+      <div class="form-group"><label>选择商品</label><select id="show-product"></select></div>
+      <div class="form-group"><label>带出数量</label><input type="number" id="show-qty" value="1" min="1"></div>
+      <div class="form-group full"><label>展会名称</label><input type="text" id="show-name-input" placeholder="例：2025东京矿物展"></div>
+    </div>
+    <div style="margin-top:14px;"><button class="btn btn-gold" onclick="doShowOut()">带出</button></div>
+  </div>
+  <div class="card">
+    <div class="card-title">📤 展会中（未归还）</div>
+    <div id="show-list"></div>
+  </div>
+</div>
+
+<!-- 扫码 -->
+<div class="section" id="sec-scan">
+  <div class="card">
+    <div class="card-title">📱 摄像头扫码</div>
+    <div id="camera-start-wrap">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">用手机/电脑摄像头直接扫条形码或QR码，无需扫码枪</p>
+      <button class="btn btn-gold" onclick="startCamera()">📷 开启摄像头扫码</button>
+    </div>
+    <div id="camera-wrap" style="display:none;">
+      <div class="camera-wrap-inner">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div class="camera-overlay">
+          <div class="scan-frame"></div>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+      <div class="camera-result-bar" id="camera-result-bar">将条形码或QR码对准框内…</div>
+      <div style="margin-top:10px;text-align:center;">
+        <button class="btn btn-rose btn-sm" onclick="stopCamera()">停止</button>
+      </div>
+    </div>
+    <div id="camera-scan-result" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⌨️ 手动输入 / 扫码枪</div>
+    <div style="display:flex;gap:8px;">
+      <input class="search-input" id="scan-input" placeholder="输入或扫码枪扫入SKU…" onkeydown="if(event.key==='Enter')doScan()">
+      <button class="btn btn-gold" onclick="doScan()">查询</button>
+    </div>
+    <div id="scan-result" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 AI拍照识别建品</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">拍一张商品照片，AI自动识别名称、类别、产地，快速建品</p>
+    <div class="photo-upload-area" onclick="document.getElementById('ai-photo-input').click()">📸 点击拍照或选择图片</div>
+    <input type="file" id="ai-photo-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
+    <div id="ai-status" style="display:none;" class="ai-status"><div class="ai-dot"></div>AI识别中，请稍候…</div>
+    <div id="ai-result" style="display:none;margin-top:14px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏷️ 生成QR标签</div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>选择商品</label>
+      <select id="qr-product" onchange="generateQR()"></select>
+    </div>
+    <div id="qr-container" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <div id="qr-info" style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"></div>
+    <button class="btn btn-outline btn-sm" onclick="printQR()">🖨️ 打印标签</button>
+  </div>
+</div>
+
+<!-- 统计 -->
+<div class="section" id="sec-stats">
+  <div class="stats-row" id="stats-row"></div>
+  <div class="card">
+    <div class="card-title">📊 各类别库存</div>
+    <div class="table-wrap"><table><thead><tr><th>类别</th><th>种类数</th><th>总件数</th></tr></thead><tbody id="cat-stats-tbody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ 库存不足（&lt;3件）</div>
+    <div id="low-stock-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">💾 数据管理</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="exportData()">📥 导出备份</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('import-file').click()">📤 导入</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      <button class="btn btn-rose btn-sm" onclick="clearAll()">🗑️ 清空全部</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- 建品 MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-title" id="modal-add-title">新建商品档案</div>
+    <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
+    <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存，或点「建档并入库」一步完成。</div>
+    <div class="form-grid">
+      <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
+      <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
+      <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
+      <div class="form-group"><label>单价（可选）</label><input type="text" id="f-price" placeholder="¥"></div>
+      <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
+      <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
+      <div class="form-group full"><label>备注描述</label><textarea id="f-note" placeholder="成色、特征等…"></textarea></div>
+      <div class="form-group full">
+        <label>商品照片（最多5张）</label>
+        <div class="photo-upload-area" onclick="document.getElementById('f-photos').click()">📷 拍照或选择图片</div>
+        <input type="file" id="f-photos" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
+        <div class="photo-preview-grid" id="photo-previews"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-add')">取消</button>
+      <button class="btn btn-outline" onclick="saveProductOnly()">仅建档</button>
+      <button class="btn btn-gold" onclick="saveProductAndStockIn()">建档并入库 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- 入库 MODAL -->
+<div class="modal-overlay" id="modal-stockin">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">⬆️ 入库</div>
+    <button class="modal-close" onclick="closeModal('modal-stockin')">✕</button>
+    <div class="form-grid">
+      <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
+      <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
+      <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
+      <div class="form-group"><label>入库单价（可选）</label><input type="text" id="si-price" placeholder="¥ 留空不更新"></div>
+      <div class="form-group full"><label>备注（来源/批次等）</label><input type="text" id="si-note" placeholder="可选"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-stockin')">取消</button>
+      <button class="btn btn-gold" onclick="doStockIn()">确认入库</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商品详情 MODAL -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-title" id="detail-title"></div>
+    <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    <div id="detail-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="editFromDetail()">✏️ 编辑</button>
+      <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
+      <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
+      <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);">🗑️</button>
+    </div>
+  </div>
+</div>
+
+<!-- 记录详情 MODAL -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title">操作记录详情</div>
+    <button class="modal-close" onclick="closeModal('modal-log')">✕</button>
+    <div id="log-detail-body"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-log')">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// DATA
+let DB={products:[],logs:[],showItems:[]};
+let editingId=null,detailId=null,pendingPhotos=[];
+let catFilter='all',cameraStream=null,camTimer=null;
+
+function load(){try{const d=localStorage.getItem('minzhen_v2');if(d)DB=JSON.parse(d);}catch(e){}}
+function save(){try{localStorage.setItem('minzhen_v2',JSON.stringify(DB));}catch(e){toast('⚠️ 存储不足');}}
+load();
+
+// UTILS
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmt(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function fmtFull(ts){const d=new Date(ts);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
+function getProduct(id){return DB.products.find(p=>p.id===id);}
+function allCats(){return[...new Set(DB.products.map(p=>p.cat||'未分类'))].sort();}
+function catEmoji(cat){if(!cat)return'📦';const c=cat.toLowerCase();if(c.includes('首饰')||c.includes('项链')||c.includes('戒'))return'💍';if(c.includes('矿')||c.includes('标本'))return'🪨';if(c.includes('元石')||c.includes('宝石')||c.includes('水晶'))return'💎';if(c.includes('化石'))return'🦕';return'📦';}
+async function compressImage(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const mx=800;if(w>mx||h>mx){const s=Math.min(mx/w,mx/h);w=Math.round(w*s);h=Math.round(h*s);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.82;const go=()=>{const d=c.toDataURL('image/jpeg',q);if((d.length*3/4)/1024<=200||q<=0.2)res(d);else{q-=0.1;go();}};go();};img.src=e.target.result;};r.readAsDataURL(file);});}
+
+// TABS
+function switchTab(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='inout'){renderOutSelects();renderInLogs();renderOutLogs();}
+  if(name==='show'){renderShowSelects();renderShowList();}
+  if(name==='scan'){renderQRSelects();}
+  if(name==='stats'){renderStats();}
+  if(name!=='scan')stopCamera();
+}
+function setIOMode(mode,el){
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');
+  document.querySelectorAll('.segment').forEach(s=>s.classList.remove('active'));
+  document.getElementById('seg-'+mode).classList.add('active');
+  if(mode==='out')renderOutSelects();
+}
+
+// INVENTORY
+function renderInventory(){
+  const q=document.getElementById('inv-search').value.toLowerCase();
+  const grid=document.getElementById('product-grid');
+  let prods=DB.products.filter(p=>{
+    if(catFilter!=='all'&&(p.cat||'未分类')!==catFilter)return false;
+    if(q&&!p.name.toLowerCase().includes(q)&&!(p.sku||'').toLowerCase().includes(q)&&!(p.cat||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  if(!prods.length){
+    grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div style="font-size:40px;margin-bottom:12px;">${DB.products.length?'🔍':'💎'}</div><div style="margin-bottom:14px;font-size:14px;">${DB.products.length?'没有符合的商品':'还没有商品，开始建品吧'}</div><button class="btn btn-gold" onclick="openAddModal()">＋ 建品</button></div>`;
+    updateHeader();return;
+  }
+  grid.innerHTML=prods.map(p=>{
+    const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+    const avail=p.qty-showOut;
+    const qc=avail<=0?' zero':avail<3?' low':'';
+    const thumb=p.photos&&p.photos[0]?`<div class="product-thumb"><img src="${p.photos[0]}" loading="lazy"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
+    return`<div class="product-card" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
+  }).join('');
+  updateHeader();renderCatFilters();
+}
+function renderCatFilters(){
+  const cats=allCats();
+  const row=document.getElementById('cat-filters');
+  const dl=document.getElementById('cat-list');
+  dl.innerHTML=cats.map(c=>`<option value="${c}">`).join('');
+  const existing=[...row.querySelectorAll('[data-cat]')].map(c=>c.dataset.cat);
+  cats.forEach(cat=>{
+    if(!existing.includes(cat)){
+      const btn=document.createElement('button');
+      btn.className='filter-chip';btn.dataset.cat=cat;btn.textContent=cat;
+      btn.onclick=function(){setCatFilter(cat,this);};row.appendChild(btn);
+    }
+  });
+}
+function setCatFilter(cat,el){catFilter=cat;document.querySelectorAll('#cat-filters .filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderInventory();}
+function updateHeader(){
+  document.getElementById('hdr-total').textContent=DB.products.length;
+  document.getElementById('hdr-qty').textContent=DB.products.reduce((a,p)=>a+p.qty,0);
+  document.getElementById('hdr-show').textContent=DB.showItems.reduce((a,s)=>a+s.qty,0);
+}
+
+// 建品 MODAL
+function openAddModal(prefill){
+  editingId=null;pendingPhotos=[];
+  document.getElementById('modal-add-title').textContent='新建商品档案';
+  ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('photo-previews').innerHTML='';
+  if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
+  document.getElementById('modal-add').classList.add('open');
+}
+function openEditModal(id){
+  const p=getProduct(id);if(!p)return;
+  editingId=id;pendingPhotos=[...(p.photos||[])];
+  document.getElementById('modal-add-title').textContent='编辑商品';
+  document.getElementById('f-name').value=p.name||'';
+  document.getElementById('f-sku').value=p.sku||'';
+  document.getElementById('f-cat').value=p.cat||'';
+  document.getElementById('f-price').value=p.price||'';
+  document.getElementById('f-origin').value=p.origin||'';
+  document.getElementById('f-country').value=p.country||'';
+  document.getElementById('f-note').value=p.note||'';
+  renderPhotoPreviews();closeModal('modal-detail');
+  document.getElementById('modal-add').classList.add('open');
+}
+function openAddThenStockIn(){
+  openAddModal();
+  // override save button action flag
+  document.getElementById('modal-add').dataset.stockin='1';
+}
+async function handlePhotos(e){
+  const files=[...e.target.files],rem=5-pendingPhotos.length;
+  if(rem<=0){toast('最多5张');return;}
+  for(const f of files.slice(0,rem))pendingPhotos.push(await compressImage(f));
+  renderPhotoPreviews();e.target.value='';
+}
+function renderPhotoPreviews(){
+  document.getElementById('photo-previews').innerHTML=pendingPhotos.map((s,i)=>`<div class="photo-preview-item"><img src="${s}"><button class="photo-remove" onclick="removePhoto(${i})">✕</button></div>`).join('');
+}
+function removePhoto(i){pendingPhotos.splice(i,1);renderPhotoPreviews();}
+function buildProduct(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){toast('请填写商品名称');return null;}
+  const sku=document.getElementById('f-sku').value.trim()||('MZ-'+uid().toUpperCase().slice(0,6));
+  return{id:editingId||uid(),name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+}
+function saveProductOnly(){
+  const data=buildProduct();if(!data)return;
+  if(editingId){Object.assign(getProduct(editingId),data);toast('✅ 已更新');}
+  else{DB.products.unshift(data);toast('✅ 建档完成（库存0，请记得入库）');}
+  save();closeModal('modal-add');renderInventory();
+}
+function saveProductAndStockIn(){
+  if(editingId){saveProductOnly();return;}
+  const data=buildProduct();if(!data)return;
+  DB.products.unshift(data);save();closeModal('modal-add');renderInventory();
+  setTimeout(()=>openStockInModal(data.id),200);
+}
+
+// 入库 MODAL
+function openStockInModal(preId){
+  const sel=document.getElementById('si-product');
+  sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name}（${p.sku||'—'}）现库存:${p.qty}</option>`).join('');
+  if(!sel.innerHTML){toast('请先建品');return;}
+  document.getElementById('si-qty').value=1;
+  document.getElementById('si-price').value='';
+  document.getElementById('si-note').value='';
+  updateStockInInfo();
+  document.getElementById('modal-stockin').classList.add('open');
+}
+function updateStockInInfo(){
+  const p=getProduct(document.getElementById('si-product').value);
+  const el=document.getElementById('si-current-info');
+  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 单价：'+p.price:''}`;}
+  else el.style.display='none';
+}
+function doStockIn(){
+  const pid=document.getElementById('si-product').value;
+  const qty=parseInt(document.getElementById('si-qty').value)||0;
+  const note=document.getElementById('si-note').value.trim();
+  const price=document.getElementById('si-price').value.trim();
+  if(!pid){toast('请选择商品');return;}
+  if(qty<=0){toast('数量需大于0');return;}
+  const p=getProduct(pid);
+  p.qty+=qty;
+  if(price)p.price=price;
+  DB.logs.unshift({id:uid(),productId:pid,type:'in',qty,note,price,ts:Date.now()});
+  save();closeModal('modal-stockin');renderInventory();renderInLogs();toast(`✅ 入库 ${qty} 件，当前库存 ${p.qty} 件`);
+}
+
+// 出库
+function renderOutSelects(){
+  document.getElementById('out-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
+}
+function doOut(){
+  const pid=document.getElementById('out-product').value;
+  const qty=parseInt(document.getElementById('out-qty').value)||0;
+  const note=document.getElementById('out-note').value.trim();
+  if(!pid){toast('请选择商品');return;}
+  if(qty<=0){toast('数量需大于0');return;}
+  const p=getProduct(pid);
+  if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
+  p.qty-=qty;
+  DB.logs.unshift({id:uid(),productId:pid,type:'out',qty,note,ts:Date.now()});
+  save();renderOutSelects();renderInventory();renderOutLogs();
+  document.getElementById('out-qty').value=1;document.getElementById('out-note').value='';
+  toast(`✅ 出库 ${qty} 件`);
+}
+
+// LOGS
+function renderInLogs(){
+  const logs=DB.logs.filter(l=>l.type==='in').slice(0,100);
+  document.getElementById('in-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l)).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">暂无入库记录</td></tr>`;
+}
+function renderOutLogs(){
+  const logs=DB.logs.filter(l=>l.type==='out').slice(0,100);
+  document.getElementById('out-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l)).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">暂无出库记录</td></tr>`;
+}
+function logRow(l){
+  const p=getProduct(l.productId);
+  return`<tr class="clickable" onclick="openLogDetail('${l.id}')">
+    <td class="td-mono">${fmt(l.ts)}</td>
+    <td>${p?p.name:'已删除'}</td>
+    <td style="font-family:'DM Mono',monospace;color:${l.type==='in'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'?'+':'−'}${l.qty}</td>
+    <td style="color:var(--text-muted);">${l.note||'—'}</td>
+  </tr>`;
+}
+function openLogDetail(lid){
+  const l=DB.logs.find(x=>x.id===lid);if(!l)return;
+  const p=getProduct(l.productId);
+  const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
+  document.getElementById('log-detail-body').innerHTML=`
+    <div style="margin-bottom:14px;">
+      <span class="badge badge-${l.type}">${typeLabel[l.type]||l.type}</span>
+      <span class="td-mono" style="margin-left:10px;">${fmtFull(l.ts)}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-field"><label>商品名称</label><div class="val">${p?p.name:'（已删除）'}</div></div>
+      <div class="detail-field"><label>SKU</label><div class="val mono">${p?p.sku||'—':'—'}</div></div>
+      <div class="detail-field"><label>数量</label><div class="val" style="font-size:20px;font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</div></div>
+      ${l.price?`<div class="detail-field"><label>入库单价</label><div class="val">${l.price}</div></div>`:''}
+      ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
+      ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
+    </div>
+    ${p?`<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="closeModal('modal-log');openDetail('${p.id}')">查看商品详情 →</button>`:''}`;
+  document.getElementById('modal-log').classList.add('open');
+}
+
+// 商品详情
+function openDetail(id){
+  const p=getProduct(id);if(!p)return;
+  detailId=id;
+  document.getElementById('detail-title').textContent=p.name;
+  const showOut=DB.showItems.filter(s=>s.productId===id).reduce((a,s)=>a+s.qty,0);
+  const avail=p.qty-showOut;
+  const logs=DB.logs.filter(l=>l.productId===id).slice(0,10);
+  document.getElementById('detail-body').innerHTML=`
+    ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
+    <div class="detail-grid">
+      <div class="detail-field"><label>SKU</label><div class="val mono">${p.sku||'—'}</div></div>
+      <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
+      <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
+      <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
+      ${p.price?`<div class="detail-field"><label>单价</label><div class="val">${p.price}</div></div>`:''}
+      ${p.origin?`<div class="detail-field"><label>产地/规格</label><div class="val">${p.origin}</div></div>`:''}
+      ${p.country?`<div class="detail-field"><label>原产国</label><div class="val">${p.country}</div></div>`:''}
+      <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>
+    </div>
+    ${p.note?`<div style="font-size:13px;color:var(--text-dim);padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:14px;">${p.note}</div>`:''}
+    ${logs.length?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">操作历史（点击查看详情）</div>
+    <div class="table-wrap"><table><thead><tr><th>时间</th><th>类型</th><th>数量</th><th>备注</th></tr></thead><tbody>
+    ${logs.map(l=>`<tr class="clickable" onclick="closeModal('modal-detail');openLogDetail('${l.id}')">
+      <td class="td-mono">${fmt(l.ts)}</td>
+      <td><span class="badge badge-${l.type==='in'?'in':l.type==='out'?'out':l.type==='show'?'show':'return'}">${l.type==='in'?'入库':l.type==='out'?'出库':l.type==='show'?'带出':'归还'}</span></td>
+      <td style="font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</td>
+      <td style="color:var(--text-muted);">${l.note||'—'}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`:''}`;
+  document.getElementById('modal-detail').classList.add('open');
+}
+function editFromDetail(){openEditModal(detailId);}
+function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
+function quickOutFromDetail(){
+  const p=getProduct(detailId);if(!p)return;
+  const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
+  if(!n||n<=0)return;
+  if(p.qty<n){toast('库存不足');return;}
+  p.qty-=n;
+  DB.logs.unshift({id:uid(),productId:detailId,type:'out',qty:n,note:'详情页出库',ts:Date.now()});
+  save();renderInventory();closeModal('modal-detail');toast(`✅ 出库 ${n} 件`);
+}
+function deleteFromDetail(){
+  if(!confirm('确认删除此商品及其所有记录？'))return;
+  DB.products=DB.products.filter(p=>p.id!==detailId);
+  DB.logs=DB.logs.filter(l=>l.productId!==detailId);
+  DB.showItems=DB.showItems.filter(s=>s.productId!==detailId);
+  save();closeModal('modal-detail');renderInventory();toast('已删除');
+}
+function viewPhoto(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;">`);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// 展会
+function renderShowSelects(){
+  document.getElementById('show-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
+}
+function doShowOut(){
+  const pid=document.getElementById('show-product').value;
+  const qty=parseInt(document.getElementById('show-qty').value)||0;
+  const showName=document.getElementById('show-name-input').value.trim()||'展会';
+  if(!pid||qty<=0)return;
+  const p=getProduct(pid);
+  if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
+  p.qty-=qty;
+  const sid=uid();
+  DB.showItems.push({id:sid,productId:pid,qty,showName,ts:Date.now()});
+  DB.logs.unshift({id:uid(),productId:pid,type:'show',qty,note:showName,ts:Date.now()});
+  save();renderShowList();renderInventory();updateHeader();toast(`✅ 带出 ${qty} 件`);
+}
+function doReturn(sid){
+  const si=DB.showItems.find(s=>s.id===sid);if(!si)return;
+  const n=parseInt(prompt(`归还数量（带出 ${si.qty} 件）：`,si.qty));
+  if(!n||n<=0||n>si.qty)return;
+  const p=getProduct(si.productId);if(p)p.qty+=n;
+  DB.logs.unshift({id:uid(),productId:si.productId,type:'return',qty:n,note:si.showName+' 归还',ts:Date.now()});
+  if(n>=si.qty)DB.showItems=DB.showItems.filter(s=>s.id!==sid);
+  else si.qty-=n;
+  save();renderShowList();renderInventory();updateHeader();toast(`✅ 归还 ${n} 件`);
+}
+function renderShowList(){
+  const el=document.getElementById('show-list');
+  if(!DB.showItems.length){el.innerHTML=`<div class="empty-state"><div style="font-size:36px;margin-bottom:10px;">🎉</div><div>目前没有展会带出的商品</div></div>`;return;}
+  el.innerHTML=DB.showItems.map(si=>{
+    const p=getProduct(si.productId);
+    const thumb=p&&p.photos&&p.photos[0]?`<div class="show-thumb"><img src="${p.photos[0]}"></div>`:`<div class="show-thumb">${catEmoji(p&&p.cat)}</div>`;
+    return`<div class="show-item">${thumb}<div class="show-details"><div style="font-size:14px;color:var(--text);margin-bottom:4px;">${p?p.name:'已删除'}</div><div style="font-size:12px;color:var(--text-muted);">📍 ${si.showName} · 带出 <strong style="color:var(--gold);">${si.qty}</strong> 件 · ${fmt(si.ts)}</div></div><button class="btn btn-jade btn-sm" onclick="doReturn('${si.id}')">↩️ 归还</button></div>`;
+  }).join('');
+}
+
+// 摄像头扫码
+async function startCamera(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    cameraStream=stream;
+    const v=document.getElementById('camera-video');v.srcObject=stream;
+    document.getElementById('camera-wrap').style.display='block';
+    document.getElementById('camera-start-wrap').style.display='none';
+    document.getElementById('camera-scan-result').style.display='none';
+    scanFrame();
+  }catch(e){toast('无法访问摄像头：'+e.message);}
+}
+function stopCamera(){
+  if(cameraStream){cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;}
+  if(camTimer){clearTimeout(camTimer);camTimer=null;}
+  document.getElementById('camera-wrap').style.display='none';
+  document.getElementById('camera-start-wrap').style.display='block';
+}
+function scanFrame(){
+  const v=document.getElementById('camera-video');
+  if(!cameraStream){return;}
+  if(v.readyState<2){camTimer=setTimeout(scanFrame,200);return;}
+  const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+  const ctx=c.getContext('2d');ctx.drawImage(v,0,0);
+  try{
+    const img=ctx.getImageData(0,0,c.width,c.height);
+    const code=jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'});
+    if(code){
+      document.getElementById('camera-result-bar').textContent='✅ 扫到：'+code.data;
+      stopCamera();
+      showScanResult(code.data,'camera-scan-result');
+      return;
+    }
+  }catch(e){}
+  camTimer=setTimeout(scanFrame,150);
+}
+
+// 手动扫码
+function doScan(){
+  const q=document.getElementById('scan-input').value.trim();if(!q)return;
+  const code=q.includes('|')?q.split('|')[0]:q;
+  showScanResult(code,'scan-result');
+}
+function showScanResult(code,targetId){
+  const p=DB.products.find(pr=>pr.sku===code||pr.id===code||pr.name===code);
+  const el=document.getElementById(targetId);
+  el.style.display='block';
+  if(p){
+    const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+    el.innerHTML=`
+      <div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          ${p.photos&&p.photos[0]?`<img src="${p.photos[0]}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`:`<div style="width:60px;height:60px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;">${catEmoji(p.cat)}</div>`}
+          <div>
+            <div style="font-size:15px;font-weight:500;margin-bottom:4px;">${p.name}</div>
+            <div style="font-size:12px;color:var(--text-muted);">SKU: ${p.sku||'—'} · ${p.cat||'未分类'}</div>
+            <div style="font-size:13px;color:var(--jade-light);margin-top:3px;">库存 ${p.qty-showOut} 件${showOut>0?`（展会带出${showOut}件）`:''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${p.id}')">详情</button>
+          <button class="btn btn-jade btn-sm" onclick="openStockInModal('${p.id}')">⬆️ 入库</button>
+          <button class="btn btn-rose btn-sm" onclick="quickOutScan('${p.id}','${targetId}')">⬇️ 出库</button>
+        </div>
+      </div>`;
+  }else{
+    el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;">
+      <div style="color:var(--rose);margin-bottom:10px;">❌ 未找到商品「${code}」</div>
+      <button class="btn btn-gold btn-sm" onclick="openAddModal({sku:'${code}'})">新建此商品</button>
+    </div>`;
+  }
+}
+function quickOutScan(pid,targetId){
+  const p=getProduct(pid);if(!p)return;
+  const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
+  if(!n||n<=0)return;
+  if(p.qty<n){toast('库存不足');return;}
+  p.qty-=n;
+  DB.logs.unshift({id:uid(),productId:pid,type:'out',qty:n,note:'扫码出库',ts:Date.now()});
+  save();renderInventory();
+  // refresh result
+  const el=document.getElementById(targetId);
+  if(el)showScanResult(p.sku||p.id,targetId);
+  toast(`✅ 出库 ${n} 件`);
+}
+
+// AI识别
+async function doAIRecognize(e){
+  const file=e.target.files[0];if(!file)return;
+  const st=document.getElementById('ai-status'),res=document.getElementById('ai-result');
+  st.style.display='flex';res.style.display='none';
+  const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result.split(',')[1]);rd.readAsDataURL(file);});
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:600,
+        system:'你是一个专业的矿物、宝石、首饰库管助手。识别图片中的商品，返回JSON：{"name":"商品名称","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON，无其他文字。',
+        messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'识别这个商品'}]}]
+      })
+    });
+    const data=await resp.json();
+    const text=(data.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(text);
+    st.style.display='none';res.style.display='block';
+    res.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成</div>
+      <div class="detail-grid">
+        <div class="detail-field"><label>识别名称</label><div class="val">${parsed.name||'—'}</div></div>
+        <div class="detail-field"><label>类别</label><div class="val">${parsed.cat||'—'}</div></div>
+        ${parsed.origin?`<div class="detail-field"><label>产地/规格</label><div class="val">${parsed.origin}</div></div>`:''}
+        ${parsed.country?`<div class="detail-field"><label>原产国</label><div class="val">${parsed.country}</div></div>`:''}
+        ${parsed.note?`<div class="detail-field full"><label>描述</label><div class="val" style="font-size:13px;color:var(--text-dim);">${parsed.note}</div></div>`:''}
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-gold btn-sm" onclick='useAIResult(${JSON.stringify(JSON.stringify(parsed))})'>用此结果建品 →</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('ai-result').style.display='none';document.getElementById('ai-photo-input').value=''">重拍</button>
+      </div>
+    </div>`;
+  }catch(err){
+    st.style.display='none';res.style.display='block';
+    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）<br>请手动建品或重试。</div>`;
+  }
+  e.target.value='';
+}
+function useAIResult(j){try{openAddModal(JSON.parse(j));}catch(e){openAddModal();}}
+
+// QR
+function renderQRSelects(){
+  document.getElementById('qr-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  generateQR();
+}
+function generateQR(){
+  const pid=document.getElementById('qr-product').value;
+  const p=getProduct(pid);
+  const c=document.getElementById('qr-container');c.innerHTML='';
+  if(!p)return;
+  const content=`${p.sku||p.id}|${p.name}`;
+  document.getElementById('qr-info').textContent=`编码：${content}`;
+  new QRCode(c,{text:content,width:120,height:120,colorDark:'#c9a84c',colorLight:'#1a1915'});
+}
+function printQR(){
+  const pid=document.getElementById('qr-product').value;
+  const p=getProduct(pid);if(!p)return;
+  const canvas=document.querySelector('#qr-container canvas');if(!canvas){toast('请先选择商品');return;}
+  const w=window.open('','_blank');
+  w.document.write(`<html><body style="text-align:center;padding:24px;font-family:sans-serif;background:#fff;">
+    <img src="${canvas.toDataURL()}" style="width:160px;height:160px;display:block;margin:0 auto 10px;">
+    <div style="font-size:15px;font-weight:bold;">${p.name}</div>
+    <div style="font-size:12px;color:#666;margin-top:4px;">${p.sku||p.id}</div>
+    ${p.cat?`<div style="font-size:11px;color:#999;margin-top:2px;">${p.cat}</div>`:''}
+    <script>window.print();<\/script></body></html>`);
+}
+
+// STATS
+function renderStats(){
+  const t=DB.products.length,q=DB.products.reduce((a,p)=>a+p.qty,0);
+  const so=DB.showItems.reduce((a,s)=>a+s.qty,0),lw=DB.products.filter(p=>p.qty<3).length;
+  const inc=DB.logs.filter(l=>l.type==='in').length;
+  document.getElementById('stats-row').innerHTML=`
+    <div class="stat-card"><span class="stat-num">${t}</span><div class="stat-label">商品种类</div></div>
+    <div class="stat-card"><span class="stat-num">${q}</span><div class="stat-label">总库存件数</div></div>
+    <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${so}</span><div class="stat-label">展会带出中</div></div>
+    <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${lw}</span><div class="stat-label">库存不足</div></div>
+    <div class="stat-card"><span class="stat-num" style="color:var(--jade-light)">${inc}</span><div class="stat-label">累计入库次数</div></div>`;
+  const cm={};
+  DB.products.forEach(p=>{const c=p.cat||'未分类';if(!cm[c])cm[c]={count:0,qty:0};cm[c].count++;cm[c].qty+=p.qty;});
+  document.getElementById('cat-stats-tbody').innerHTML=Object.entries(cm).sort((a,b)=>b[1].qty-a[1].qty).map(([c,v])=>`<tr><td>${c}</td><td class="td-mono">${v.count}</td><td class="td-mono">${v.qty}</td></tr>`).join('');
+  const low=DB.products.filter(p=>p.qty<3);
+  document.getElementById('low-stock-list').innerHTML=low.length?low.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail('${p.id}')">
+    <span style="font-size:13px;">${p.name}</span>
+    <span style="color:${p.qty<=0?'var(--text-muted)':'var(--rose)'};font-family:'DM Mono',monospace;">${p.qty}件</span>
+  </div>`).join(''):`<div style="color:var(--jade-light);font-size:13px;padding:8px;">✅ 所有商品库存充足</div>`;
+}
+
+// DATA MGMT
+function exportData(){
+  const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`minzhen_${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importData(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.products)throw 0;
+      if(!confirm(`导入 ${d.products.length} 个商品？将与现有数据合并。`))return;
+      d.products.forEach(p=>{if(!getProduct(p.id))DB.products.push(p);});
+      (d.logs||[]).forEach(l=>{if(!DB.logs.find(x=>x.id===l.id))DB.logs.push(l);});
+      (d.showItems||[]).forEach(s=>{if(!DB.showItems.find(x=>x.id===s.id))DB.showItems.push(s);});
+      save();renderInventory();toast('✅ 导入成功');
+    }catch{toast('❌ 文件格式错误');}
+  };
+  r.readAsText(f);
+}
+function clearAll(){if(!confirm('确认清空所有数据？不可恢复！'))return;DB={products:[],logs:[],showItems:[]};save();renderInventory();toast('已清空');}
+
+// INIT
+renderInventory();
+</script>
+</body>
+</html>
