@@ -746,7 +746,20 @@ function doScan(){
   showScanResult(code,'scan-result');
 }
 function showScanResult(code,targetId){
-  const p=DB.products.find(pr=>pr.sku===code||pr.id===code||pr.name===code);
+  // QR codes from this app use format "SKU|ProductName"
+  const parts=code.split('|');
+  const sku=parts[0].trim();
+  const nameFromQR=parts[1]?parts[1].trim():'';
+  
+  // Try matching by SKU, product ID, full code, or name from QR
+  const p=DB.products.find(pr=>
+    pr.sku===sku ||
+    pr.id===sku ||
+    pr.sku===code ||
+    pr.id===code ||
+    pr.name===code ||
+    (nameFromQR && pr.name===nameFromQR)
+  );
   const el=document.getElementById(targetId);
   el.style.display='block';
   if(p){
