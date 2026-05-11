@@ -842,7 +842,7 @@ function generateQR(){
   if(!p)return;
   const content=`${p.sku||p.id}|${p.name}`;
   document.getElementById('qr-info').textContent=`编码：${content}`;
-  new QRCode(c,{text:content,width:120,height:120,colorDark:'#c9a84c',colorLight:'#1a1915'});
+  new QRCode(c,{text:content,width:150,height:150,colorDark:'#000000',colorLight:'#ffffff'});
 }
 function printQR(){
   const pid=document.getElementById('qr-product').value;
