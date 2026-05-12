@@ -881,9 +881,20 @@ async function quickOutScan(pid,targetId){
 }
 
 // ===================== AI识别 =====================
-// ⚡ 通过 Vercel 后端中转，支持 Gemini / Claude 双引擎切换
+// ⚡ 通过 Vercel 后端中转，识别后自动搜索库存
 const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
-  let aiProvider='gemini'; // 默认用 Gemini（省钱），可切换为 'claude'
+let aiProvider='gemini'; // 默认Gemini，可切换为claude
+
+// 搜索库存匹配商品
+function searchByAIResult(parsed){
+  const keywords=[parsed.name,parsed.cat,parsed.origin].filter(Boolean).join(' ');
+  const words=keywords.toLowerCase().split(/\s+|，|,/).filter(w=>w.length>0);
+  const matches=DB.products.filter(p=>{
+    const target=(p.name+' '+(p.cat||'')+' '+(p.origin||'')).toLowerCase();
+    return words.some(w=>w.length>=2&&target.includes(w));
+  });
+  return matches;
+}
 
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
@@ -901,10 +912,48 @@ async function doAIRecognize(e){
     if(!resp.ok){const er=await resp.json();throw new Error(er.error||resp.status);}
     const data=await resp.json();
     const parsed=data.result;
-    const providerLabel=data.provider==='claude'?'Claude ✦':'Gemini ✦';
+    const providerLabel=data.provider||aiProvider;
     st.style.display='none';res.style.display='block';
+
+    // 搜索库存
+    const matches=searchByAIResult(parsed);
+
+    let matchHTML='';
+    if(matches.length>0){
+      matchHTML=`<div style="margin-top:12px;">
+        <div style="font-size:12px;color:var(--jade-light);margin-bottom:8px;">📦 库存中找到 ${matches.length} 个匹配商品</div>
+        ${matches.map(p=>{
+          const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+          const avail=p.qty-showOut;
+          return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>
+                <div style="font-size:14px;font-weight:600;color:var(--text);">${p.name}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${p.sku||'—'} · ${p.cat||'未分类'}${p.origin?' · '+p.origin:''}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:18px;font-weight:700;color:${avail>0?'var(--jade-light)':'var(--rose)'};">${avail}</div>
+                <div style="font-size:10px;color:var(--text-muted);">可用库存</div>
+              </div>
+            </div>
+            ${p.price?`<div style="font-size:13px;color:var(--gold);margin-bottom:8px;">💰 ${p.price}</div>`:''}
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-jade btn-sm" onclick="closeAIResult();openStockInModal('${p.id}')">⬆️ 入库</button>
+              <button class="btn btn-sm" style="background:var(--rose-dim);color:var(--rose-light);" onclick="closeAIResult();openStockOutModal('${p.id}')">⬇️ 出库</button>
+              <button class="btn btn-outline btn-sm" onclick="closeAIResult();openDetail('${p.id}')">详情</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    } else {
+      matchHTML=`<div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--radius);font-size:13px;color:var(--text-muted);">
+        库存中未找到匹配商品
+        <button class="btn btn-gold btn-sm" style="margin-top:8px;width:100%;" onclick='useAIResult(${JSON.stringify(JSON.stringify(parsed))})'>＋ 用此结果建新品</button>
+      </div>`;
+    }
+
     res.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
-      <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成 <span style="color:var(--text-muted);">· ${providerLabel}</span></div>
+      <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成 · ${providerLabel}</div>
       <div class="detail-grid">
         <div class="detail-field"><label>识别名称</label><div class="val">${parsed.name||'—'}</div></div>
         <div class="detail-field"><label>类别</label><div class="val">${parsed.cat||'—'}</div></div>
@@ -912,9 +961,10 @@ async function doAIRecognize(e){
         ${parsed.country?`<div class="detail-field"><label>原产国</label><div class="val">${parsed.country}</div></div>`:''}
         ${parsed.note?`<div class="detail-field full"><label>描述</label><div class="val" style="font-size:13px;color:var(--text-dim);">${parsed.note}</div></div>`:''}
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;">
-        <button class="btn btn-gold btn-sm" onclick='useAIResult(${JSON.stringify(JSON.stringify(parsed))})'>用此结果建品 →</button>
-        <button class="btn btn-outline btn-sm" onclick="document.getElementById('ai-result').style.display='none'">重拍</button>
+      ${matchHTML}
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        ${matches.length>0?`<button class="btn btn-outline btn-sm" onclick='useAIResult(${JSON.stringify(JSON.stringify(parsed))})'>＋ 建新品</button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('ai-result').style.display='none'">关闭</button>
       </div>
     </div>`;
   }catch(err){
@@ -922,6 +972,17 @@ async function doAIRecognize(e){
     res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）<br><span style="color:var(--text-muted);font-size:11px;">请检查网络或联系管理员</span></div>`;
   }
   e.target.value='';
+}
+
+function closeAIResult(){document.getElementById('ai-result').style.display='none';}
+
+function openStockOutModal(preId){
+  switchTab('inout',document.querySelector('[onclick*="inout"]'));
+  setTimeout(()=>{
+    renderOutSelects();
+    if(preId){const sel=document.getElementById('out-product');if(sel)sel.value=preId;}
+    document.getElementById('out-qty').focus();
+  },200);
 }
 function useAIResult(j){try{openAddModal(JSON.parse(j));}catch(e){openAddModal();}}
 
