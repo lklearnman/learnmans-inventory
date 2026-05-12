@@ -885,13 +885,50 @@ async function quickOutScan(pid,targetId){
 const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
 let aiProvider='gemini'; // 默认Gemini，可切换为claude
 
+// 同义词对照表
+const SYNONYMS=[
+  ['陨石','天铁','铁陨石','石铁陨石','陨铁','meteorite'],
+  ['葫芦','葫芦形','葫芦状'],
+  ['宝石','gemstone','gem'],
+  ['首饰','jewelry','吊坠','项链','手链','戒指','耳环','手镯'],
+  ['矿物','矿石','crystal','水晶'],
+  ['玛瑙','agate'],
+  ['琥珀','amber'],
+  ['翡翠','jadeite','硬玉'],
+  ['和田玉','软玉','nephrite'],
+  ['黄金','金','gold'],
+  ['白银','银','silver'],
+  ['钻石','diamond','钻'],
+];
+
+function expandSynonyms(word){
+  const w=word.toLowerCase();
+  for(const group of SYNONYMS){
+    if(group.some(s=>s.toLowerCase()===w||w.includes(s.toLowerCase())||s.toLowerCase().includes(w))){
+      return group;
+    }
+  }
+  return [word];
+}
+
 // 搜索库存匹配商品
 function searchByAIResult(parsed){
   const keywords=[parsed.name,parsed.cat,parsed.origin].filter(Boolean).join(' ');
-  const words=keywords.toLowerCase().split(/\s+|，|,/).filter(w=>w.length>0);
+  // 分词
+  const rawWords=keywords.replace(/[，,、。！？\s]+/g,' ').split(' ').filter(w=>w.length>=2);
+  // 展开同义词
+  const expandedWords=[...new Set(rawWords.flatMap(w=>expandSynonyms(w)))];
+  
   const matches=DB.products.filter(p=>{
-    const target=(p.name+' '+(p.cat||'')+' '+(p.origin||'')).toLowerCase();
-    return words.some(w=>w.length>=2&&target.includes(w));
+    const target=(p.name+' '+(p.cat||'')+' '+(p.origin||'')+' '+(p.note||'')).toLowerCase();
+    return expandedWords.some(w=>w.length>=2&&target.includes(w.toLowerCase()));
+  });
+  
+  // 按匹配数量排序，匹配越多越靠前
+  matches.sort((a,b)=>{
+    const scoreA=expandedWords.filter(w=>w.length>=2&&(a.name+' '+(a.cat||'')).toLowerCase().includes(w.toLowerCase())).length;
+    const scoreB=expandedWords.filter(w=>w.length>=2&&(b.name+' '+(b.cat||'')).toLowerCase().includes(w.toLowerCase())).length;
+    return scoreB-scoreA;
   });
   return matches;
 }
