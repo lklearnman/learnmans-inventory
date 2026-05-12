@@ -1,0 +1,9 @@
+{
+  "name": "minzhen-api",
+  "version": "1.0.0",
+  "description": "矿珍库 Vercel 后端 API",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

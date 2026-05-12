@@ -270,14 +270,25 @@ tr.clickable{cursor:pointer;}
   </div>
   <div class="card">
     <div class="card-title">🤖 AI拍照识别建品</div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">拍照或从相册选图，AI自动识别名称、类别、产地</p>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">拍照或从相册选图，AI自动识别名称、类别、产地</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;background:var(--surface2);border-radius:var(--radius);padding:6px 10px;">
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">AI引擎：</span>
+      <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-dim);">
+        <input type="radio" name="ai-provider" value="gemini" checked onchange="aiProvider=this.value" style="accent-color:var(--gold);width:auto;">
+        Gemini <span style="font-size:10px;color:var(--jade-light);">（省钱）</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text-dim);">
+        <input type="radio" name="ai-provider" value="claude" onchange="aiProvider=this.value" style="accent-color:var(--gold);width:auto;">
+        Claude <span style="font-size:10px;color:var(--gold-dim);">（更准）</span>
+      </label>
+    </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-gold" onclick="document.getElementById('ai-camera-input').click()">📷 拍照识别</button>
       <button class="btn btn-outline" onclick="document.getElementById('ai-library-input').click()">🖼️ 从相册选图</button>
     </div>
     <input type="file" id="ai-camera-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
     <input type="file" id="ai-library-input" accept="image/*" style="display:none" onchange="doAIRecognize(event)">
-    <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div>AI识别中…</div>
+    <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div><span id="ai-status-text">AI识别中…</span></div>
     <div id="ai-result" style="display:none;margin-top:14px;"></div>
   </div>
   <div class="card">
@@ -870,27 +881,30 @@ async function quickOutScan(pid,targetId){
 }
 
 // ===================== AI识别 =====================
+// ⚡ 通过 Vercel 后端中转，支持 Gemini / Claude 双引擎切换
+const AI_API_URL='https://minzhen-api.vercel.app/api/ai-recognize';
+let aiProvider='gemini'; // 默认用 Gemini（省钱），可切换为 'claude'
+
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
   const st=document.getElementById('ai-status'),res=document.getElementById('ai-result');
+  const stText=document.getElementById('ai-status-text');
   st.style.display='flex';res.style.display='none';
+  if(stText)stText.textContent=`${aiProvider==='claude'?'Claude':'Gemini'} 识别中…`;
   const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result.split(',')[1]);rd.readAsDataURL(file);});
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    const resp=await fetch(AI_API_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:600,
-        system:'你是专业矿物宝石首饰库管助手。识别图片商品，返回JSON：{"name":"商品名","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON。',
-        messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:'识别这个商品'}]}]
-      })
+      body:JSON.stringify({imageBase64:b64,mediaType:file.type||'image/jpeg',provider:aiProvider})
     });
+    if(!resp.ok){const er=await resp.json();throw new Error(er.error||resp.status);}
     const data=await resp.json();
-    const text=(data.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(text);
+    const parsed=data.result;
+    const providerLabel=data.provider==='claude'?'Claude ✦':'Gemini ✦';
     st.style.display='none';res.style.display='block';
     res.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
-      <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成</div>
+      <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成 <span style="color:var(--text-muted);">· ${providerLabel}</span></div>
       <div class="detail-grid">
         <div class="detail-field"><label>识别名称</label><div class="val">${parsed.name||'—'}</div></div>
         <div class="detail-field"><label>类别</label><div class="val">${parsed.cat||'—'}</div></div>
@@ -905,7 +919,7 @@ async function doAIRecognize(e){
     </div>`;
   }catch(err){
     st.style.display='none';res.style.display='block';
-    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）</div>`;
+    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）<br><span style="color:var(--text-muted);font-size:11px;">请检查网络或联系管理员</span></div>`;
   }
   e.target.value='';
 }
