@@ -882,8 +882,8 @@ async function quickOutScan(pid,targetId){
 
 // ===================== AI识别 =====================
 // ⚡ 通过 Vercel 后端中转，支持 Gemini / Claude 双引擎切换
-const AI_API_URL='https://minzhen-api.vercel.app/api/ai-recognize';
-let aiProvider='gemini'; // 默认用 Gemini（省钱），可切换为 'claude'
+const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
+  let aiProvider='gemini'; // 默认用 Gemini（省钱），可切换为 'claude'
 
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
