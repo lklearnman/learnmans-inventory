@@ -933,8 +933,12 @@ function searchByAIResult(parsed){
   return matches;
 }
 
+let aiCapturedPhoto=null; // 保存识别时拍的照片
+
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
+  // 保存照片用于建新品
+  aiCapturedPhoto=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.readAsDataURL(file);});
   const st=document.getElementById('ai-status'),res=document.getElementById('ai-result');
   const stText=document.getElementById('ai-status-text');
   st.style.display='flex';res.style.display='none';
@@ -1021,7 +1025,17 @@ function openStockOutModal(preId){
     document.getElementById('out-qty').focus();
   },200);
 }
-function useAIResult(j){try{openAddModal(JSON.parse(j));}catch(e){openAddModal();}}
+function useAIResult(j){
+  try{
+    const parsed=JSON.parse(j);
+    openAddModal(parsed);
+    // 把识别时的照片带入建品
+    if(aiCapturedPhoto){
+      pendingPhotos=[aiCapturedPhoto];
+      renderPhotoPreviews();
+    }
+  }catch(e){openAddModal();}
+}
 
 // ===================== QR =====================
 function renderQRSelects(){
