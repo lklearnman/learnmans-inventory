@@ -924,12 +924,22 @@ function searchByAIResult(parsed){
     return expandedWords.some(w=>w.length>=2&&target.includes(w.toLowerCase()));
   });
   
-  // 按匹配数量排序，匹配越多越靠前
-  matches.sort((a,b)=>{
-    const scoreA=expandedWords.filter(w=>w.length>=2&&(a.name+' '+(a.cat||'')).toLowerCase().includes(w.toLowerCase())).length;
-    const scoreB=expandedWords.filter(w=>w.length>=2&&(b.name+' '+(b.cat||'')).toLowerCase().includes(w.toLowerCase())).length;
-    return scoreB-scoreA;
-  });
+  // 按匹配分数排序，匹配越多越靠前
+  const calcScore=(p)=>{
+    const name=(p.name||'').toLowerCase();
+    const cat=(p.cat||'').toLowerCase();
+    const origin=(p.origin||'').toLowerCase();
+    const note=(p.note||'').toLowerCase();
+    return expandedWords.filter(w=>w.length>=2).reduce((score,w)=>{
+      const wl=w.toLowerCase();
+      if(name.includes(wl)) score+=3;       // 名称匹配权重最高
+      if(cat.includes(wl)) score+=2;        // 类别次之
+      if(origin.includes(wl)) score+=1;     // 产地
+      if(note.includes(wl)) score+=1;       // 备注
+      return score;
+    },0);
+  };
+  matches.sort((a,b)=>calcScore(b)-calcScore(a));
   return matches;
 }
 
