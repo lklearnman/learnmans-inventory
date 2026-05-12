@@ -379,7 +379,7 @@ tr.clickable{cursor:pointer;}
 <div class="modal-overlay" id="modal-detail">
   <div class="modal" style="max-width:640px;">
     <div class="modal-title" id="detail-title"></div>
-    <button class="modal-close" onclick="closeModal('modal-detail')">✕</button>
+    <button class="modal-close" onclick="closeModal('modal-detail');if(detailOpenedFromAI){detailOpenedFromAI=false;document.getElementById('ai-result').style.display='block';}">✕</button>
     <div id="detail-body"></div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="editFromDetail()">✏️ 编辑</button>
@@ -934,6 +934,7 @@ function searchByAIResult(parsed){
 }
 
 let aiCapturedPhoto=null; // 保存识别时拍的照片
+let detailOpenedFromAI=false; // 记录详情是否从AI结果打开
 
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
@@ -981,7 +982,7 @@ async function doAIRecognize(e){
             <div style="display:flex;gap:8px;">
               <button class="btn btn-jade btn-sm" onclick="closeAIResult();openStockInModal('${p.id}')">⬆️ 入库</button>
               <button class="btn btn-sm" style="background:var(--rose-dim);color:var(--rose-light);" onclick="closeAIResult();openStockOutModal('${p.id}')">⬇️ 出库</button>
-              <button class="btn btn-outline btn-sm" onclick="closeAIResult();openDetail('${p.id}')">详情</button>
+              <button class="btn btn-outline btn-sm" onclick="detailOpenedFromAI=true;openDetail('${p.id}')">详情</button>
             </div>
           </div>`;
         }).join('')}
