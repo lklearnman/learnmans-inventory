@@ -1,14 +1,21 @@
 // api/ai-recognize.js
-// 选Gemini：先试Gemini，失败自动fallback到Claude
-// 选Claude：强制用Claude，不fallback
+// 自动 fallback：按顺序尝试多个模型，一个失败自动换下一个
+// 环境变量：GEMINI_API_KEY、ANTHROPIC_API_KEY
 
 const SYSTEM_PROMPT = '你是专业矿物宝石首饰库管助手。识别图片商品，返回JSON：{"name":"商品名","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON，不要加任何markdown代码块或多余文字。';
 
-async function callGemini(imageBase64, mediaType) {
+const GEMINI_MODELS = [
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-flash-latest',
+];
+
+async function callGemini(model, imageBase64, mediaType) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY 未配置');
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-002:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -22,15 +29,23 @@ async function callGemini(imageBase64, mediaType) {
     }
   );
   const data = await res.json();
-  if (!res.ok) throw new Error(`Gemini错误 ${res.status}: ${data?.error?.message}`);
+  if (!res.ok) {
+    const code = data?.error?.code;
+    const msg = data?.error?.message || res.status;
+    // 429=超额, 404=模型不存在 → 都可以继续试下一个
+    if (code === 429 || code === 404 || res.status === 429 || res.status === 404) {
+      throw new Error(`SKIP:${model} ${code||res.status}`);
+    }
+    throw new Error(`Gemini ${model} 错误: ${msg}`);
+  }
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  if (!text) throw new Error('Gemini返回为空');
-  return { text, provider: 'Gemini' };
+  if (!text) throw new Error(`SKIP:${model} 返回为空`);
+  return { text, provider: `Gemini/${model}` };
 }
 
 async function callClaude(imageBase64, mediaType) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY 未配置');
+  if (!apiKey) throw new Error('SKIP:claude ANTHROPIC_API_KEY未配置');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -48,13 +63,10 @@ async function callClaude(imageBase64, mediaType) {
       ]}],
     }),
   });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(`Claude错误 ${res.status}: ${JSON.stringify(err)}`);
-  }
+  if (!res.ok) throw new Error(`Claude错误 ${res.status}`);
   const data = await res.json();
   const text = (data.content || []).map(c => c.text || '').join('');
-  return { text, provider: 'Claude' };
+  return { text, provider: 'Claude/haiku' };
 }
 
 export default async function handler(req, res) {
@@ -64,32 +76,34 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { imageBase64, mediaType = 'image/jpeg', provider = 'gemini' } = req.body;
+  const { imageBase64, mediaType = 'image/jpeg' } = req.body;
   if (!imageBase64) return res.status(400).json({ error: 'Missing imageBase64' });
 
-  // 强制Claude
-  if (provider === 'claude') {
+  const errors = [];
+
+  // 依次尝试 Gemini 各模型
+  for (const model of GEMINI_MODELS) {
     try {
-      const { text, provider: used } = await callClaude(imageBase64, mediaType);
+      const { text, provider } = await callGemini(model, imageBase64, mediaType);
       const clean = text.replace(/```json|```/g, '').trim();
-      return res.status(200).json({ result: JSON.parse(clean), provider: used });
+      const parsed = JSON.parse(clean);
+      return res.status(200).json({ result: parsed, provider });
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      errors.push(err.message);
+      if (!err.message.startsWith('SKIP:')) break; // 非跳过错误直接停
+      continue;
     }
   }
 
-  // Gemini优先，失败fallback到Claude
+  // Gemini 全部失败，尝试 Claude Haiku
   try {
-    const { text, provider: used } = await callGemini(imageBase64, mediaType);
+    const { text, provider } = await callClaude(imageBase64, mediaType);
     const clean = text.replace(/```json|```/g, '').trim();
-    return res.status(200).json({ result: JSON.parse(clean), provider: used });
-  } catch (geminiErr) {
-    try {
-      const { text, provider: used } = await callClaude(imageBase64, mediaType);
-      const clean = text.replace(/```json|```/g, '').trim();
-      return res.status(200).json({ result: JSON.parse(clean), provider: used + '(fallback)' });
-    } catch (claudeErr) {
-      return res.status(500).json({ error: `Gemini: ${geminiErr.message} | Claude: ${claudeErr.message}` });
-    }
+    const parsed = JSON.parse(clean);
+    return res.status(200).json({ result: parsed, provider });
+  } catch (err) {
+    errors.push(err.message);
   }
+
+  return res.status(500).json({ error: '所有AI引擎均失败', details: errors });
 }
