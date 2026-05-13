@@ -350,8 +350,8 @@ tr.clickable{cursor:pointer;}
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-add')">取消</button>
-      <button class="btn btn-outline" onclick="saveProductOnly()">仅建档</button>
-      <button class="btn btn-gold" onclick="saveProductAndStockIn()">建档并入库 →</button>
+      <button class="btn btn-gold" id="btn-save-only" onclick="saveProductOnly()">仅建档</button>
+      <button class="btn btn-outline" id="btn-save-stockin" onclick="saveProductAndStockIn()">建档并入库 →</button>
     </div>
   </div>
 </div>
@@ -585,7 +585,19 @@ function buildProduct(){
   return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
 }
 async function saveProductOnly(){
-  const data=buildProduct();if(!data)return;
+  const btn=document.getElementById('btn-save-only');
+  if(btn)btn.disabled=true;
+  const data=buildProduct();
+  if(!data){if(btn)btn.disabled=false;return;}
+  // 重复名称检查
+  if(!editingId){
+    const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
+    if(dup){
+      if(!confirm(`已有同名商品"${dup.name}"（${dup.sku}），确定要新建吗？`)){
+        if(btn)btn.disabled=false;return;
+      }
+    }
+  }
   if(editingId){
     const idx=DB.products.findIndex(p=>p.id===editingId);
     if(idx>=0)DB.products[idx]=data;
@@ -599,7 +611,17 @@ async function saveProductOnly(){
 }
 async function saveProductAndStockIn(){
   if(editingId){saveProductOnly();return;}
-  const data=buildProduct();if(!data)return;
+  const btn=document.getElementById('btn-save-stockin');
+  if(btn)btn.disabled=true;
+  const data=buildProduct();
+  if(!data){if(btn)btn.disabled=false;return;}
+  // 重复名称检查
+  const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
+  if(dup){
+    if(!confirm(`已有同名商品"${dup.name}"（${dup.sku}），确定要新建吗？`)){
+      if(btn)btn.disabled=false;return;
+    }
+  }
   DB.products.unshift(data);
   await upsertProduct(data);
   closeModal('modal-add');renderInventory();
