@@ -593,9 +593,8 @@ async function saveProductOnly(){
   if(!editingId){
     const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
     if(dup){
-      if(!confirm(`已有同名商品"${dup.name}"（${dup.sku}），确定要新建吗？`)){
-        if(btn)btn.disabled=false;return;
-      }
+      toast(`⚠️ 已有同名商品"${dup.name}"，请修改名称`);
+      if(btn)btn.disabled=false;return;
     }
   }
   if(editingId){
@@ -618,9 +617,8 @@ async function saveProductAndStockIn(){
   // 重复名称检查
   const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
   if(dup){
-    if(!confirm(`已有同名商品"${dup.name}"（${dup.sku}），确定要新建吗？`)){
-      if(btn)btn.disabled=false;return;
-    }
+    toast(`⚠️ 已有同名商品"${dup.name}"，请修改名称`);
+    if(btn)btn.disabled=false;return;
   }
   DB.products.unshift(data);
   await upsertProduct(data);
