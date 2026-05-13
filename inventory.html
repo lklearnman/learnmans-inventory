@@ -451,6 +451,9 @@ async function loadAll(){
       sb.from('logs').select('*').order('ts',{ascending:false}),
       sb.from('show_items').select('*').order('ts',{ascending:false})
     ]);
+    if(p.error) throw new Error('products: '+p.error.message);
+    if(l.error) throw new Error('logs: '+l.error.message);
+    if(s.error) throw new Error('show_items: '+s.error.message);
     DB.products=(p.data||[]).map(dbToProduct);
     DB.logs=(l.data||[]).map(dbToLog);
     DB.showItems=(s.data||[]).map(dbToShow);
