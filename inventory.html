@@ -593,10 +593,10 @@ async function saveProductOnly(){
   if(!editingId){
     const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
     if(dup){
-      toast(`⚠️ 已有同名商品"${dup.name}"，请修改名称`);
+      toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
       if(btn)btn.disabled=false;
       closeModal('modal-add');
-      setTimeout(()=>openDetail(dup.id),300);
+      setTimeout(()=>openDetail(dup.id),600);
       return;
     }
   }
@@ -620,10 +620,10 @@ async function saveProductAndStockIn(){
   // 重复名称检查
   const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
   if(dup){
-    toast(`⚠️ 已有同名商品"${dup.name}"，请修改名称`);
+    toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
     if(btn)btn.disabled=false;
     closeModal('modal-add');
-    setTimeout(()=>openDetail(dup.id),300);
+    setTimeout(()=>openDetail(dup.id),600);
     return;
   }
   DB.products.unshift(data);
