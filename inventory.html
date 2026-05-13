@@ -205,9 +205,24 @@ tr.clickable{cursor:pointer;}
         <button class="btn btn-outline" onclick="openAddThenStockIn()">新建商品并入库</button>
       </div>
       <div class="divider"></div>
-      <div class="card-title" style="margin-top:4px;">📋 入库记录（点击查看详情）</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:8px;">
+        <div class="card-title" style="margin:0;">📋 入库记录</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="exportLogCSV('in')">📥 CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="printLogs('in')">🖨️ 打印</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <input class="search-input" style="flex:1;min-width:120px;font-size:12px;" id="in-log-search" placeholder="搜索商品名…" oninput="renderInLogs()">
+        <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+          <option value="">全部类别</option>
+        </select>
+        <input type="date" id="in-log-date-from" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+        <input type="date" id="in-log-date-to" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+      </div>
+      <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>时间</th><th>商品</th><th>数量</th><th>备注</th></tr></thead>
+        <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="in-log-tbody"></tbody>
       </table></div>
     </div>
@@ -222,9 +237,24 @@ tr.clickable{cursor:pointer;}
       </div>
       <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
       <div class="divider"></div>
-      <div class="card-title" style="margin-top:4px;">📋 出库记录（点击查看详情）</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:8px;">
+        <div class="card-title" style="margin:0;">📋 出库记录</div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="exportLogCSV('out')">📥 CSV</button>
+          <button class="btn btn-outline btn-sm" onclick="printLogs('out')">🖨️ 打印</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <input class="search-input" style="flex:1;min-width:120px;font-size:12px;" id="out-log-search" placeholder="搜索商品名…" oninput="renderOutLogs()">
+        <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+          <option value="">全部类别</option>
+        </select>
+        <input type="date" id="out-log-date-from" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+        <input type="date" id="out-log-date-to" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+      </div>
+      <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
-        <thead><tr><th>时间</th><th>商品</th><th>数量</th><th>备注</th></tr></thead>
+        <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="out-log-tbody"></tbody>
       </table></div>
     </div>
@@ -451,9 +481,6 @@ async function loadAll(){
       sb.from('logs').select('*').order('ts',{ascending:false}),
       sb.from('show_items').select('*').order('ts',{ascending:false})
     ]);
-    if(p.error) throw new Error('products: '+p.error.message);
-    if(l.error) throw new Error('logs: '+l.error.message);
-    if(s.error) throw new Error('show_items: '+s.error.message);
     DB.products=(p.data||[]).map(dbToProduct);
     DB.logs=(l.data||[]).map(dbToLog);
     DB.showItems=(s.data||[]).map(dbToShow);
@@ -539,6 +566,7 @@ function renderInventory(){
     return true;
   });
   if(!prods.length){
+    grid.className='product-grid';
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div style="font-size:40px;margin-bottom:12px;">${DB.products.length?'🔍':'💎'}</div><div style="margin-bottom:14px;font-size:14px;">${DB.products.length?'没有符合的商品':'还没有商品，开始建品吧'}</div><button class="btn btn-gold" onclick="openAddModal()">＋ 建品</button></div>`;
     updateHeader();return;
   }
@@ -762,23 +790,159 @@ async function doOut(){
 }
 
 // ===================== LOGS =====================
+function filterLogs(type){
+  const searchEl=document.getElementById(type+'-log-search');
+  const catEl=document.getElementById(type+'-log-cat');
+  const fromEl=document.getElementById(type+'-log-date-from');
+  const toEl=document.getElementById(type+'-log-date-to');
+  const q=(searchEl?searchEl.value:'').toLowerCase();
+  const cat=catEl?catEl.value:'';
+  const from=fromEl&&fromEl.value?new Date(fromEl.value).getTime():0;
+  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').getTime():Infinity;
+  return DB.logs.filter(l=>{
+    if(l.type!==type)return false;
+    const p=getProduct(l.productId);
+    if(q&&!(p?p.name:'').toLowerCase().includes(q))return false;
+    if(cat&&(p?p.cat||'':'')!==cat)return false;
+    if(l.ts<from||l.ts>to)return false;
+    return true;
+  });
+}
+
+function updateLogCatOptions(type){
+  const sel=document.getElementById(type+'-log-cat');
+  if(!sel)return;
+  const cats=[...new Set(DB.products.map(p=>p.cat||'').filter(Boolean))].sort();
+  const cur=sel.value;
+  sel.innerHTML='<option value="">全部类别</option>'+cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+}
+
+function renderSummary(logs, elId){
+  const el=document.getElementById(elId);if(!el)return;
+  const totalQty=logs.reduce((a,l)=>a+l.qty,0);
+  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  el.innerHTML=`
+    <span>📦 共 <b>${logs.length}</b> 条记录</span>
+    <span>🔢 总数量 <b>${totalQty}</b> 件</span>
+    ${totalAmt>0?`<span>💰 合计金额 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
+  `;
+}
+
 function renderInLogs(){
-  const logs=DB.logs.filter(l=>l.type==='in').slice(0,100);
-  document.getElementById('in-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l)).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">暂无入库记录</td></tr>`;
+  updateLogCatOptions('in');
+  const logs=filterLogs('in');
+  renderSummary(logs,'in-log-summary');
+  document.getElementById('in-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l,'in')).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">暂无入库记录</td></tr>`;
 }
 function renderOutLogs(){
-  const logs=DB.logs.filter(l=>l.type==='out').slice(0,100);
-  document.getElementById('out-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l)).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">暂无出库记录</td></tr>`;
+  updateLogCatOptions('out');
+  const logs=filterLogs('out');
+  renderSummary(logs,'out-log-summary');
+  document.getElementById('out-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l,'out')).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">暂无出库记录</td></tr>`;
 }
-function logRow(l){
+function logRow(l,type){
   const p=getProduct(l.productId);
+  const price=l.price?parseFloat(l.price):null;
+  const subtotal=price&&l.qty?price*l.qty:null;
+  const color=type==='in'?'var(--jade-light)':'var(--rose-light)';
   return`<tr class="clickable" onclick="openLogDetail('${l.id}')">
-    <td class="td-mono">${fmt(l.ts)}</td>
-    <td>${p?p.name:'已删除'}</td>
-    <td style="font-family:'DM Mono',monospace;color:${l.type==='in'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'?'+':'−'}${l.qty}</td>
-    <td style="color:var(--text-muted);">${l.note||'—'}</td>
+    <td class="td-mono" style="white-space:nowrap;">${fmt(l.ts)}</td>
+    <td style="max-width:120px;">${p?p.name:'已删除'}</td>
+    <td style="font-size:11px;"><span style="background:var(--surface2);padding:2px 6px;border-radius:8px;">${p?p.cat||'—':'—'}</span></td>
+    <td style="font-family:'DM Mono',monospace;color:${color};text-align:center;">${type==='in'?'+':'−'}${l.qty}</td>
+    <td style="color:var(--gold);text-align:right;">${price?'¥'+price.toLocaleString():'—'}</td>
+    <td style="color:var(--gold);font-weight:600;text-align:right;">${subtotal?'¥'+subtotal.toLocaleString():'—'}</td>
+    <td style="color:var(--text-muted);font-size:12px;">${l.note||'—'}</td>
   </tr>`;
 }
+function exportLogCSV(type){
+  const logs=filterLogs(type);
+  const label=type==='in'?'入库':'出库';
+  const rows=[['日期','商品名','SKU','类别','数量','单价','小计','备注']];
+  logs.forEach(l=>{
+    const p=getProduct(l.productId);
+    const price=l.price?parseFloat(l.price):'';
+    const subtotal=price&&l.qty?price*l.qty:'';
+    rows.push([
+      fmtFull(l.ts),
+      p?p.name:'已删除',
+      p?p.sku||'':'',
+      p?p.cat||'':'',
+      l.qty,
+      price,
+      subtotal,
+      l.note||''
+    ]);
+  });
+  // 合计行
+  const totalQty=logs.reduce((a,l)=>a+l.qty,0);
+  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  rows.push(['合计','','','',totalQty,'',totalAmt,'']);
+  
+  const bom='﻿';
+  const csv=bom+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('
+');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`矿珍库_${label}记录_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`✅ ${label}记录已导出`);
+}
+
+function printLogs(type){
+  const logs=filterLogs(type);
+  const label=type==='in'?'入库':'出库';
+  const totalQty=logs.reduce((a,l)=>a+l.qty,0);
+  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  const rows=logs.map(l=>{
+    const p=getProduct(l.productId);
+    const price=l.price?parseFloat(l.price):null;
+    const subtotal=price&&l.qty?price*l.qty:null;
+    return`<tr>
+      <td>${fmtFull(l.ts)}</td>
+      <td>${p?p.name:'已删除'}</td>
+      <td>${p?p.sku||'—':'—'}</td>
+      <td>${p?p.cat||'—':'—'}</td>
+      <td style="text-align:center;">${l.qty}</td>
+      <td style="text-align:right;">${price?'¥'+price.toLocaleString():'—'}</td>
+      <td style="text-align:right;">${subtotal?'¥'+subtotal.toLocaleString():'—'}</td>
+      <td>${l.note||'—'}</td>
+    </tr>`;
+  }).join('');
+  
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="utf-8">
+    <title>矿珍库 ${label}记录</title>
+    <style>
+      body{font-family:sans-serif;font-size:12px;padding:20px;color:#111;}
+      h2{margin-bottom:4px;}
+      .sub{color:#666;margin-bottom:16px;font-size:11px;}
+      table{width:100%;border-collapse:collapse;}
+      th{background:#f0f0f0;padding:6px 8px;text-align:left;border:1px solid #ddd;font-size:11px;}
+      td{padding:5px 8px;border:1px solid #eee;}
+      tr:nth-child(even){background:#fafafa;}
+      .summary{margin-top:12px;padding:10px;background:#f5f5f5;border-radius:4px;display:flex;gap:24px;}
+      .summary b{color:#b8860b;}
+      @media print{button{display:none;}}
+    </style>
+  </head><body>
+    <h2>矿珍库 · ${label}记录</h2>
+    <div class="sub">导出时间：${fmtFull(Date.now())} · 共${logs.length}条</div>
+    <table>
+      <thead><tr><th>日期</th><th>商品名</th><th>SKU</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="summary">
+      <span>总数量：<b>${totalQty}</b> 件</span>
+      ${totalAmt>0?`<span>合计金额：<b>¥${totalAmt.toLocaleString()}</b></span>`:''}
+    </div>
+    <br><button onclick="window.print()">🖨️ 打印</button>
+  </body></html>`);
+  w.document.close();
+}
+
 function openLogDetail(lid){
   const l=DB.logs.find(x=>x.id===lid);if(!l)return;
   const p=getProduct(l.productId);
