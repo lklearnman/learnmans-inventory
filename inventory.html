@@ -44,6 +44,16 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 .btn-rose{background:var(--rose);color:#fff;}.btn-rose:hover{background:var(--rose-light);}
 .btn-sm{padding:6px 11px;font-size:12px;}
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;}
+.inv-table{width:100%;border-collapse:collapse;font-size:13px;}
+.inv-table th{padding:8px 10px;text-align:left;color:var(--text-muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px;}
+.inv-table td{padding:10px 10px;border-bottom:1px solid var(--border2);vertical-align:middle;}
+.inv-table tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
+.inv-table .thumb-sm{width:36px;height:36px;border-radius:6px;object-fit:cover;}
+.inv-table .thumb-emoji{width:36px;height:36px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.qty-badge{display:inline-block;min-width:28px;text-align:center;padding:2px 7px;border-radius:20px;font-weight:700;font-size:14px;}
+.qty-badge.ok{background:rgba(74,222,128,0.15);color:var(--jade-light);}
+.qty-badge.low{background:rgba(251,191,36,0.15);color:var(--gold);}
+.qty-badge.zero{background:rgba(248,113,113,0.15);color:var(--rose);}
 .product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
 .product-card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
 .product-thumb{width:100%;aspect-ratio:1;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
@@ -173,6 +183,7 @@ tr.clickable{cursor:pointer;}
     <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()">
     <button class="btn btn-outline btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-gold btn-sm" onclick="openStockInModal(null)">⬆️ 入库</button>
+    <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
   </div>
   <div class="filter-row" id="cat-filters">
     <button class="filter-chip active" onclick="setCatFilter('all',this)">全部</button>
@@ -501,6 +512,21 @@ function setIOMode(mode,el){
 }
 
 // ===================== INVENTORY =====================
+let invViewMode='grid'; // 'grid' or 'list'
+function toggleInventoryView(){
+  invViewMode=invViewMode==='grid'?'list':'grid';
+  const btn=document.getElementById('view-toggle');
+  const grid=document.getElementById('product-grid');
+  if(invViewMode==='list'){
+    btn.textContent='⊟';btn.title='切换到卡片视图';
+    grid.style.display='block';
+  }else{
+    btn.textContent='⊞';btn.title='切换到列表视图';
+    grid.style.display='';
+  }
+  renderInventory();
+}
+
 function renderInventory(){
   const q=document.getElementById('inv-search').value.toLowerCase();
   const grid=document.getElementById('product-grid');
@@ -513,13 +539,58 @@ function renderInventory(){
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div style="font-size:40px;margin-bottom:12px;">${DB.products.length?'🔍':'💎'}</div><div style="margin-bottom:14px;font-size:14px;">${DB.products.length?'没有符合的商品':'还没有商品，开始建品吧'}</div><button class="btn btn-gold" onclick="openAddModal()">＋ 建品</button></div>`;
     updateHeader();return;
   }
-  grid.innerHTML=prods.map(p=>{
-    const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
-    const avail=p.qty-showOut;
-    const qc=avail<=0?' zero':avail<3?' low':'';
-    const thumb=p.photos&&p.photos[0]?`<div class="product-thumb"><img src="${p.photos[0]}" loading="lazy"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
-    return`<div class="product-card" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
-  }).join('');
+
+  if(invViewMode==='list'){
+    // 列表视图
+    grid.className='';
+    grid.innerHTML=`<table class="inv-table">
+      <thead><tr>
+        <th></th>
+        <th>商品名称</th>
+        <th>SKU</th>
+        <th>类别</th>
+        <th>单价</th>
+        <th>库存</th>
+        <th>展会</th>
+        <th>可用</th>
+        <th>操作</th>
+      </tr></thead>
+      <tbody>${prods.map(p=>{
+        const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+        const avail=p.qty-showOut;
+        const qc=avail<=0?'zero':avail<3?'low':'ok';
+        const thumb=p.photos&&p.photos[0]
+          ?`<img class="thumb-sm" src="${p.photos[0]}" loading="lazy">`
+          :`<div class="thumb-emoji">${catEmoji(p.cat)}</div>`;
+        return`<tr class="clickable" onclick="openDetail('${p.id}')">
+          <td>${thumb}</td>
+          <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
+          <td style="color:var(--text-muted);font-size:11px;">${p.sku||'—'}</td>
+          <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
+          <td style="color:var(--gold);">${p.price?'¥'+p.price:'—'}</td>
+          <td style="text-align:center;">${p.qty}</td>
+          <td style="text-align:center;color:var(--text-muted);">${showOut||'—'}</td>
+          <td style="text-align:center;"><span class="qty-badge ${qc}">${avail}</span></td>
+          <td onclick="event.stopPropagation()">
+            <div style="display:flex;gap:5px;">
+              <button class="btn btn-jade btn-sm" style="padding:4px 8px;font-size:11px;" onclick="openStockInModal('${p.id}')">入库</button>
+              <button class="btn btn-sm" style="padding:4px 8px;font-size:11px;background:var(--rose-dim);color:var(--rose-light);" onclick="openStockOutModal('${p.id}')">出库</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+  } else {
+    // 卡片视图
+    grid.className='product-grid';
+    grid.innerHTML=prods.map(p=>{
+      const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+      const avail=p.qty-showOut;
+      const qc=avail<=0?' zero':avail<3?' low':'';
+      const thumb=p.photos&&p.photos[0]?`<div class="product-thumb"><img src="${p.photos[0]}" loading="lazy"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
+      return`<div class="product-card" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
+    }).join('');
+  }
   updateHeader();renderCatFilters();
 }
 function renderCatFilters(){
