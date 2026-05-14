@@ -214,21 +214,16 @@ tr.clickable{cursor:pointer;}
           <button class="btn btn-outline btn-sm" onclick="printLogs('in')">🖨️ 打印</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <input class="search-input" style="flex:1;min-width:120px;font-size:12px;" id="in-log-search" placeholder="搜索商品名…" oninput="renderInLogs()">
+      <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <input class="search-input" style="font-size:12px;" id="in-log-search" placeholder="🔍 搜索商品名" oninput="renderInLogs()">
         <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
           <option value="">全部类别</option>
         </select>
-        <button class="btn btn-outline" id="in-log-date-btn" style="padding:6px 10px;font-size:12px;" onclick="toggleDateFilter('in')">📅 日期筛选</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 开始：</span><input type="date" id="in-log-date-from" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 结束：</span><input type="date" id="in-log-date-to" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;grid-column:1/-1;" onclick="document.getElementById('in-log-search').value='';document.getElementById('in-log-cat').value='';document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">🔄 重置筛选</button>
       </div>
-      <div id="in-log-date-panel" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);display:none;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:var(--text-muted);">从</span>
-        <input type="date" id="in-log-date-from" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-        <span style="font-size:12px;color:var(--text-muted);">到</span>
-        <input type="date" id="in-log-date-to" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">清空</button>
-      </div>
-      <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="in-log-tbody"></tbody>
@@ -255,21 +250,16 @@ tr.clickable{cursor:pointer;}
           <button class="btn btn-outline btn-sm" onclick="printLogs('out')">🖨️ 打印</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <input class="search-input" style="flex:1;min-width:120px;font-size:12px;" id="out-log-search" placeholder="搜索商品名…" oninput="renderOutLogs()">
+      <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <input class="search-input" style="font-size:12px;" id="out-log-search" placeholder="🔍 搜索商品名" oninput="renderOutLogs()">
         <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
           <option value="">全部类别</option>
         </select>
-        <button class="btn btn-outline" id="out-log-date-btn" style="padding:6px 10px;font-size:12px;" onclick="toggleDateFilter('out')">📅 日期筛选</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 开始：</span><input type="date" id="out-log-date-from" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 结束：</span><input type="date" id="out-log-date-to" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;grid-column:1/-1;" onclick="document.getElementById('out-log-search').value='';document.getElementById('out-log-cat').value='';document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">🔄 重置筛选</button>
       </div>
-      <div id="out-log-date-panel" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:var(--text-muted);">从</span>
-        <input type="date" id="out-log-date-from" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-        <span style="font-size:12px;color:var(--text-muted);">到</span>
-        <input type="date" id="out-log-date-to" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">清空</button>
-      </div>
-      <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="out-log-tbody"></tbody>
@@ -928,8 +918,8 @@ async function fetchLogsPage(type){
   const from=fromEl&&fromEl.value?new Date(fromEl.value).toISOString():null;
   const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').toISOString():null;
   
+  console.log('[fetchLogsPage]', type, {page: st.page, q, cat, from, to});
   try{
-    // 先获取符合条件的product_id列表（用于name/cat筛选）
     let allowedPids=null;
     if(q||cat){
       allowedPids=DB.products.filter(p=>{
@@ -949,7 +939,9 @@ async function fetchLogsPage(type){
     if(from)countQ=countQ.gte('ts',from);
     if(to)countQ=countQ.lte('ts',to);
     if(allowedPids)countQ=countQ.in('product_id',allowedPids);
-    const{count}=await countQ;
+    const cnt=await countQ;
+    console.log('[count result]', type, cnt);
+    const count=cnt.count;
     st.total=count||0;
     st.totalPages=Math.max(1,Math.ceil(st.total/LOGS_PER_PAGE));
     if(st.page>st.totalPages)st.page=st.totalPages;
@@ -959,10 +951,10 @@ async function fetchLogsPage(type){
     if(from)dataQ=dataQ.gte('ts',from);
     if(to)dataQ=dataQ.lte('ts',to);
     if(allowedPids)dataQ=dataQ.in('product_id',allowedPids);
-    const{data,error}=await dataQ;
-    if(error)throw error;
-    
-    const logs=(data||[]).map(dbToLog);
+    const dq=await dataQ;
+    console.log('[data result]', type, dq);
+    if(dq.error)throw dq.error;
+    const logs=(dq.data||[]).map(dbToLog);
     renderLogsTable(type,logs);
   }catch(e){
     console.log(e);
