@@ -819,7 +819,7 @@ async function doStockIn(){
 
 // ===================== 出库 =====================
 function renderOutSelects(){
-  document.getElementById('out-product').innerHTML=DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
+  document.getElementById('out-product').innerHTML='<option value="">-- 请选择商品 --</option>'+DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
 }
 async function doOut(){
   const pid=document.getElementById('out-product').value;
@@ -946,8 +946,10 @@ async function fetchLogsPage(type){
     if(allowedPids)countQ=countQ.in('product_id',allowedPids);
     const cnt=await countQ;
     console.log('[count result]', type, cnt);
+    if(cnt.error){throw cnt.error;}
     const count=cnt.count;
     st.total=count||0;
+    toast(`查询 ${type}: ${count} 条`,1500);
     st.totalPages=Math.max(1,Math.ceil(st.total/LOGS_PER_PAGE));
     if(st.page>st.totalPages)st.page=st.totalPages;
     
@@ -963,7 +965,9 @@ async function fetchLogsPage(type){
     renderLogsTable(type,logs);
   }catch(e){
     console.log(e);
-    toast('⚠️ 加载失败');
+    toast('⚠️ 加载失败: '+(e.message||e));
+    const tbody=document.getElementById(type+'-log-tbody');
+    if(tbody)tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--rose);padding:20px;">查询失败：${e.message||e}</td></tr>`;
   }
 }
 
@@ -1011,15 +1015,13 @@ function goLogPage(type,page){
 
 function renderInLogs(){
   updateLogCatOptions('in');
-  const logs=filterLogs('in');
-  renderSummary(logs,'in-log-summary');
-  document.getElementById('in-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l,'in')).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">暂无入库记录</td></tr>`;
+  logPageState.in.page=1;
+  fetchLogsPage('in');
 }
 function renderOutLogs(){
   updateLogCatOptions('out');
-  const logs=filterLogs('out');
-  renderSummary(logs,'out-log-summary');
-  document.getElementById('out-log-tbody').innerHTML=logs.length?logs.map(l=>logRow(l,'out')).join(''):`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">暂无出库记录</td></tr>`;
+  logPageState.out.page=1;
+  fetchLogsPage('out');
 }
 function logRow(l,type){
   const p=getProduct(l.productId);
