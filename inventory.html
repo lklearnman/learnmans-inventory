@@ -219,13 +219,14 @@ tr.clickable{cursor:pointer;}
         <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:var(--text-muted);">从</span>
-          <input type="date" id="in-log-date-from" placeholder="开始日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-          <span style="font-size:11px;color:var(--text-muted);">到</span>
-          <input type="date" id="in-log-date-to" placeholder="结束日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">清空</button>
-        </div>
+        <button class="btn btn-outline" id="in-log-date-btn" style="padding:6px 10px;font-size:12px;" onclick="toggleDateFilter('in')">📅 日期筛选</button>
+      </div>
+      <div id="in-log-date-panel" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-muted);">从</span>
+        <input type="date" id="in-log-date-from" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+        <span style="font-size:12px;color:var(--text-muted);">到</span>
+        <input type="date" id="in-log-date-to" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">清空</button>
       </div>
       <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
@@ -233,7 +234,7 @@ tr.clickable{cursor:pointer;}
         <tbody id="in-log-tbody"></tbody>
       </table></div>
       <div style="text-align:center;margin-top:10px;">
-        <button class="btn btn-outline btn-sm" onclick="loadMoreLogs()">📜 加载更多历史</button>
+        
       </div>
     </div>
   </div>
@@ -259,13 +260,14 @@ tr.clickable{cursor:pointer;}
         <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:var(--text-muted);">从</span>
-          <input type="date" id="out-log-date-from" placeholder="开始日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-          <span style="font-size:11px;color:var(--text-muted);">到</span>
-          <input type="date" id="out-log-date-to" placeholder="结束日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">清空</button>
-        </div>
+        <button class="btn btn-outline" id="out-log-date-btn" style="padding:6px 10px;font-size:12px;" onclick="toggleDateFilter('out')">📅 日期筛选</button>
+      </div>
+      <div id="out-log-date-panel" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--radius);align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-muted);">从</span>
+        <input type="date" id="out-log-date-from" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+        <span style="font-size:12px;color:var(--text-muted);">到</span>
+        <input type="date" id="out-log-date-to" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">清空</button>
       </div>
       <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
@@ -273,7 +275,7 @@ tr.clickable{cursor:pointer;}
         <tbody id="out-log-tbody"></tbody>
       </table></div>
       <div style="margin-top:12px;text-align:center;">
-        <button class="btn btn-outline btn-sm" onclick="loadMoreLogs()">📜 加载更多历史</button>
+        
       </div>
     </div>
   </div>
@@ -526,14 +528,13 @@ async function compressImage(file){return new Promise(res=>{const r=new FileRead
 async function loadAll(){
   setSyncStatus('syncing');
   try{
-    const [p,l,s]=await Promise.all([
+    const [p,s]=await Promise.all([
       sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,created_at').order('created_at',{ascending:false}),
-      sb.from('logs').select('*').order('ts',{ascending:false}).limit(500),
-      sb.from('show_items').select('*').order('ts',{ascending:false}).limit(500)
+      sb.from('show_items').select('*').order('ts',{ascending:false}).limit(200)
     ]);
     DB.products=(p.data||[]).map(dbToProduct);
-    DB.logs=(l.data||[]).map(dbToLog);
     DB.showItems=(s.data||[]).map(dbToShow);
+    DB.logs=[];
     setSyncStatus('ok');
   }catch(e){
     setSyncStatus('error');
@@ -842,24 +843,49 @@ async function doOut(){
   toast(`✅ 出库 ${qty} 件`);
 }
 
+function toggleDateFilter(type){
+  const panel=document.getElementById(type+'-log-date-panel');
+  const btn=document.getElementById(type+'-log-date-btn');
+  if(panel.style.display==='none'||!panel.style.display){
+    panel.style.display='flex';
+    btn.style.background='var(--gold-dim)';
+    btn.style.color='var(--gold)';
+  }else{
+    panel.style.display='none';
+    btn.style.background='';
+    btn.style.color='';
+    document.getElementById(type+'-log-date-from').value='';
+    document.getElementById(type+'-log-date-to').value='';
+    if(type==='in')renderInLogs();else renderOutLogs();
+  }
+}
+
 // ===================== LOGS =====================
-function filterLogs(type){
+async function filterLogs(type){
+  // 不分页，拉所有符合条件的（用于CSV/打印）
   const searchEl=document.getElementById(type+'-log-search');
   const catEl=document.getElementById(type+'-log-cat');
   const fromEl=document.getElementById(type+'-log-date-from');
   const toEl=document.getElementById(type+'-log-date-to');
   const q=(searchEl?searchEl.value:'').toLowerCase();
   const cat=catEl?catEl.value:'';
-  const from=fromEl&&fromEl.value?new Date(fromEl.value).getTime():0;
-  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').getTime():Infinity;
-  return DB.logs.filter(l=>{
-    if(l.type!==type)return false;
-    const p=getProduct(l.productId);
-    if(q&&!(p?p.name:'').toLowerCase().includes(q))return false;
-    if(cat&&(p?p.cat||'':'')!==cat)return false;
-    if(l.ts<from||l.ts>to)return false;
-    return true;
-  });
+  const from=fromEl&&fromEl.value?new Date(fromEl.value).toISOString():null;
+  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').toISOString():null;
+  let allowedPids=null;
+  if(q||cat){
+    allowedPids=DB.products.filter(p=>{
+      if(q&&!p.name.toLowerCase().includes(q))return false;
+      if(cat&&(p.cat||'')!==cat)return false;
+      return true;
+    }).map(p=>p.id);
+    if(!allowedPids.length)return [];
+  }
+  let dataQ=sb.from('logs').select('*').eq('type',type).order('ts',{ascending:false}).limit(5000);
+  if(from)dataQ=dataQ.gte('ts',from);
+  if(to)dataQ=dataQ.lte('ts',to);
+  if(allowedPids)dataQ=dataQ.in('product_id',allowedPids);
+  const{data}=await dataQ;
+  return (data||[]).map(dbToLog);
 }
 
 let _logCatCache='';
@@ -885,24 +911,107 @@ function renderSummary(logs, elId){
   `;
 }
 
-let _logsHasMore=true;
-async function loadMoreLogs(){
-  if(!_logsHasMore){toast('已经是最早的记录了');return;}
-  toast('加载更多历史…');
+// ===================== 分页 =====================
+const LOGS_PER_PAGE=20;
+let logPageState={in:{page:1,total:0,totalPages:0},out:{page:1,total:0,totalPages:0}};
+
+async function fetchLogsPage(type){
+  const st=logPageState[type];
+  const offset=(st.page-1)*LOGS_PER_PAGE;
+  
+  const searchEl=document.getElementById(type+'-log-search');
+  const catEl=document.getElementById(type+'-log-cat');
+  const fromEl=document.getElementById(type+'-log-date-from');
+  const toEl=document.getElementById(type+'-log-date-to');
+  const q=(searchEl?searchEl.value:'').toLowerCase();
+  const cat=catEl?catEl.value:'';
+  const from=fromEl&&fromEl.value?new Date(fromEl.value).toISOString():null;
+  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').toISOString():null;
+  
   try{
-    const oldest=DB.logs.length?DB.logs[DB.logs.length-1].ts:Date.now();
-    const{data,error}=await sb.from('logs').select('*').lt('ts',new Date(oldest).toISOString()).order('ts',{ascending:false}).limit(500);
+    // 先获取符合条件的product_id列表（用于name/cat筛选）
+    let allowedPids=null;
+    if(q||cat){
+      allowedPids=DB.products.filter(p=>{
+        if(q&&!p.name.toLowerCase().includes(q))return false;
+        if(cat&&(p.cat||'')!==cat)return false;
+        return true;
+      }).map(p=>p.id);
+      if(allowedPids.length===0){
+        st.total=0;st.totalPages=0;
+        renderLogsTable(type,[]);
+        return;
+      }
+    }
+    
+    // 查总数
+    let countQ=sb.from('logs').select('*',{count:'exact',head:true}).eq('type',type);
+    if(from)countQ=countQ.gte('ts',from);
+    if(to)countQ=countQ.lte('ts',to);
+    if(allowedPids)countQ=countQ.in('product_id',allowedPids);
+    const{count}=await countQ;
+    st.total=count||0;
+    st.totalPages=Math.max(1,Math.ceil(st.total/LOGS_PER_PAGE));
+    if(st.page>st.totalPages)st.page=st.totalPages;
+    
+    // 查数据
+    let dataQ=sb.from('logs').select('*').eq('type',type).order('ts',{ascending:false}).range(offset,offset+LOGS_PER_PAGE-1);
+    if(from)dataQ=dataQ.gte('ts',from);
+    if(to)dataQ=dataQ.lte('ts',to);
+    if(allowedPids)dataQ=dataQ.in('product_id',allowedPids);
+    const{data,error}=await dataQ;
     if(error)throw error;
-    if(!data||data.length===0){_logsHasMore=false;toast('没有更多记录了');return;}
-    const newLogs=data.map(dbToLog);
-    DB.logs=DB.logs.concat(newLogs);
-    if(data.length<500)_logsHasMore=false;
-    renderInLogs();renderOutLogs();
-    toast(`✅ 加载了 ${data.length} 条历史记录`);
+    
+    const logs=(data||[]).map(dbToLog);
+    renderLogsTable(type,logs);
   }catch(e){
-    toast('⚠️ 加载失败');
     console.log(e);
+    toast('⚠️ 加载失败');
   }
+}
+
+function renderLogsTable(type,logs){
+  const st=logPageState[type];
+  const tbody=document.getElementById(type+'-log-tbody');
+  if(!tbody)return;
+  
+  // 汇总(只算当前页)
+  const totalQty=logs.reduce((a,l)=>a+l.qty,0);
+  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  
+  const sumEl=document.getElementById(type+'-log-summary');
+  if(sumEl){
+    sumEl.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <span>📦 共 <b>${st.total}</b> 条</span>
+          <span>📄 第 <b>${st.page}</b>/<b>${st.totalPages}</b> 页</span>
+          <span>🔢 本页 <b>${totalQty}</b> 件</span>
+          ${totalAmt>0?`<span>💰 ¥<b style="color:var(--gold);">${totalAmt.toLocaleString()}</b></span>`:''}
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  if(!logs.length){
+    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">${st.total===0?'暂无'+(type==='in'?'入库':'出库')+'记录':'本页无记录'}</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML=logs.map(l=>logRow(l,type)).join('');
+}
+
+function goLogPage(type,page){
+  if(page<1)page=1;
+  if(page>logPageState[type].totalPages)page=logPageState[type].totalPages;
+  logPageState[type].page=page;
+  fetchLogsPage(type);
 }
 
 function renderInLogs(){
@@ -932,8 +1041,8 @@ function logRow(l,type){
     <td style="color:var(--text-muted);font-size:12px;">${l.note||'—'}</td>
   </tr>`;
 }
-function exportLogCSV(type){
-  const logs=filterLogs(type);
+async function exportLogCSV(type){
+  const logs=await filterLogs(type);
   const label=type==='in'?'入库':'出库';
   const rows=[['日期','商品名','SKU','类别','数量','单价','小计','备注']];
   logs.forEach(l=>{
@@ -966,8 +1075,8 @@ function exportLogCSV(type){
   toast(`✅ ${label}记录已导出`);
 }
 
-function printLogs(type){
-  const logs=filterLogs(type);
+async function printLogs(type){
+  const logs=await filterLogs(type);
   const label=type==='in'?'入库':'出库';
   const totalQty=logs.reduce((a,l)=>a+l.qty,0);
   const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
