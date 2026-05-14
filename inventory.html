@@ -560,6 +560,9 @@ function toggleInventoryView(){
 function renderInventory(){
   const q=document.getElementById('inv-search').value.toLowerCase();
   const grid=document.getElementById('product-grid');
+  // 预计算showOut，避免每个商品都遍历showItems
+  const showOutMap={};
+  DB.showItems.forEach(s=>{showOutMap[s.productId]=(showOutMap[s.productId]||0)+s.qty;});
   let prods=DB.products.filter(p=>{
     if(catFilter!=='all'&&(p.cat||'未分类')!==catFilter)return false;
     if(q&&!p.name.toLowerCase().includes(q)&&!(p.sku||'').toLowerCase().includes(q)&&!(p.cat||'').toLowerCase().includes(q))return false;
@@ -587,7 +590,7 @@ function renderInventory(){
         <th>操作</th>
       </tr></thead>
       <tbody>${prods.map(p=>{
-        const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+        const showOut=showOutMap[p.id]||0;
         const avail=p.qty-showOut;
         const qc=avail<=0?'zero':avail<3?'low':'ok';
         const thumb=p.photos&&p.photos[0]
@@ -615,7 +618,7 @@ function renderInventory(){
     // 卡片视图
     grid.className='product-grid';
     grid.innerHTML=prods.map(p=>{
-      const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+      const showOut=showOutMap[p.id]||0;
       const avail=p.qty-showOut;
       const qc=avail<=0?' zero':avail<3?' low':'';
       const thumb=p.photos&&p.photos[0]?`<div class="product-thumb"><img src="${p.photos[0]}" loading="lazy"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
@@ -809,10 +812,14 @@ function filterLogs(type){
   });
 }
 
-function updateLogCatOptions(type){
+let _logCatCache='';
+function updateLogCatOptions(type,force){
   const sel=document.getElementById(type+'-log-cat');
   if(!sel)return;
   const cats=[...new Set(DB.products.map(p=>p.cat||'').filter(Boolean))].sort();
+  const sig=cats.join('|');
+  if(!force&&sig===_logCatCache)return; // 没变就不重建
+  _logCatCache=sig;
   const cur=sel.value;
   sel.innerHTML='<option value="">全部类别</option>'+cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
 }
