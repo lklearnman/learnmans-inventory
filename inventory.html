@@ -219,8 +219,13 @@ tr.clickable{cursor:pointer;}
         <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
           <option value="">全部类别</option>
         </select>
-        <input type="date" id="in-log-date-from" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-        <input type="date" id="in-log-date-to" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--text-muted);">从</span>
+          <input type="date" id="in-log-date-from" placeholder="开始日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+          <span style="font-size:11px;color:var(--text-muted);">到</span>
+          <input type="date" id="in-log-date-to" placeholder="结束日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">清空</button>
+        </div>
       </div>
       <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
@@ -254,8 +259,13 @@ tr.clickable{cursor:pointer;}
         <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
           <option value="">全部类别</option>
         </select>
-        <input type="date" id="out-log-date-from" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-        <input type="date" id="out-log-date-to" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:var(--text-muted);">从</span>
+          <input type="date" id="out-log-date-from" placeholder="开始日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+          <span style="font-size:11px;color:var(--text-muted);">到</span>
+          <input type="date" id="out-log-date-to" placeholder="结束日期" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
+          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">清空</button>
+        </div>
       </div>
       <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
