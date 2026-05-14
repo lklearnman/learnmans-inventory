@@ -1523,15 +1523,17 @@ async function doAIRecognize(e){
         ${matches.map(p=>{
           const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
           const avail=p.qty-showOut;
+          const tn=p.thumbnail||(p.photos&&p.photos[0]);
           return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+              ${tn?`<img src="${tn}" class="zoomable" style="width:60px;height:60px;border-radius:8px;object-fit:contain;background:#000;flex-shrink:0;" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()">`:`<div style="width:60px;height:60px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">${catEmoji(p.cat)}</div>`}
+              <div style="flex:1;min-width:0;">
                 <div style="font-size:14px;font-weight:600;color:var(--text);">${p.name}</div>
                 <div style="font-size:11px;color:var(--text-muted);">${p.sku||'—'} · ${p.cat||'未分类'}${p.origin?' · '+p.origin:''}</div>
               </div>
               <div style="text-align:right;">
                 <div style="font-size:18px;font-weight:700;color:${avail>0?'var(--jade-light)':'var(--rose)'};">${avail}</div>
-                <div style="font-size:10px;color:var(--text-muted);">可用库存</div>
+                <div style="font-size:10px;color:var(--text-muted);">可用</div>
               </div>
             </div>
             ${p.price?`<div style="font-size:13px;color:var(--gold);margin-bottom:8px;">💰 ${p.price}</div>`:''}
