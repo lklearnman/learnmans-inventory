@@ -477,7 +477,7 @@ async function loadAll(){
   setSyncStatus('syncing');
   try{
     const [p,l,s]=await Promise.all([
-      sb.from('products').select('*').order('created_at',{ascending:false}),
+      sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,created_at').order('created_at',{ascending:false}),
       sb.from('logs').select('*').order('ts',{ascending:false}),
       sb.from('show_items').select('*').order('ts',{ascending:false})
     ]);
@@ -495,7 +495,7 @@ async function loadAll(){
 
 // DB field mapping
 function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
-function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos||[],createdAt:new Date(r.created_at).getTime()};}
+function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,createdAt:new Date(r.created_at).getTime()};}
 function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,ts:new Date(l.ts).toISOString()};}
 function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,ts:new Date(r.ts).getTime()};}
 function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
@@ -972,8 +972,21 @@ function openLogDetail(lid){
 }
 
 // ===================== 商品详情 =====================
+async function _loadPhotos(p){
+  if(p.photos!==undefined)return;
+  try{
+    const{data}=await sb.from('products').select('photos').eq('id',p.id).single();
+    p.photos=data?.photos||[];
+  }catch{p.photos=[];}
+}
 function openDetail(id){
   const p=getProduct(id);if(!p)return;
+  _loadPhotos(p).then(()=>{
+    const el=document.getElementById('detail-photos');
+    if(el&&p.photos&&p.photos[0]){
+      el.innerHTML=p.photos.map(ph=>`<img class="detail-photo" src="${ph}">`).join('');
+    }
+  });
   detailId=id;
   document.getElementById('detail-title').textContent=p.name;
   const showOut=DB.showItems.filter(s=>s.productId===id).reduce((a,s)=>a+s.qty,0);
