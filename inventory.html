@@ -72,7 +72,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 .product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
 .product-card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
 .product-thumb{width:100%;aspect-ratio:1;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;overflow:hidden;}
-.product-thumb img{width:100%;height:100%;object-fit:cover;}
+.product-thumb img{width:100%;height:100%;object-fit:contain;background:#000;}
 .product-info{padding:10px;}
 .product-name{font-size:13px;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .product-sku{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;}
@@ -567,6 +567,27 @@ function allCats(){return[...new Set(DB.products.map(p=>p.cat||'未分类'))].so
 function catEmoji(cat){if(!cat)return'📦';const c=cat.toLowerCase();if(c.includes('首饰')||c.includes('项链')||c.includes('戒'))return'💍';if(c.includes('矿')||c.includes('标本'))return'🪨';if(c.includes('元石')||c.includes('宝石')||c.includes('水晶'))return'💎';if(c.includes('化石'))return'🦕';return'📦';}
 async function compressImage(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const mx=800;if(w>mx||h>mx){const s=Math.min(mx/w,mx/h);w=Math.round(w*s);h=Math.round(h*s);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);let q=0.82;const go=()=>{const d=c.toDataURL('image/jpeg',q);if((d.length*3/4)/1024<=200||q<=0.2)res(d);else{q-=0.1;go();}};go();};img.src=e.target.result;};r.readAsDataURL(file);});}
 
+// 从base64生成200x200缩略图
+async function generateThumbnail(b64){
+  if(!b64)return null;
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=200;
+      const c=document.createElement('canvas');
+      c.width=size;c.height=size;
+      const ctx=c.getContext('2d');
+      const m=Math.min(img.width,img.height);
+      const sx=(img.width-m)/2;
+      const sy=(img.height-m)/2;
+      ctx.drawImage(img,sx,sy,m,m,0,0,size,size);
+      res(c.toDataURL('image/jpeg',0.75));
+    };
+    img.onerror=()=>res(null);
+    img.src=b64;
+  });
+}
+
 // ===================== SUPABASE CRUD =====================
 async function loadAll(){
   setSyncStatus('syncing');
@@ -596,6 +617,14 @@ function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s
 function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
 
 async function upsertProduct(p){
+  // 自动生成缩略图（如果有照片且没缩略图）
+  if(p.photos&&p.photos[0]&&!p.thumbnail){
+    try{
+      p.thumbnail=await generateThumbnail(p.photos[0]);
+    }catch(e){console.log('缩略图生成失败',e);}
+  }
+  // 如果没有照片，清空缩略图
+  if(!p.photos||!p.photos.length){p.thumbnail=null;}
   setSyncStatus('syncing');
   const{error}=await sb.from('products').upsert(productToDb(p));
   if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');}
@@ -1175,8 +1204,16 @@ async function printLogs(type){
   w.document.close();
 }
 
-function openLogDetail(lid){
-  const l=DB.logs.find(x=>x.id===lid);if(!l)return;
+async function openLogDetail(lid){
+  let l=DB.logs.find(x=>x.id===lid);
+  if(!l){
+    // 分页模式下DB.logs不完整，去数据库查
+    try{
+      const{data,error}=await sb.from('logs').select('*').eq('id',lid).single();
+      if(error||!data){toast('找不到记录');return;}
+      l=dbToLog(data);
+    }catch(e){toast('查询失败');return;}
+  }
   const p=getProduct(l.productId);
   const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
   document.getElementById('log-detail-body').innerHTML=`
