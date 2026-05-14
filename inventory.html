@@ -11,6 +11,13 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
+/* date input 空值时不显示 mm/dd/yyyy 占位 */
+input[type="date"]:not(.has-value):not(:focus){color:var(--text-muted);}
+input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-year-field,
+input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-month-field,
+input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-day-field,
+input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-text{color:var(--text-muted);opacity:0.4;}
+
 :root{
   --bg:#0e0d0b;--surface:#1a1915;--surface2:#242218;--border:#2e2c24;
   --gold:#c9a84c;--gold-light:#e8c96a;--gold-dim:#7a6230;
@@ -220,9 +227,8 @@ tr.clickable{cursor:pointer;}
         <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 开始：</span><input type="date" id="in-log-date-from" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 结束：</span><input type="date" id="in-log-date-to" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
-        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;grid-column:1/-1;" onclick="document.getElementById('in-log-search').value='';document.getElementById('in-log-cat').value='';document.getElementById('in-log-date-from').value='';document.getElementById('in-log-date-to').value='';renderInLogs()">🔄 重置筛选</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="date" id="in-log-date-from" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderInLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="date" id="in-log-date-to" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderInLogs()"></div>
       </div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
@@ -256,9 +262,8 @@ tr.clickable{cursor:pointer;}
         <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 开始：</span><input type="date" id="out-log-date-from" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);"><span style="white-space:nowrap;">📅 结束：</span><input type="date" id="out-log-date-to" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
-        <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;grid-column:1/-1;" onclick="document.getElementById('out-log-search').value='';document.getElementById('out-log-cat').value='';document.getElementById('out-log-date-from').value='';document.getElementById('out-log-date-to').value='';renderOutLogs()">🔄 重置筛选</button>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="date" id="out-log-date-from" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderOutLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="date" id="out-log-date-to" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderOutLogs()"></div>
       </div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
@@ -974,19 +979,17 @@ function renderLogsTable(type,logs){
   const sumEl=document.getElementById(type+'-log-summary');
   if(sumEl){
     sumEl.innerHTML=`
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <span>📦 共 <b>${st.total}</b> 条</span>
-          <span>📄 第 <b>${st.page}</b>/<b>${st.totalPages}</b> 页</span>
-          <span>🔢 本页 <b>${totalQty}</b> 件</span>
-          ${totalAmt>0?`<span>💰 ¥<b style="color:var(--gold);">${totalAmt.toLocaleString()}</b></span>`:''}
-        </div>
-        <div style="display:flex;gap:4px;">
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
-          <button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
-        </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;">
+        <span>📦 共 <b style="color:var(--gold);">${st.total}</b> 条</span>
+        <span>📄 第 <b>${st.page}</b> / <b>${st.totalPages}</b> 页</span>
+        <span>🔢 本页 <b>${totalQty}</b> 件</span>
+        ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
+      </div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
       </div>
     `;
   }
