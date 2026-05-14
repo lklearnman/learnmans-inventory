@@ -11,6 +11,12 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
+/* 缩略图悬停放大 */
+.zoom-preview{position:fixed;z-index:9999;pointer-events:none;background:#000;border:2px solid var(--gold);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:4px;display:none;}
+.zoom-preview img{display:block;max-width:320px;max-height:320px;border-radius:8px;}
+.zoom-preview .zoom-info{color:#fff;font-size:12px;padding:6px 8px 2px;text-align:center;}
+.zoomable{cursor:zoom-in;}
+
 /* date input 空值时不显示 mm/dd/yyyy 占位 */
 input[type="date"]:not(.has-value):not(:focus){color:var(--text-muted);}
 input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-year-field,
@@ -227,8 +233,8 @@ tr.clickable{cursor:pointer;}
         <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="date" id="in-log-date-from" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderInLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="date" id="in-log-date-to" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderInLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="text" id="in-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="text" id="in-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
       </div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
@@ -262,8 +268,8 @@ tr.clickable{cursor:pointer;}
         <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
           <option value="">全部类别</option>
         </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="date" id="out-log-date-from" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderOutLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="date" id="out-log-date-to" onfocus="this.classList.add('has-value')" onblur="if(!this.value)this.classList.remove('has-value')" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 4px;color:var(--text);font-size:11px;" onchange="this.classList.toggle('has-value',!!this.value);renderOutLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">从</span><input type="text" id="out-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">到</span><input type="text" id="out-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
       </div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
@@ -489,6 +495,7 @@ tr.clickable{cursor:pointer;}
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
 <script>
 // ===================== SUPABASE =====================
@@ -509,6 +516,47 @@ function setSyncStatus(status){
   if(status==='error')dot.classList.add('error');
 }
 
+// ===================== ZOOM PREVIEW =====================
+let _zoomTimer=null;
+async function showZoomPreview(el,pid){
+  clearTimeout(_zoomTimer);
+  _zoomTimer=setTimeout(async()=>{
+    const preview=document.getElementById('zoom-preview');
+    const img=document.getElementById('zoom-img');
+    const info=document.getElementById('zoom-info');
+    const p=getProduct(pid);
+    if(!p)return;
+    
+    // 先用缩略图显示
+    img.src=el.src;
+    info.textContent=p.name+(p.price?' · ¥'+p.price:'');
+    
+    // 定位（鼠标右下方）
+    const rect=el.getBoundingClientRect();
+    preview.style.display='block';
+    const pw=preview.offsetWidth,ph=preview.offsetHeight;
+    let x=rect.right+10,y=rect.top;
+    if(x+pw>window.innerWidth)x=rect.left-pw-10;
+    if(y+ph>window.innerHeight)y=window.innerHeight-ph-10;
+    if(y<10)y=10;
+    preview.style.left=x+'px';
+    preview.style.top=y+'px';
+    
+    // 后台加载高清原图
+    try{
+      const {data}=await sb.from('products').select('photos').eq('id',pid).single();
+      if(data&&data.photos&&data.photos[0]){
+        img.src=data.photos[0];
+      }
+    }catch(e){}
+  },200); // 200ms延迟，避免快速划过
+}
+
+function hideZoomPreview(){
+  clearTimeout(_zoomTimer);
+  document.getElementById('zoom-preview').style.display='none';
+}
+
 // ===================== UTILS =====================
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function fmt(ts){const d=new Date(ts);return`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;}
@@ -524,7 +572,7 @@ async function loadAll(){
   setSyncStatus('syncing');
   try{
     const [p,s]=await Promise.all([
-      sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,created_at').order('created_at',{ascending:false}),
+      sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false}),
       sb.from('show_items').select('*').order('ts',{ascending:false}).limit(200)
     ]);
     DB.products=(p.data||[]).map(dbToProduct);
@@ -540,8 +588,8 @@ async function loadAll(){
 }
 
 // DB field mapping
-function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
-function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,createdAt:new Date(r.created_at).getTime()};}
+function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
+function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
 function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,ts:new Date(l.ts).toISOString()};}
 function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,ts:new Date(r.ts).getTime()};}
 function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
@@ -639,8 +687,9 @@ function renderInventory(){
         const showOut=showOutMap[p.id]||0;
         const avail=p.qty-showOut;
         const qc=avail<=0?'zero':avail<3?'low':'ok';
-        const thumb=p.photos&&p.photos[0]
-          ?`<img class="thumb-sm" src="${p.photos[0]}" loading="lazy">`
+        const tn=p.thumbnail||(p.photos&&p.photos[0]);
+        const thumb=tn
+          ?`<img class="thumb-sm zoomable" src="${tn}" loading="lazy" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()">`
           :`<div class="thumb-emoji">${catEmoji(p.cat)}</div>`;
         return`<tr class="clickable" onclick="openDetail('${p.id}')">
           <td>${thumb}</td>
@@ -667,7 +716,8 @@ function renderInventory(){
       const showOut=showOutMap[p.id]||0;
       const avail=p.qty-showOut;
       const qc=avail<=0?' zero':avail<3?' low':'';
-      const thumb=p.photos&&p.photos[0]?`<div class="product-thumb"><img src="${p.photos[0]}" loading="lazy"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
+      const tn=p.thumbnail||(p.photos&&p.photos[0]);
+      const thumb=tn?`<div class="product-thumb"><img src="${tn}" loading="lazy" class="zoomable" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
       return`<div class="product-card" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
     }).join('');
   }
