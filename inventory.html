@@ -251,7 +251,7 @@ tr.clickable{cursor:pointer;}
       <div class="form-grid">
         <div class="form-group"><label>选择商品</label><select id="out-product"></select></div>
         <div class="form-group"><label>出库数量</label><input type="number" id="out-qty" value="1" min="1"></div>
-        <div class="form-group"><label>出库单价（可选）</label><input type="number" id="out-price" placeholder="销售单价" step="0.01"></div>
+        <div class="form-group"><label>本次售价（可选）</label><input type="number" id="out-price" placeholder="¥ 实际成交价" step="0.01"></div>
         <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="客户/原因（可选）"></div>
       </div>
       <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
@@ -461,7 +461,7 @@ tr.clickable{cursor:pointer;}
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
       <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
-      <div class="form-group"><label>入库单价（可选）</label><input type="text" id="si-price" placeholder="¥ 留空不更新"></div>
+      <div class="form-group"><label>本次进价（可选）</label><input type="text" id="si-price" placeholder="¥ 仅记录到流水，不影响商品定价"></div>
       <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="来源/批次（可选）"></div>
     </div>
     <div class="modal-actions">
@@ -878,7 +878,7 @@ function openStockInModal(preId){
 function updateStockInInfo(){
   const p=getProduct(document.getElementById('si-product').value);
   const el=document.getElementById('si-current-info');
-  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 单价：'+p.price:''}`;}
+  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 参考售价：'+p.price:''}`;}
   else el.style.display='none';
 }
 async function doStockIn(){
@@ -890,7 +890,6 @@ async function doStockIn(){
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   p.qty+=qty;
-  if(price)p.price=price;
   const log={id:uid(),productId:pid,type:'in',qty,note,price,ts:Date.now()};
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
@@ -1229,8 +1228,8 @@ async function openLogDetail(lid){
       <div class="detail-field"><label>商品名称</label><div class="val">${p?p.name:'（已删除）'}</div></div>
       <div class="detail-field"><label>SKU</label><div class="val mono">${p?p.sku||'—':'—'}</div></div>
       <div class="detail-field"><label>数量</label><div class="val" style="font-size:20px;font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</div></div>
-      ${l.price?`<div class="detail-field"><label>${l.type==='in'?'入库':l.type==='out'?'出库':''}单价</label><div class="val" style="color:var(--gold);">¥${l.price}</div></div>`:''}
-      ${l.price&&l.qty?`<div class="detail-field"><label>${l.type==='in'?'入库':l.type==='out'?'出库':''}金额</label><div class="val" style="color:var(--gold);font-weight:600;">¥${(parseFloat(l.price)*l.qty).toLocaleString()}</div></div>`:''}
+      ${l.price?`<div class="detail-field"><label>${l.type==='in'?'本次进价':l.type==='out'?'本次售价':'单价'}</label><div class="val" style="color:var(--gold);">¥${l.price}</div></div>`:''}
+      ${l.price&&l.qty?`<div class="detail-field"><label>${l.type==='in'?'进货金额':l.type==='out'?'销售金额':'金额'}</label><div class="val" style="color:var(--gold);font-weight:600;">¥${(parseFloat(l.price)*l.qty).toLocaleString()}</div></div>`:''}
       ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
       ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
     </div>
@@ -1258,7 +1257,10 @@ function openDetail(id){
   document.getElementById('detail-title').textContent=p.name;
   const showOut=DB.showItems.filter(s=>s.productId===id).reduce((a,s)=>a+s.qty,0);
   const avail=p.qty-showOut;
-  const logs=DB.logs.filter(l=>l.productId===id).slice(0,10);
+  const allLogs=DB.logs.filter(l=>l.productId===id);
+  const logs=allLogs.slice(0,10);
+  const lastIn=allLogs.find(l=>l.type==='in'&&l.price);
+  const lastOut=allLogs.find(l=>l.type==='out'&&l.price);
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
     <div class="detail-grid">
@@ -1266,7 +1268,9 @@ function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      ${p.price?`<div class="detail-field"><label>单价</label><div class="val">${p.price}</div></div>`:''}
+      ${p.price?`<div class="detail-field"><label>参考售价</label><div class="val">¥${p.price}</div></div>`:''}
+      ${lastIn?`<div class="detail-field"><label>最近一次进价</label><div class="val" style="color:var(--jade-light);">¥${lastIn.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastIn.ts)})</span></div></div>`:''}
+      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       ${p.origin?`<div class="detail-field"><label>产地/规格</label><div class="val">${p.origin}</div></div>`:''}
       ${p.country?`<div class="detail-field"><label>原产国</label><div class="val">${p.country}</div></div>`:''}
       <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>
