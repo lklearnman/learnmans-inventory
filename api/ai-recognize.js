@@ -11,7 +11,9 @@ const GEMINI_MODELS = [
 ];
 
 // 每个模型的超时（毫秒）
-const TIMEOUT_MS = 15000;
+// ⚠️ Vercel Hobby plan 函数最长 10 秒，超过就会被强杀。
+// 这里设 9000，留 1 秒给后续 JSON.parse 和响应。
+const TIMEOUT_MS = 9000;
 
 function fetchWithTimeout(url, options, ms) {
   return Promise.race([
@@ -84,13 +86,36 @@ async function callClaude(imageBase64, mediaType) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // 健康检查端点：GET /api/ai-recognize → 看 API 是否活着、key 是否配置
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      status: 'ok',
+      hasClaudeKey: !!process.env.ANTHROPIC_API_KEY,
+      hasGeminiKey: !!process.env.GEMINI_API_KEY,
+      timeoutMs: TIMEOUT_MS,
+      claudeModel: 'claude-haiku-4-5-20251001',
+      geminiModels: GEMINI_MODELS,
+      time: new Date().toISOString(),
+    });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { imageBase64, mediaType = 'image/jpeg', provider = 'claude' } = req.body;
+  const { imageBase64, mediaType = 'image/jpeg', provider = 'claude' } = req.body || {};
   if (!imageBase64) return res.status(400).json({ error: 'Missing imageBase64' });
+
+  // 体积保护：base64 > 4MB（约对应 3MB 原图）的话直接报错，避免 Vercel 4.5MB body 限制
+  const sizeBytes = Math.floor(imageBase64.length * 0.75);
+  if (sizeBytes > 4 * 1024 * 1024) {
+    return res.status(413).json({
+      error: `图片太大（约 ${(sizeBytes / 1024 / 1024).toFixed(1)} MB），请把客户端压缩到 < 3 MB`,
+      sizeBytes,
+    });
+  }
 
   const errors = [];
 
