@@ -348,6 +348,7 @@ tr.clickable{cursor:pointer;}
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-gold" onclick="document.getElementById('ai-camera-input').click()">📷 拍照识别</button>
       <button class="btn btn-outline" onclick="document.getElementById('ai-library-input').click()">🖼️ 从相册选图</button>
+      <button class="btn btn-outline btn-sm" onclick="testAIBackend()" style="font-size:11px;">🔍 测试后端</button>
     </div>
     <input type="file" id="ai-camera-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
     <input type="file" id="ai-library-input" accept="image/*" style="display:none" onchange="doAIRecognize(event)">
@@ -1435,6 +1436,72 @@ async function quickOutScan(pid,targetId){
 const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
 let aiProvider='claude'; // 默认Claude（更稳定），可切换为Gemini
 
+// 📏 图片压缩：iPhone 原图常 5-10MB，base64 后超 Vercel 4.5MB 限制 + Safari "Load failed"
+// 压到最长边 1600px、JPEG 85% → 大约 200-500KB，又快又稳
+async function compressImageForAI(file, maxSize=1600, quality=0.85){
+  // 先把文件加载成 Image
+  const dataURL = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = () => reject(new Error('文件读取失败'));
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = () => reject(new Error('图片解码失败（HEIC格式不支持，请改用JPEG/PNG）'));
+    im.src = dataURL;
+  });
+  // 按比例缩放到 maxSize 长边内
+  let w = img.naturalWidth, h = img.naturalHeight;
+  if (w > h) {
+    if (w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
+  } else {
+    if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h); // 防 PNG 透明变黑
+  ctx.drawImage(img, 0, 0, w, h);
+  // 输出 JPEG dataURL
+  const outDataURL = canvas.toDataURL('image/jpeg', quality);
+  const base64 = outDataURL.split(',')[1];
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  return { dataURL: outDataURL, base64, sizeKB, width: w, height: h };
+}
+
+// 🔍 测试 AI 后端连接（点按钮触发，方便快速诊断）
+async function testAIBackend(){
+  const stText = document.getElementById('ai-status-text');
+  const st = document.getElementById('ai-status');
+  const res = document.getElementById('ai-result');
+  st.style.display='flex'; res.style.display='none';
+  if(stText) stText.textContent='检测后端 API…';
+  try {
+    const r = await fetch(AI_API_URL, { method:'GET' });
+    const txt = await r.text();
+    let info;
+    try { info = JSON.parse(txt); } catch(e) { info = { raw: txt.slice(0,300) }; }
+    st.style.display='none'; res.style.display='block';
+    const keyOk = info.hasClaudeKey || info.hasGeminiKey;
+    res.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;font-size:13px;">
+      <div style="font-weight:600;color:var(--jade-light);margin-bottom:8px;">🔍 后端诊断 (HTTP ${r.status})</div>
+      <div style="font-family:monospace;font-size:12px;color:var(--text-dim);white-space:pre-wrap;word-break:break-all;">${JSON.stringify(info, null, 2)}</div>
+      <div style="margin-top:8px;color:${keyOk?'var(--jade-light)':'var(--rose)'};">
+        ${keyOk ? '✅ API 在线、密钥已配置' : '❌ API key 未配置或未读到，去 Vercel 环境变量检查 ANTHROPIC_API_KEY / GEMINI_API_KEY'}
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="document.getElementById('ai-result').style.display='none'">关闭</button>
+    </div>`;
+  } catch(err) {
+    st.style.display='none'; res.style.display='block';
+    res.innerHTML = `<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">
+      ❌ 无法连接后端（${err.message}）<br>
+      <span style="color:var(--text-muted);font-size:11px;">检查：① 网络 ② Vercel 部署是否成功 ③ AI_API_URL 是否对</span>
+    </div>`;
+  }
+}
+
 // 同义词对照表
 const SYNONYMS=[
   ['陨石','天铁','铁陨石','石铁陨石','陨铁','meteorite'],
@@ -1498,20 +1565,38 @@ let detailOpenedFromAI=false; // 记录详情是否从AI结果打开
 
 async function doAIRecognize(e){
   const file=e.target.files[0];if(!file)return;
-  // 保存照片用于建新品
-  aiCapturedPhoto=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result);rd.readAsDataURL(file);});
   const st=document.getElementById('ai-status'),res=document.getElementById('ai-result');
   const stText=document.getElementById('ai-status-text');
   st.style.display='flex';res.style.display='none';
-  if(stText)stText.textContent=`${aiProvider==='claude'?'Claude':'Gemini'} 识别中…`;
-  const b64=await new Promise(r=>{const rd=new FileReader();rd.onload=ev=>r(ev.target.result.split(',')[1]);rd.readAsDataURL(file);});
+  if(stText)stText.textContent='📏 压缩图片…';
+  // 🔧 压缩图片：最长边 1600px、JPEG 85%（防 Vercel 4.5MB body 限制、防 Safari "Load failed"）
+  let compressed;
+  try {
+    compressed = await compressImageForAI(file);
+  } catch (err) {
+    st.style.display='none';res.style.display='block';
+    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">图片处理失败：${err.message}</div>`;
+    e.target.value=''; return;
+  }
+  aiCapturedPhoto = compressed.dataURL; // 用压缩后的图保存到建品（也省 Supabase 流量）
+  if(stText)stText.textContent=`${aiProvider==='claude'?'Claude':'Gemini'} 识别中… (${compressed.sizeKB}KB)`;
+  // 前端 25 秒兜底超时（虽然 Vercel 10s 会先返回，但万一连接挂死的话）
+  const ctrl = new AbortController();
+  const tmr = setTimeout(()=>ctrl.abort(), 25000);
   try{
     const resp=await fetch(AI_API_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({imageBase64:b64,mediaType:file.type||'image/jpeg',provider:aiProvider})
+      body:JSON.stringify({imageBase64:compressed.base64,mediaType:'image/jpeg',provider:aiProvider}),
+      signal: ctrl.signal,
     });
-    if(!resp.ok){const er=await resp.json();throw new Error(er.error||resp.status);}
+    clearTimeout(tmr);
+    if(!resp.ok){
+      // 把后端返回的 error + details 全部抓出来显示
+      let er; try { er = await resp.json(); } catch(_) { er = { error: 'HTTP '+resp.status }; }
+      const detailStr = Array.isArray(er.details) ? ' / ' + er.details.join(' | ') : '';
+      throw new Error(`HTTP ${resp.status}: ${er.error||'未知错误'}${detailStr}`);
+    }
     const data=await resp.json();
     const parsed=data.result;
     const providerLabel=data.provider||aiProvider;
@@ -1572,8 +1657,28 @@ async function doAIRecognize(e){
       </div>
     </div>`;
   }catch(err){
+    clearTimeout(tmr);
     st.style.display='none';res.style.display='block';
-    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:10px;background:var(--surface2);border-radius:var(--radius);">识别失败（${err.message}）<br><span style="color:var(--text-muted);font-size:11px;">请检查网络或联系管理员</span></div>`;
+    // 把可能的根因写明白
+    let hint = '';
+    const msg = String(err.message||err);
+    if (msg === 'Load failed' || msg.includes('aborted') || msg.includes('NetworkError')) {
+      hint = '💡 通常原因：Vercel 函数 10 秒超时（Claude API 太慢） / 网络中断。可点下方"测试后端"看 API 是否在线。';
+    } else if (msg.includes('413')) {
+      hint = '💡 图片压缩后还是太大。换一张试试。';
+    } else if (msg.includes('401') || msg.includes('403')) {
+      hint = '💡 Vercel 环境变量里的 API key 失效，去 Vercel 项目 Settings → Environment Variables 检查。';
+    } else if (msg.includes('429')) {
+      hint = '💡 API 调用频率超限或额度用完，去 Anthropic/Google 控制台看余额。';
+    } else if (msg.includes('TIMEOUT')) {
+      hint = '💡 单次调用超过 9 秒。试试改用 Gemini 引擎，或者图片再小一点。';
+    }
+    res.innerHTML=`<div style="color:var(--rose);font-size:13px;padding:12px;background:var(--surface2);border-radius:var(--radius);">
+      <div style="font-weight:600;margin-bottom:6px;">识别失败</div>
+      <div style="font-family:monospace;font-size:11px;color:var(--text-dim);word-break:break-all;margin-bottom:8px;">${msg}</div>
+      ${hint?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${hint}</div>`:''}
+      <button class="btn btn-outline btn-sm" onclick="testAIBackend()">🔍 测试后端 API</button>
+    </div>`;
   }
   e.target.value='';
 }
