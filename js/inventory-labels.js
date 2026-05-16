@@ -1,10 +1,16 @@
-// ===================== QR =====================
 // ===================== LABELS / 价格标签 =====================
 let selectedLabelIds=new Set();
 
-function renderQRSelects(){
+// presetIds: 可选数组,预先勾选这些商品 ID;不传时空白进入,用户自己选
+function openLabelModal(presetIds){
+  selectedLabelIds = new Set(Array.isArray(presetIds)?presetIds:[]);
+  const search=document.getElementById('label-search');if(search)search.value='';
   renderLabelList();
+  document.getElementById('modal-label').classList.add('open');
 }
+
+// 兼容旧调用,例如其他地方误调
+function renderQRSelects(){}
 
 function renderLabelList(){
   const q=(document.getElementById('label-search')?.value||'').toLowerCase();
