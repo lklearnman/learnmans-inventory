@@ -166,7 +166,7 @@ function openAddModal(prefill){
   editingId=null;pendingPhotos=[];
   document.getElementById('modal-add-title').textContent='新建商品档案';
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-currency').value='CNY';
+  document.getElementById('f-currency').value='JPY';
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
   document.getElementById('modal-add').classList.add('open');
@@ -182,9 +182,8 @@ function openEditModal(id){
   const _jpy=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0)
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY')).filter(v=>!isNaN(v));
   const _rec=_jpy.length?Math.round(_jpy.reduce((a,b)=>a+b,0)/_jpy.length*3):0;
-  document.getElementById('f-currency').value=p.currency||(p.price?'CNY':'JPY');
+  document.getElementById('f-currency').value=p.currency||'JPY';
   document.getElementById('f-price').value=p.price||(_rec?String(_rec):'');
-  if(!p.price&&_rec)document.getElementById('f-currency').value='JPY'; // 默认填入的推荐价是 JPY
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
