@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0208">
+<link rel="stylesheet" href="inventory.css?v=20260517-0218">
 </head>
 <body>
 
@@ -42,11 +42,11 @@
 <!-- 库存 -->
 <div class="section active" id="sec-inventory">
   <div class="search-row">
+    <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
     <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()">
     <button class="btn btn-outline btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-gold btn-sm" onclick="openStockInModal(null)">⬆️ 入库</button>
     <button class="btn btn-outline btn-sm" onclick="openLabelModal()" title="打印价格标签">🏷️ 标签</button>
-    <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
   </div>
   <div class="filter-row" id="cat-filters">
     <button class="filter-chip active" onclick="setCatFilter('all',this)">全部</button>
@@ -354,11 +354,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0208"></script>
-<script src="js/inventory-ui.js?v=20260517-0208"></script>
-<script src="js/inventory-logs.js?v=20260517-0208"></script>
-<script src="js/inventory-ai.js?v=20260517-0208"></script>
-<script src="js/inventory-labels.js?v=20260517-0208"></script>
+<script src="js/inventory-core.js?v=20260517-0218"></script>
+<script src="js/inventory-ui.js?v=20260517-0218"></script>
+<script src="js/inventory-logs.js?v=20260517-0218"></script>
+<script src="js/inventory-ai.js?v=20260517-0218"></script>
+<script src="js/inventory-labels.js?v=20260517-0218"></script>
 <script>loadAll();</script>
 </body>
 </html>
