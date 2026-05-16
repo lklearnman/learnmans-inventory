@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0437">
+<link rel="stylesheet" href="inventory.css?v=20260517-0612">
 </head>
 <body>
 
@@ -43,14 +43,21 @@
 <div class="section active" id="sec-inventory">
   <div class="search-row">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
-    <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
+    <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
   </div>
   <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:center;margin-bottom:16px;">
     <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
-    <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
+    <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
     <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;min-width:0;">
       <option value="all">全部</option>
     </select>
+  </div>
+  <div id="inv-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
+      <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
+      <span id="select-all-label">全选</span>
+    </label>
+    <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
   </div>
   <div id="product-grid" class="product-grid"></div>
 </div>
@@ -85,6 +92,7 @@
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="in-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="in-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
       </div>
+      <div id="in-log-pager-top" style="margin:0 0 10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="in-log-tbody"></tbody>
@@ -119,6 +127,7 @@
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="out-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="out-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
       </div>
+      <div id="out-log-pager-top" style="margin:0 0 10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
       <div class="table-wrap"><table>
         <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
         <tbody id="out-log-tbody"></tbody>
@@ -167,14 +176,6 @@
       </div>
     </div>
     <div id="camera-scan-result" style="display:none;margin-top:14px;"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">⌨️ 手动输入 / 扫码枪</div>
-    <div style="display:flex;gap:8px;">
-      <input class="search-input" id="scan-input" placeholder="输入或扫码枪扫入SKU…" onkeydown="if(event.key==='Enter')doScan()">
-      <button class="btn btn-gold" onclick="doScan()">查询</button>
-    </div>
-    <div id="scan-result" style="display:none;margin-top:14px;"></div>
   </div>
   <div class="card">
     <div class="card-title">🤖 AI拍照识别建品</div>
@@ -343,11 +344,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0437"></script>
-<script src="js/inventory-ui.js?v=20260517-0437"></script>
-<script src="js/inventory-logs.js?v=20260517-0437"></script>
-<script src="js/inventory-ai.js?v=20260517-0437"></script>
-<script src="js/inventory-labels.js?v=20260517-0437"></script>
+<script src="js/inventory-core.js?v=20260517-0612"></script>
+<script src="js/inventory-ui.js?v=20260517-0612"></script>
+<script src="js/inventory-logs.js?v=20260517-0612"></script>
+<script src="js/inventory-ai.js?v=20260517-0612"></script>
+<script src="js/inventory-labels.js?v=20260517-0612"></script>
 <script>loadAll();</script>
 </body>
 </html>

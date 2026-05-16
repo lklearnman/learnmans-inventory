@@ -18,9 +18,7 @@ function setIOMode(mode,el){
 
 // ===================== INVENTORY =====================
 let invViewMode='grid'; // 'grid' or 'list'
-const IS_MOBILE=()=>window.innerWidth<600;
 function toggleInventoryView(){
-  if(IS_MOBILE()){toast('手机屏幕窄,仅支持卡片视图');return;}
   invViewMode=invViewMode==='grid'?'list':'grid';
   const btn=document.getElementById('view-toggle');
   const grid=document.getElementById('product-grid');
@@ -33,6 +31,11 @@ function toggleInventoryView(){
   }
   renderInventory();
 }
+function quickScan(){
+  const navBtn=document.querySelector('.nav-tab[onclick*="\'scan\'"]')||document.querySelector('.nav-tab[onclick*="scan"]');
+  if(navBtn)switchTab('scan',navBtn);
+  if(typeof startCamera==='function')setTimeout(startCamera,80);
+}
 
 function getVisibleProducts(){
   const q=(document.getElementById('inv-search')?.value||'').toLowerCase();
@@ -43,7 +46,6 @@ function getVisibleProducts(){
   });
 }
 function renderInventory(){
-  if(IS_MOBILE())invViewMode='grid';
   const grid=document.getElementById('product-grid');
   const showOutMap={};
   DB.showItems.forEach(s=>{showOutMap[s.productId]=(showOutMap[s.productId]||0)+s.qty;});
@@ -59,7 +61,7 @@ function renderInventory(){
     grid.className='';
     grid.innerHTML=`<table class="inv-table">
       <thead><tr>
-        <th style="width:28px;"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()" title="全选/取消全选当前可见商品"></th>
+        <th style="width:28px;"></th>
         <th></th>
         <th>商品名称</th>
         <th>类别</th>
@@ -137,6 +139,10 @@ function updateLabelButtonCount(){
     else if(n===visible.length){cb.checked=true;cb.indeterminate=false;}
     else if(n>0){cb.checked=false;cb.indeterminate=true;}
     else{cb.checked=false;cb.indeterminate=false;}
+  }
+  const lbl=document.getElementById('select-all-label');
+  if(lbl){
+    lbl.textContent=visible.length?`全选 (${n}/${visible.length})`:'全选';
   }
 }
 function renderCatFilters(){

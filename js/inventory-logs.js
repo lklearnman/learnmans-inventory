@@ -132,15 +132,18 @@ function renderLogsTable(type,logs){
       ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
     </div>`;
   }
-  const pagerEl=document.getElementById(type+'-log-pager');
-  if(pagerEl){
-    pagerEl.innerHTML=st.totalPages>1?`
-      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
-      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
-      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
-      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
-    `:'';
-  }
+  const totalPages=st.totalPages||1;
+  const pagerHtml=`
+    <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
+    <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
+    <span style="padding:5px 10px;font-size:12px;color:var(--text-muted);">${st.page} / ${totalPages}</span>
+    <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=totalPages?'disabled':''}>下一页 ▶</button>
+    <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${totalPages})" ${st.page>=totalPages?'disabled':''}>末页 ⏭</button>
+  `;
+  ['', '-top'].forEach(suffix=>{
+    const el=document.getElementById(`${type}-log-pager${suffix}`);
+    if(el)el.innerHTML=pagerHtml;
+  });
   
   if(!logs.length){
     tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">${st.total===0?'暂无'+(type==='in'?'入库':'出库')+'记录':'本页无记录'}</td></tr>`;
