@@ -139,19 +139,14 @@ function updateLabelButtonCount(){
 }
 function renderCatFilters(){
   const cats=allCats();
-  const row=document.getElementById('cat-filters');
   const dl=document.getElementById('cat-list');
-  dl.innerHTML=cats.map(c=>`<option value="${c}">`).join('');
-  const existing=[...row.querySelectorAll('[data-cat]')].map(c=>c.dataset.cat);
-  cats.forEach(cat=>{
-    if(!existing.includes(cat)){
-      const btn=document.createElement('button');
-      btn.className='filter-chip';btn.dataset.cat=cat;btn.textContent=cat;
-      btn.onclick=function(){setCatFilter(cat,this);};row.appendChild(btn);
-    }
-  });
+  if(dl)dl.innerHTML=cats.map(c=>`<option value="${c}">`).join('');
+  const sel=document.getElementById('cat-filter-select');
+  if(!sel)return;
+  sel.innerHTML='<option value="all">全部</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  sel.value=catFilter;
 }
-function setCatFilter(cat,el){catFilter=cat;document.querySelectorAll('#cat-filters .filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderInventory();}
+function setCatFilter(cat){catFilter=cat;renderInventory();}
 function updateHeader(){
   document.getElementById('hdr-total').textContent=DB.products.length;
   document.getElementById('hdr-qty').textContent=DB.products.reduce((a,p)=>a+p.qty,0);
