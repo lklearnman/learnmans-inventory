@@ -125,20 +125,21 @@ function renderLogsTable(type,logs){
   
   const sumEl=document.getElementById(type+'-log-summary');
   if(sumEl){
-    sumEl.innerHTML=`
-      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;">
-        <span>📦 共 <b style="color:var(--gold);">${st.total}</b> 条</span>
-        <span>📄 第 <b>${st.page}</b> / <b>${st.totalPages}</b> 页</span>
-        <span>🔢 本页 <b>${totalQty}</b> 件</span>
-        ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
-      </div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;">
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
-        <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
-      </div>
-    `;
+    sumEl.innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;">
+      <span>📦 共 <b style="color:var(--gold);">${st.total}</b> 条</span>
+      <span>📄 第 <b>${st.page}</b> / <b>${st.totalPages}</b> 页</span>
+      <span>🔢 本页 <b>${totalQty}</b> 件</span>
+      ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
+    </div>`;
+  }
+  const pagerEl=document.getElementById(type+'-log-pager');
+  if(pagerEl){
+    pagerEl.innerHTML=st.totalPages>1?`
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',1)" ${st.page<=1?'disabled':''}>⏮ 首页</button>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page-1})" ${st.page<=1?'disabled':''}>◀ 上一页</button>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.page+1})" ${st.page>=st.totalPages?'disabled':''}>下一页 ▶</button>
+      <button class="btn btn-outline" style="padding:5px 10px;font-size:12px;" onclick="goLogPage('${type}',${st.totalPages})" ${st.page>=st.totalPages?'disabled':''}>末页 ⏭</button>
+    `:'';
   }
   
   if(!logs.length){
