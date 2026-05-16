@@ -332,7 +332,7 @@ async function _loadPhotos(p){
     p.photos=data?.photos||[];
   }catch{p.photos=[];}
 }
-function openDetail(id){
+async function openDetail(id){
   const p=getProduct(id);if(!p)return;
   _loadPhotos(p).then(()=>{
     const el=document.getElementById('detail-photos');
@@ -342,6 +342,14 @@ function openDetail(id){
   });
   detailId=id;
   document.getElementById('detail-title').textContent=p.name;
+  // 确保该商品的 logs 已加载(DB.logs 默认空,只在流水 tab 才填充)
+  try{
+    const{data}=await sb.from('logs').select('*').eq('product_id',id).order('ts',{ascending:false});
+    if(data){
+      const existIds=new Set(DB.logs.map(l=>l.id));
+      data.forEach(r=>{if(!existIds.has(r.id))DB.logs.push(dbToLog(r));});
+    }
+  }catch(e){}
   const showOut=DB.showItems.filter(s=>s.productId===id).reduce((a,s)=>a+s.qty,0);
   const avail=p.qty-showOut;
   const allLogs=DB.logs.filter(l=>l.productId===id);
