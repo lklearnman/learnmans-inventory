@@ -19,7 +19,9 @@ function setIOMode(mode,el){
 
 // ===================== INVENTORY =====================
 let invViewMode='grid'; // 'grid' or 'list'
+const IS_MOBILE=()=>window.innerWidth<600;
 function toggleInventoryView(){
+  if(IS_MOBILE()){toast('手机屏幕窄,仅支持卡片视图');return;}
   invViewMode=invViewMode==='grid'?'list':'grid';
   const btn=document.getElementById('view-toggle');
   const grid=document.getElementById('product-grid');
@@ -34,6 +36,9 @@ function toggleInventoryView(){
 }
 
 function renderInventory(){
+  if(IS_MOBILE())invViewMode='grid';
+  const viewBtn=document.getElementById('view-toggle');
+  if(viewBtn)viewBtn.style.display=IS_MOBILE()?'none':'';
   const q=document.getElementById('inv-search').value.toLowerCase();
   const grid=document.getElementById('product-grid');
   // 预计算showOut，避免每个商品都遍历showItems
@@ -57,7 +62,6 @@ function renderInventory(){
       <thead><tr>
         <th></th>
         <th>商品名称</th>
-        <th>SKU</th>
         <th>类别</th>
         <th>单价</th>
         <th>库存</th>
@@ -76,7 +80,6 @@ function renderInventory(){
         return`<tr class="clickable" onclick="openDetail('${p.id}')">
           <td>${thumb}</td>
           <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
-          <td style="color:var(--text-muted);font-size:11px;">${p.sku||'—'}</td>
           <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
           <td style="color:var(--gold);">${p.price?'¥'+p.price:'—'}</td>
           <td style="text-align:center;">${p.qty}</td>
