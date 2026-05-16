@@ -13,11 +13,9 @@ function renderLabelList(){
   if(!el)return;
   if(!list.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">没有匹配的商品</div>';updateLabelCount();return;}
   el.innerHTML=list.map(p=>`
-    <label style="display:block;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border);">
-      <input type="checkbox" ${selectedLabelIds.has(p.id)?'checked':''} onchange="toggleLabelSelect('${p.id}',this.checked)" style="vertical-align:middle;margin-right:8px;">
-      <span style="font-size:13px;">${p.name}</span>
-      ${p.sku?`<span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${p.sku}</span>`:''}
-      ${p.price?`<span style="font-size:11px;color:var(--gold);margin-left:8px;">¥${p.price}</span>`:''}
+    <label style="display:flex;align-items:flex-start;gap:8px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border);">
+      <input type="checkbox" ${selectedLabelIds.has(p.id)?'checked':''} onchange="toggleLabelSelect('${p.id}',this.checked)" style="margin-top:3px;flex-shrink:0;">
+      <span style="flex:1;min-width:0;font-size:13px;line-height:1.4;">${p.name}${p.sku?` <span style="font-size:11px;color:var(--text-muted);">${p.sku}</span>`:''}${p.price?` <span style="font-size:11px;color:var(--gold);">¥${p.price}</span>`:''}</span>
     </label>
   `).join('');
   updateLabelCount();
