@@ -1,54 +1,53 @@
 // ===================== LABELS / 价格标签 =====================
 let selectedLabelIds=new Set();
 
-// presetIds: 可选数组,预先勾选这些商品 ID;不传时空白进入,用户自己选
+// presetIds: 可选数组,若传入则覆盖当前选择(从详情页 🏷️ 打来,只打这一个)
+// 不传则使用库存页已勾选的 selectedLabelIds
 function openLabelModal(presetIds){
-  selectedLabelIds = new Set(Array.isArray(presetIds)?presetIds:[]);
-  const search=document.getElementById('label-search');if(search)search.value='';
+  if(Array.isArray(presetIds)&&presetIds.length){
+    selectedLabelIds=new Set(presetIds);
+  }
+  if(!selectedLabelIds.size){
+    toast('请先在库存页勾选要打印的商品');
+    return;
+  }
   renderLabelList();
   document.getElementById('modal-label').classList.add('open');
 }
 
-// 兼容旧调用,例如其他地方误调
+// 兼容旧调用
 function renderQRSelects(){}
 
 function renderLabelList(){
-  const q=(document.getElementById('label-search')?.value||'').toLowerCase();
-  const list=DB.products.filter(p=>!q||p.name.toLowerCase().includes(q)||(p.sku||'').toLowerCase().includes(q));
   const el=document.getElementById('label-product-list');
   if(!el)return;
-  if(!list.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">没有匹配的商品</div>';updateLabelCount();return;}
-  el.innerHTML=list.map(p=>`
-    <label style="display:flex;align-items:flex-start;gap:8px;padding:8px 4px;cursor:pointer;border-bottom:1px solid var(--border);">
-      <input type="checkbox" ${selectedLabelIds.has(p.id)?'checked':''} onchange="toggleLabelSelect('${p.id}',this.checked)" style="margin-top:3px;flex-shrink:0;">
+  const prods=DB.products.filter(p=>selectedLabelIds.has(p.id));
+  if(!prods.length){
+    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">未选择商品</div>';
+    updateLabelCount();return;
+  }
+  el.innerHTML=prods.map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);">
       <span style="flex:1;min-width:0;font-size:13px;line-height:1.4;">${p.name}${p.sku?` <span style="font-size:11px;color:var(--text-muted);">${p.sku}</span>`:''}${p.price?` <span style="font-size:11px;color:var(--gold);">¥${p.price}</span>`:''}</span>
-    </label>
+      <button class="btn btn-outline btn-sm" onclick="removeFromLabelSelection('${p.id}')" style="padding:2px 9px;font-size:13px;line-height:1;flex-shrink:0;" title="从打印列表移除">×</button>
+    </div>
   `).join('');
   updateLabelCount();
 }
 
-function toggleLabelSelect(pid,checked){
-  if(checked)selectedLabelIds.add(pid);else selectedLabelIds.delete(pid);
-  updateLabelCount();
-}
-
-function selectAllLabels(v){
-  const q=(document.getElementById('label-search')?.value||'').toLowerCase();
-  DB.products.forEach(p=>{
-    if(q&&!p.name.toLowerCase().includes(q)&&!(p.sku||'').toLowerCase().includes(q))return;
-    if(v)selectedLabelIds.add(p.id);else selectedLabelIds.delete(p.id);
-  });
+function removeFromLabelSelection(pid){
+  selectedLabelIds.delete(pid);
   renderLabelList();
-}
-
-function selectStockedLabels(){
-  selectedLabelIds=new Set(DB.products.filter(p=>p.qty>0).map(p=>p.id));
-  renderLabelList();
+  if(typeof renderInventory==='function')renderInventory();
+  if(!selectedLabelIds.size){
+    closeModal('modal-label');
+    toast('已清空打印列表');
+  }
 }
 
 function updateLabelCount(){
   const el=document.getElementById('label-selected-count');
-  if(el)el.textContent=`已选 ${selectedLabelIds.size} 个商品`;
+  if(el)el.textContent=selectedLabelIds.size?`(${selectedLabelIds.size} 件)`:'';
 }
 
 function getLabelConfig(){
