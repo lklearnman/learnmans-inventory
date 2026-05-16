@@ -85,7 +85,7 @@ function renderInventory(){
           <td>${thumb}</td>
           <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
           <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
-          <td style="color:var(--gold);">${fmtPrice(p.price)}</td>
+          <td style="color:var(--gold);">${fmtPrice(p.price,currentCurrency,p.currency||'CNY')}</td>
           <td style="text-align:center;">${p.qty}</td>
           <td style="text-align:center;color:var(--text-muted);">${showOut||'—'}</td>
           <td style="text-align:center;"><span class="qty-badge ${qc}">${avail}</span></td>
@@ -166,6 +166,7 @@ function openAddModal(prefill){
   editingId=null;pendingPhotos=[];
   document.getElementById('modal-add-title').textContent='新建商品档案';
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-currency').value='CNY';
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
   document.getElementById('modal-add').classList.add('open');
@@ -177,9 +178,13 @@ function openEditModal(id){
   document.getElementById('f-name').value=p.name||'';
   document.getElementById('f-sku').value=p.sku||'';
   document.getElementById('f-cat').value=p.cat||'';
-  const _logs=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
-  const _rec=_logs.length?Math.round(_logs.reduce((a,b)=>a+b,0)/_logs.length*3):0;
+  // 推荐价(JPY):平均(进价换算JPY)×3
+  const _jpy=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0)
+    .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY')).filter(v=>!isNaN(v));
+  const _rec=_jpy.length?Math.round(_jpy.reduce((a,b)=>a+b,0)/_jpy.length*3):0;
+  document.getElementById('f-currency').value=p.currency||(p.price?'CNY':'JPY');
   document.getElementById('f-price').value=p.price||(_rec?String(_rec):'');
+  if(!p.price&&_rec)document.getElementById('f-currency').value='JPY'; // 默认填入的推荐价是 JPY
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
@@ -202,7 +207,7 @@ function buildProduct(){
   if(!name){toast('请填写商品名称');return null;}
   const sku=document.getElementById('f-sku').value.trim()||('MZ-'+uid().toUpperCase().slice(0,6));
   const id=editingId||uid();
-  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),currency:document.getElementById('f-currency').value||'CNY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
 }
 async function saveProductOnly(){
   const btn=document.getElementById('btn-save-only');
@@ -259,6 +264,7 @@ function openStockInModal(preId){
   if(!sel.innerHTML){toast('请先建品');return;}
   document.getElementById('si-qty').value=1;
   document.getElementById('si-price').value='';
+  document.getElementById('si-currency').value='CNY';
   document.getElementById('si-note').value='';
   updateStockInInfo();
   document.getElementById('modal-stockin').classList.add('open');
@@ -266,7 +272,7 @@ function openStockInModal(preId){
 function updateStockInInfo(){
   const p=getProduct(document.getElementById('si-product').value);
   const el=document.getElementById('si-current-info');
-  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：¥'+p.price:''}`;}
+  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：'+fmtPriceRaw(p.price,p.currency||'CNY'):''}`;}
   else el.style.display='none';
 }
 async function doStockIn(){
@@ -274,11 +280,12 @@ async function doStockIn(){
   const qty=parseInt(document.getElementById('si-qty').value)||0;
   const note=document.getElementById('si-note').value.trim();
   const price=document.getElementById('si-price').value.trim();
+  const currency=document.getElementById('si-currency').value||'CNY';
   if(!pid){toast('请选择商品');return;}
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   p.qty+=qty;
-  const log={id:uid(),productId:pid,type:'in',qty,note,price,ts:Date.now()};
+  const log={id:uid(),productId:pid,type:'in',qty,note,price,currency,ts:Date.now()};
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   closeModal('modal-stockin');renderInventory();renderInLogs();
@@ -294,13 +301,15 @@ async function doOut(){
   const qty=parseInt(document.getElementById('out-qty').value)||0;
   const priceEl=document.getElementById('out-price');
   const price=priceEl?priceEl.value.trim():'';
+  const currencyEl=document.getElementById('out-currency');
+  const currency=currencyEl?(currencyEl.value||'JPY'):'JPY';
   const note=document.getElementById('out-note').value.trim();
   if(!pid){toast('请选择商品');return;}
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  const log={id:uid(),productId:pid,type:'out',qty,note,price:price||null,ts:Date.now()};
+  const log={id:uid(),productId:pid,type:'out',qty,note,price:price||null,currency,ts:Date.now()};
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   renderOutSelects();renderInventory();renderOutLogs();
@@ -356,8 +365,11 @@ async function openDetail(id){
   const logs=allLogs.slice(0,10);
   const lastIn=allLogs.find(l=>l.type==='in'&&l.price);
   const lastOut=allLogs.find(l=>l.type==='out'&&l.price);
-  const inPrices=allLogs.filter(l=>l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
-  const recPrice=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length*3):0;
+  // 推荐价格:所有 in 进价换算成 JPY → 平均 → ×3 (永远是 JPY)
+  const inJpyPrices=allLogs.filter(l=>l.type==='in'&&parseFloat(l.price)>0)
+    .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY'))
+    .filter(v=>!isNaN(v));
+  const recPriceJPY=inJpyPrices.length?Math.round(inJpyPrices.reduce((a,b)=>a+b,0)/inJpyPrices.length*3):0;
   const currencySelect=`<select class="currency-select" onchange="setCurrency(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;color:var(--text);font-size:11px;">${CURRENCIES.map(c=>`<option value="${c}" ${c===currentCurrency?'selected':''}>${c} ${CURRENCY_SYMBOL[c]}</option>`).join('')}</select>`;
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
@@ -370,9 +382,9 @@ async function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price)}</div></div>
-      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?fmtPrice(recPrice):'—'}</div></div>
-      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
+      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price,currentCurrency,p.currency||'CNY')}${p.currency&&p.currency!==currentCurrency?`<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">原 ${fmtPriceRaw(p.price,p.currency)}</span>`:''}</div></div>
+      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价(换算JPY) × 3">${recPriceJPY?'¥'+recPriceJPY.toLocaleString()+' <span style=\"font-size:10px;\">JPY</span>':'—'}</div></div>
+      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">${fmtPriceRaw(lastOut.price,lastOut.currency)} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
       <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>
       <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>

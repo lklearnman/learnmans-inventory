@@ -174,14 +174,16 @@ function logRow(l,type){
   const p=getProduct(l.productId);
   const price=l.price?parseFloat(l.price):null;
   const subtotal=price&&l.qty?price*l.qty:null;
+  const cur=l.currency||'CNY';
+  const sym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[cur])||'¥';
   const color=type==='in'?'var(--jade-light)':'var(--rose-light)';
   return`<tr class="clickable" onclick="openLogDetail('${l.id}')">
     <td class="td-mono" style="white-space:nowrap;">${fmt(l.ts)}</td>
     <td style="max-width:120px;">${p?p.name:'已删除'}</td>
     <td style="font-size:11px;"><span style="background:var(--surface2);padding:2px 6px;border-radius:8px;">${p?p.cat||'—':'—'}</span></td>
     <td style="font-family:'DM Mono',monospace;color:${color};text-align:center;">${type==='in'?'+':'−'}${l.qty}</td>
-    <td style="color:var(--gold);text-align:right;">${price?'¥'+price.toLocaleString():'—'}</td>
-    <td style="color:var(--gold);font-weight:600;text-align:right;">${subtotal?'¥'+subtotal.toLocaleString():'—'}</td>
+    <td style="color:var(--gold);text-align:right;white-space:nowrap;">${price?sym+price.toLocaleString()+' <span style="font-size:9px;color:var(--text-muted);">'+cur+'</span>':'—'}</td>
+    <td style="color:var(--gold);font-weight:600;text-align:right;">${subtotal?sym+subtotal.toLocaleString():'—'}</td>
     <td style="color:var(--text-muted);font-size:12px;">${l.note||'—'}</td>
   </tr>`;
 }
@@ -284,10 +286,14 @@ async function openLogDetail(lid){
   }
   const p=getProduct(l.productId);
   const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
-  const inPrices=DB.logs.filter(x=>x.productId===l.productId&&x.type==='in'&&parseFloat(x.price)>0).map(x=>parseFloat(x.price));
-  const avgIn=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length):0;
-  const dispPrice=l.price||(avgIn>0?String(avgIn):null);
-  const isFallback=!l.price&&avgIn>0;
+  // fallback:本条没填进价,用同商品所有 in logs 换算到 JPY 的平均
+  const inJpy=DB.logs.filter(x=>x.productId===l.productId&&x.type==='in'&&parseFloat(x.price)>0)
+    .map(x=>convertCurrency(x.price,x.currency||'CNY','JPY')).filter(v=>!isNaN(v));
+  const avgInJpy=inJpy.length?Math.round(inJpy.reduce((a,b)=>a+b,0)/inJpy.length):0;
+  const dispPrice=l.price||(avgInJpy>0?String(avgInJpy):null);
+  const dispCurrency=l.price?(l.currency||'CNY'):'JPY';
+  const dispSym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[dispCurrency])||'¥';
+  const isFallback=!l.price&&avgInJpy>0;
   const priceLabel=l.type==='in'?'进价':(l.type==='out'?'售价':'单价');
   const amtLabel=l.type==='in'?'进货金额':(l.type==='out'?'销售金额':'金额');
   const priceColor=isFallback?'var(--text-muted)':'var(--gold)';
@@ -300,8 +306,8 @@ async function openLogDetail(lid){
       <div class="detail-field"><label>商品名称</label><div class="val">${p?p.name:'（已删除）'}</div></div>
       <div class="detail-field"><label>SKU</label><div class="val mono">${p?p.sku||'—':'—'}</div></div>
       <div class="detail-field"><label>数量</label><div class="val" style="font-size:20px;font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</div></div>
-      ${dispPrice?`<div class="detail-field"><label>${priceLabel}</label><div class="val" style="color:${priceColor};">¥${dispPrice}</div></div>`:''}
-      ${dispPrice&&l.qty?`<div class="detail-field"><label>${amtLabel}</label><div class="val" style="color:${priceColor};font-weight:600;">¥${(parseFloat(dispPrice)*l.qty).toLocaleString()}</div></div>`:''}
+      ${dispPrice?`<div class="detail-field"><label>${priceLabel}</label><div class="val" style="color:${priceColor};">${dispSym}${dispPrice} <span style="font-size:10px;color:var(--text-muted);">${dispCurrency}</span></div></div>`:''}
+      ${dispPrice&&l.qty?`<div class="detail-field"><label>${amtLabel}</label><div class="val" style="color:${priceColor};font-weight:600;">${dispSym}${(parseFloat(dispPrice)*l.qty).toLocaleString()} <span style="font-size:10px;color:var(--text-muted);">${dispCurrency}</span></div></div>`:''}
       ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
       ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
     </div>

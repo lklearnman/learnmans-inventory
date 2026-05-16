@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-1430">
+<link rel="stylesheet" href="inventory.css?v=20260517-1500">
 </head>
 <body>
 
@@ -112,7 +112,14 @@
       <div class="form-grid">
         <div class="form-group"><label>选择商品</label><select id="out-product"></select></div>
         <div class="form-group"><label>出库数量</label><input type="number" id="out-qty" value="1" min="1"></div>
-        <div class="form-group"><label>本次售价（可选）</label><input type="number" id="out-price" placeholder="¥ 实际成交价" step="0.01"></div>
+        <div class="form-group"><label>本次售价（可选）</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="out-price" placeholder="实际成交价" step="0.01" style="flex:1;">
+            <select id="out-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:88px;">
+              <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
+            </select>
+          </div>
+        </div>
         <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="客户/原因（可选）"></div>
       </div>
       <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
@@ -243,7 +250,14 @@
       <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
       <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
-      <div class="form-group"><label>价格（售价）</label><input type="text" id="f-price" placeholder="¥ 留空将自动填入推荐价（平均进价×3）"></div>
+      <div class="form-group"><label>价格（售价）</label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)" style="flex:1;">
+          <select id="f-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:88px;">
+            <option value="CNY">CNY ¥</option><option value="JPY">JPY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
       <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
       <div class="form-group full"><label>备注描述</label><textarea id="f-note" placeholder="成色、特征等…"></textarea></div>
@@ -271,7 +285,14 @@
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
       <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
-      <div class="form-group"><label>本次进价</label><input type="text" id="si-price" placeholder="¥ 仅记录到流水，不影响商品定价"></div>
+      <div class="form-group"><label>本次进价</label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="si-price" placeholder="进货成本" style="flex:1;">
+          <select id="si-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:88px;">
+            <option value="CNY">CNY ¥</option><option value="JPY">JPY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="来源/批次（可选）"></div>
     </div>
     <div class="modal-actions">
@@ -350,11 +371,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-1430"></script>
-<script src="js/inventory-ui.js?v=20260517-1430"></script>
-<script src="js/inventory-logs.js?v=20260517-1430"></script>
-<script src="js/inventory-ai.js?v=20260517-1430"></script>
-<script src="js/inventory-labels.js?v=20260517-1430"></script>
+<script src="js/inventory-core.js?v=20260517-1500"></script>
+<script src="js/inventory-ui.js?v=20260517-1500"></script>
+<script src="js/inventory-logs.js?v=20260517-1500"></script>
+<script src="js/inventory-ai.js?v=20260517-1500"></script>
+<script src="js/inventory-labels.js?v=20260517-1500"></script>
 <script>loadAll();</script>
 </body>
 </html>

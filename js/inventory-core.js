@@ -94,7 +94,7 @@ async function loadAll(){
   setSyncStatus('syncing');
   try{
     const [p,s]=await Promise.all([
-      sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false}),
+      sb.from('products').select('id,name,sku,cat,price,currency,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false}),
       sb.from('show_items').select('*').order('ts',{ascending:false}).limit(200)
     ]);
     DB.products=(p.data||[]).map(dbToProduct);
@@ -110,10 +110,10 @@ async function loadAll(){
 }
 
 // DB field mapping
-function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
-function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
-function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,ts:new Date(l.ts).toISOString()};}
-function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,ts:new Date(r.ts).getTime()};}
+function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,currency:p.currency||'CNY',origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
+function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,currency:r.currency||'CNY',origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
+function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,currency:l.currency||'CNY',ts:new Date(l.ts).toISOString()};}
+function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,currency:r.currency||'CNY',ts:new Date(r.ts).getTime()};}
 function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
 function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
 
@@ -169,15 +169,35 @@ async function loadFxRates(){
     localStorage.setItem('mz_fx_v2',JSON.stringify({rates:fxRates,base:'CNY',ts:fxUpdatedAt}));
   }catch(e){/* 用默认 fxRates 兜底 */}
 }
-function fmtPrice(jpy,cur){
-  cur=cur||currentCurrency;
-  if(jpy===null||jpy===undefined||jpy==='')return '—';
-  const n=parseFloat(jpy);
-  if(isNaN(n))return '—';
-  const conv=n*(fxRates[cur]||1);
-  const sym=CURRENCY_SYMBOL[cur]||'';
-  if(cur==='JPY'||cur==='CNY')return sym+Math.round(conv).toLocaleString();
+// 把 value (单位 fromCur) 换算成 toCur 的数值
+function convertCurrency(value,fromCur,toCur){
+  const n=parseFloat(value);
+  if(isNaN(n))return NaN;
+  fromCur=fromCur||'CNY';toCur=toCur||'CNY';
+  if(fromCur===toCur)return n;
+  // fxRates 是 CNY 基准: 1 CNY = fxRates[X] X
+  const valInCNY=n/(fxRates[fromCur]||1);
+  return valInCNY*(fxRates[toCur]||1);
+}
+// 显示价格:value 是 fromCur 单位,要按 toCur 显示(默认按 currentCurrency)
+function fmtPrice(value,toCur,fromCur){
+  toCur=toCur||currentCurrency;
+  fromCur=fromCur||'CNY';
+  if(value===null||value===undefined||value==='')return '—';
+  const conv=convertCurrency(value,fromCur,toCur);
+  if(isNaN(conv))return '—';
+  const sym=CURRENCY_SYMBOL[toCur]||'';
+  if(toCur==='JPY'||toCur==='CNY')return sym+Math.round(conv).toLocaleString();
   return sym+conv.toFixed(2);
+}
+// 显示原币种价格(不换算),用于流水
+function fmtPriceRaw(value,cur){
+  if(value===null||value===undefined||value==='')return '—';
+  const n=parseFloat(value);
+  if(isNaN(n))return '—';
+  cur=cur||'CNY';
+  const sym=CURRENCY_SYMBOL[cur]||'';
+  return sym+n.toLocaleString();
 }
 function setCurrency(c){
   if(!CURRENCIES.includes(c))return;
