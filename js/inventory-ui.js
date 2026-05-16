@@ -58,6 +58,7 @@ function renderInventory(){
     grid.innerHTML=`<table class="inv-table">
       <thead><tr>
         <th></th>
+        <th></th>
         <th>商品名称</th>
         <th>类别</th>
         <th>单价</th>
@@ -74,7 +75,9 @@ function renderInventory(){
         const thumb=tn
           ?`<img class="thumb-sm zoomable" src="${tn}" loading="lazy" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()">`
           :`<div class="thumb-emoji">${catEmoji(p.cat)}</div>`;
-        return`<tr class="clickable" onclick="openDetail('${p.id}')">
+        const isSel=selectedLabelIds.has(p.id);
+        return`<tr class="clickable${isSel?' row-selected':''}" onclick="openDetail('${p.id}')">
+          <td onclick="event.stopPropagation()"><input type="checkbox" class="row-sel-cb" ${isSel?'checked':''} onchange="toggleCardSelect('${p.id}')"></td>
           <td>${thumb}</td>
           <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
           <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
@@ -100,10 +103,23 @@ function renderInventory(){
       const qc=avail<=0?' zero':avail<3?' low':'';
       const tn=p.thumbnail||(p.photos&&p.photos[0]);
       const thumb=tn?`<div class="product-thumb"><img src="${tn}" loading="lazy" class="zoomable" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
-      return`<div class="product-card" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
+      const isSel=selectedLabelIds.has(p.id);
+      return`<div class="product-card${isSel?' selected':''}" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="card-select" onclick="event.stopPropagation();toggleCardSelect('${p.id}')" title="选择打印标签">${isSel?'✓':''}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
     }).join('');
   }
-  updateHeader();renderCatFilters();
+  updateHeader();renderCatFilters();updateLabelButtonCount();
+}
+
+function toggleCardSelect(id){
+  if(selectedLabelIds.has(id))selectedLabelIds.delete(id);else selectedLabelIds.add(id);
+  renderInventory();
+}
+
+function updateLabelButtonCount(){
+  const btn=document.getElementById('label-print-btn');
+  if(!btn)return;
+  const n=selectedLabelIds.size;
+  btn.textContent=n>0?`🏷️ 标签打印 (${n})`:'🏷️ 标签打印';
 }
 function renderCatFilters(){
   const cats=allCats();
@@ -339,7 +355,7 @@ function openDetail(id){
 }
 function editFromDetail(){openEditModal(detailId);}
 function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
-function printLabelFromDetail(){closeModal('modal-detail');setTimeout(()=>openLabelModal([detailId]),150);}
+function printLabelFromDetail(){const id=detailId;closeModal('modal-detail');setTimeout(()=>openLabelModal([id]),150);}
 async function quickOutFromDetail(){
   const p=getProduct(detailId);if(!p)return;
   const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
