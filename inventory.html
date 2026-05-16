@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0157">
+<link rel="stylesheet" href="inventory.css?v=20260517-0208">
 </head>
 <body>
 
@@ -45,6 +45,7 @@
     <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()">
     <button class="btn btn-outline btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-gold btn-sm" onclick="openStockInModal(null)">⬆️ 入库</button>
+    <button class="btn btn-outline btn-sm" onclick="openLabelModal()" title="打印价格标签">🏷️ 标签</button>
     <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
   </div>
   <div class="filter-row" id="cat-filters">
@@ -202,48 +203,6 @@
     <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div><span id="ai-status-text">AI识别中…</span></div>
     <div id="ai-result" style="display:none;margin-top:14px;"></div>
   </div>
-  <div class="card">
-    <div class="card-title">🏷️ 价格标签生成（PDF批量打印）</div>
-    
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>标签尺寸</label>
-      <select id="label-size">
-        <option value="small">小标签 40×30mm（贴商品上，戒指牌）</option>
-        <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
-        <option value="large">价格牌 90×60mm（顾客看的明显牌）</option>
-        <option value="big">大价格牌 120×80mm（精品展示）</option>
-      </select>
-    </div>
-    
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>显示内容</label>
-      <div style="font-size:13px;line-height:2.1;">
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-name" checked style="vertical-align:middle;margin-right:5px;">商品名称</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-price" checked style="vertical-align:middle;margin-right:5px;">价格</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-origin" checked style="vertical-align:middle;margin-right:5px;">产地</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-sku" checked style="vertical-align:middle;margin-right:5px;">SKU条形码</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-qr" style="vertical-align:middle;margin-right:5px;">QR码（扫码查）</label>
-      </div>
-    </div>
-    
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>选择商品（可多选）</label>
-      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
-        <button class="btn btn-outline btn-sm" onclick="selectAllLabels(true)">全选</button>
-        <button class="btn btn-outline btn-sm" onclick="selectAllLabels(false)">全不选</button>
-        <button class="btn btn-outline btn-sm" onclick="selectStockedLabels()">只选有库存</button>
-        <input type="text" id="label-search" placeholder="搜索筛选" oninput="renderLabelList()" style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;">
-      </div>
-      <div id="label-product-list" style="max-height:240px;overflow-y:auto;background:var(--surface2);border-radius:var(--radius);padding:8px;"></div>
-    </div>
-    
-    <div id="label-selected-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;"></div>
-    
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-gold" onclick="previewLabels()">👁️ 预览</button>
-      <button class="btn btn-jade" onclick="exportLabelsPDF()">📄 导出PDF</button>
-    </div>
-  </div>
 </div>
 
 <!-- 统计 -->
@@ -328,7 +287,56 @@
       <button class="btn btn-outline btn-sm" onclick="editFromDetail()">✏️ 编辑</button>
       <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
       <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
+      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()">🏷️ 标签</button>
       <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);">🗑️</button>
+    </div>
+  </div>
+</div>
+
+<!-- 标签打印 MODAL -->
+<div class="modal-overlay" id="modal-label">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-title">🏷️ 打印标签</div>
+    <button class="modal-close" onclick="closeModal('modal-label')">✕</button>
+
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>标签尺寸</label>
+      <select id="label-size">
+        <option value="small">小标签 40×30mm（贴商品上，戒指牌）</option>
+        <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
+        <option value="large">价格牌 90×60mm（顾客看的明显牌）</option>
+        <option value="big">大价格牌 120×80mm（精品展示）</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>显示内容</label>
+      <div style="font-size:13px;line-height:2.1;">
+        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-name" checked style="margin-right:5px;">商品名称</label>
+        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-price" checked style="margin-right:5px;">价格</label>
+        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-origin" checked style="margin-right:5px;">产地</label>
+        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-sku" checked style="margin-right:5px;">SKU条形码</label>
+        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-qr" style="margin-right:5px;">QR码（扫码查）</label>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>选择商品（可多选）</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="selectAllLabels(true)">全选</button>
+        <button class="btn btn-outline btn-sm" onclick="selectAllLabels(false)">全不选</button>
+        <button class="btn btn-outline btn-sm" onclick="selectStockedLabels()">只选有库存</button>
+        <input type="text" id="label-search" placeholder="搜索筛选" oninput="renderLabelList()" style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;">
+      </div>
+      <div id="label-product-list" style="max-height:240px;overflow-y:auto;background:var(--surface2);border-radius:var(--radius);padding:8px;"></div>
+    </div>
+
+    <div id="label-selected-count" style="font-size:13px;color:var(--text-muted);margin-bottom:10px;"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-label')">取消</button>
+      <button class="btn btn-gold btn-sm" onclick="previewLabels()">👁️ 预览</button>
+      <button class="btn btn-jade btn-sm" onclick="exportLabelsPDF()">📄 导出PDF</button>
     </div>
   </div>
 </div>
@@ -346,11 +354,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0157"></script>
-<script src="js/inventory-ui.js?v=20260517-0157"></script>
-<script src="js/inventory-logs.js?v=20260517-0157"></script>
-<script src="js/inventory-ai.js?v=20260517-0157"></script>
-<script src="js/inventory-labels.js?v=20260517-0157"></script>
+<script src="js/inventory-core.js?v=20260517-0208"></script>
+<script src="js/inventory-ui.js?v=20260517-0208"></script>
+<script src="js/inventory-logs.js?v=20260517-0208"></script>
+<script src="js/inventory-ai.js?v=20260517-0208"></script>
+<script src="js/inventory-labels.js?v=20260517-0208"></script>
 <script>loadAll();</script>
 </body>
 </html>
