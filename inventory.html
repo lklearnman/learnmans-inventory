@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260518">
+<link rel="stylesheet" href="inventory.css?v=20260518-1">
 </head>
 <body>
 
@@ -44,9 +44,6 @@
   <div class="search-row" style="display:flex;align-items:center;gap:8px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
-    <select class="inv-currency-select" onchange="setInventoryCurrency(this.value)" title="库存显示货币" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">
-      <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
-    </select>
   </div>
   <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:center;margin-bottom:16px;">
     <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
@@ -55,12 +52,17 @@
       <option value="all">全部</option>
     </select>
   </div>
-  <div id="inv-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;">
+  <div id="inv-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;gap:8px;">
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
       <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
       <span id="select-all-label">全选</span>
     </label>
-    <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <select class="inv-currency-select" onchange="setInventoryCurrency(this.value)" title="库存显示货币" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">
+        <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
+      </select>
+      <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
+    </div>
   </div>
   <div id="product-grid" class="product-grid"></div>
 </div>
@@ -112,7 +114,7 @@
         <div class="form-group"><label>本次售价（可选）</label>
           <div style="display:flex;gap:6px;">
             <input type="number" id="out-price" placeholder="实际成交价" step="0.01" style="flex:1;">
-            <select id="out-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
+            <select id="out-currency" onchange="onPriceCurrencyChange('out-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
               <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
             </select>
           </div>
@@ -257,7 +259,7 @@
       <div class="form-group"><label>价格（售价）</label>
         <div style="display:flex;gap:6px;">
           <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)" style="flex:1;">
-          <select id="f-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
+          <select id="f-currency" onchange="onPriceCurrencyChange('f-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
             <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
           </select>
         </div>
@@ -292,7 +294,7 @@
       <div class="form-group"><label>本次进价</label>
         <div style="display:flex;gap:6px;">
           <input type="text" id="si-price" placeholder="进货成本" style="flex:1;">
-          <select id="si-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
+          <select id="si-currency" onchange="onPriceCurrencyChange('si-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
             <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
           </select>
         </div>
@@ -375,11 +377,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260518"></script>
-<script src="js/inventory-ui.js?v=20260518"></script>
-<script src="js/inventory-logs.js?v=20260518"></script>
-<script src="js/inventory-ai.js?v=20260518"></script>
-<script src="js/inventory-labels.js?v=20260518"></script>
+<script src="js/inventory-core.js?v=20260518-1"></script>
+<script src="js/inventory-ui.js?v=20260518-1"></script>
+<script src="js/inventory-logs.js?v=20260518-1"></script>
+<script src="js/inventory-ai.js?v=20260518-1"></script>
+<script src="js/inventory-labels.js?v=20260518-1"></script>
 <script>loadAll();</script>
 </body>
 </html>

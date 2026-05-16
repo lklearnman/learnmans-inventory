@@ -167,6 +167,7 @@ function openAddModal(prefill){
   document.getElementById('modal-add-title').textContent='新建商品档案';
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-currency').value='JPY';
+  initPriceCurrency('f-currency');
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
   document.getElementById('modal-add').classList.add('open');
@@ -182,8 +183,15 @@ function openEditModal(id){
   const _jpy=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0)
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY')).filter(v=>!isNaN(v));
   const _rec=_jpy.length?Math.round(_jpy.reduce((a,b)=>a+b,0)/_jpy.length*3):0;
-  document.getElementById('f-currency').value=p.currency||'JPY';
-  document.getElementById('f-price').value=p.price||(_rec?String(_rec):'');
+  // 如果商品有自己的售价就用原币种;留空时用推荐价(JPY 单位)
+  if(p.price){
+    document.getElementById('f-currency').value=p.currency||'JPY';
+    document.getElementById('f-price').value=p.price;
+  }else{
+    document.getElementById('f-currency').value='JPY';
+    document.getElementById('f-price').value=_rec?String(_rec):'';
+  }
+  initPriceCurrency('f-currency');
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
@@ -264,6 +272,7 @@ function openStockInModal(preId){
   document.getElementById('si-qty').value=1;
   document.getElementById('si-price').value='';
   document.getElementById('si-currency').value='JPY';
+  initPriceCurrency('si-currency');
   document.getElementById('si-note').value='';
   updateStockInInfo();
   document.getElementById('modal-stockin').classList.add('open');

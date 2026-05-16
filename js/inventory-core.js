@@ -239,7 +239,31 @@ function setDetailCurrency(c){
 }
 // 兼容:旧 onchange 调用
 function setCurrency(c){setInventoryCurrency(c);}
-// DOM 加载完后,把库存页 select 同步到 inventoryCurrency
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{const s=document.querySelector('.inv-currency-select');if(s)s.value=inventoryCurrency;});
-else {const s=document.querySelector('.inv-currency-select');if(s)s.value=inventoryCurrency;}
+// 切换 modal 内货币 select 时,把价格 input 的数字按汇率换算
+// 用法: <select onchange="onPriceCurrencyChange('f-price', this)">,初始化时先调 initPriceCurrency
+function onPriceCurrencyChange(priceInputId, selectEl){
+  const inp=document.getElementById(priceInputId);
+  if(!inp)return;
+  const oldCur=selectEl.dataset.cur||'JPY';
+  const newCur=selectEl.value;
+  selectEl.dataset.cur=newCur;
+  if(oldCur===newCur)return;
+  const v=parseFloat(inp.value);
+  if(isNaN(v)||v===0)return;
+  const conv=convertCurrency(v,oldCur,newCur);
+  if(isNaN(conv))return;
+  inp.value=(newCur==='JPY'||newCur==='CNY')?Math.round(conv):Number(conv.toFixed(2));
+}
+// 打开 modal 时调一次,把当前 select.value 记到 data-cur 作为"旧币种"基准
+function initPriceCurrency(selectId){
+  const sel=document.getElementById(selectId);
+  if(sel)sel.dataset.cur=sel.value;
+}
+// DOM 加载完后,把库存页 select 同步到 inventoryCurrency,并初始化所有 modal 内 currency select 的 data-cur
+function _initAllCurSelects(){
+  const s=document.querySelector('.inv-currency-select');if(s)s.value=inventoryCurrency;
+  ['f-currency','si-currency','out-currency'].forEach(initPriceCurrency);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_initAllCurSelects);
+else _initAllCurSelects();
 loadFxRates();
