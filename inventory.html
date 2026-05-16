@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0135">
+<link rel="stylesheet" href="inventory.css?v=20260517-0144">
 </head>
 <body>
 
@@ -217,12 +217,12 @@
     
     <div class="form-group" style="margin-bottom:12px;">
       <label>显示内容</label>
-      <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
-        <label style="cursor:pointer;"><input type="checkbox" id="lbl-name" checked style="vertical-align:middle;margin-right:6px;"> 商品名称</label>
-        <label style="cursor:pointer;"><input type="checkbox" id="lbl-price" checked style="vertical-align:middle;margin-right:6px;"> 价格</label>
-        <label style="cursor:pointer;"><input type="checkbox" id="lbl-origin" checked style="vertical-align:middle;margin-right:6px;"> 产地</label>
-        <label style="cursor:pointer;"><input type="checkbox" id="lbl-sku" checked style="vertical-align:middle;margin-right:6px;"> SKU条形码</label>
-        <label style="cursor:pointer;"><input type="checkbox" id="lbl-qr" style="vertical-align:middle;margin-right:6px;"> QR码（扫码查商品）</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;">
+        <label style="cursor:pointer;white-space:nowrap;"><input type="checkbox" id="lbl-name" checked style="vertical-align:middle;margin-right:5px;">商品名称</label>
+        <label style="cursor:pointer;white-space:nowrap;"><input type="checkbox" id="lbl-price" checked style="vertical-align:middle;margin-right:5px;">价格</label>
+        <label style="cursor:pointer;white-space:nowrap;"><input type="checkbox" id="lbl-origin" checked style="vertical-align:middle;margin-right:5px;">产地</label>
+        <label style="cursor:pointer;white-space:nowrap;"><input type="checkbox" id="lbl-sku" checked style="vertical-align:middle;margin-right:5px;">SKU条形码</label>
+        <label style="cursor:pointer;white-space:nowrap;"><input type="checkbox" id="lbl-qr" style="vertical-align:middle;margin-right:5px;">QR码</label>
       </div>
     </div>
     
@@ -346,11 +346,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0135"></script>
-<script src="js/inventory-ui.js?v=20260517-0135"></script>
-<script src="js/inventory-logs.js?v=20260517-0135"></script>
-<script src="js/inventory-ai.js?v=20260517-0135"></script>
-<script src="js/inventory-labels.js?v=20260517-0135"></script>
+<script src="js/inventory-core.js?v=20260517-0144"></script>
+<script src="js/inventory-ui.js?v=20260517-0144"></script>
+<script src="js/inventory-logs.js?v=20260517-0144"></script>
+<script src="js/inventory-ai.js?v=20260517-0144"></script>
+<script src="js/inventory-labels.js?v=20260517-0144"></script>
 <script>loadAll();</script>
 </body>
 </html>
