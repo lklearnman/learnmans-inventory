@@ -183,6 +183,11 @@ function setCurrency(c){
   if(!CURRENCIES.includes(c))return;
   currentCurrency=c;
   localStorage.setItem('mz_currency',c);
-  if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail').classList.contains('open'))openDetail(detailId);
+  document.querySelectorAll('.currency-select').forEach(s=>{if(s.value!==c)s.value=c;});
+  if(typeof renderInventory==='function')renderInventory();
+  if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail')&&document.getElementById('modal-detail').classList.contains('open'))openDetail(detailId);
 }
+// DOM 加载完后,把静态 currency-select 同步到当前货币
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.currency-select').forEach(s=>s.value=currentCurrency));
+else document.querySelectorAll('.currency-select').forEach(s=>s.value=currentCurrency);
 loadFxRates();

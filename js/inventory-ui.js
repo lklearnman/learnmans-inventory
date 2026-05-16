@@ -85,7 +85,7 @@ function renderInventory(){
           <td>${thumb}</td>
           <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
           <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
-          <td style="color:var(--gold);">${p.price?'¥'+p.price:'—'}</td>
+          <td style="color:var(--gold);">${fmtPrice(p.price)}</td>
           <td style="text-align:center;">${p.qty}</td>
           <td style="text-align:center;color:var(--text-muted);">${showOut||'—'}</td>
           <td style="text-align:center;"><span class="qty-badge ${qc}">${avail}</span></td>
@@ -358,11 +358,11 @@ async function openDetail(id){
   const lastOut=allLogs.find(l=>l.type==='out'&&l.price);
   const inPrices=allLogs.filter(l=>l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
   const recPrice=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length*3):0;
-  const currencyChips=CURRENCIES.map(c=>`<button class="btn btn-sm ${c===currentCurrency?'btn-gold':'btn-outline'}" style="padding:4px 10px;font-size:11px;" onclick="setCurrency('${c}')">${c}</button>`).join('');
+  const currencySelect=`<select class="currency-select" onchange="setCurrency(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;color:var(--text);font-size:11px;">${CURRENCIES.map(c=>`<option value="${c}" ${c===currentCurrency?'selected':''}>${c} ${CURRENCY_SYMBOL[c]}</option>`).join('')}</select>`;
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
-    <div style="display:flex;gap:4px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
-      <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">货币</span>${currencyChips}
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text-muted);">货币</span>${currencySelect}
       <span style="font-size:10px;color:var(--text-muted);margin-left:auto;">${fxUpdatedAt?'汇率 '+new Date(fxUpdatedAt).toLocaleDateString():'离线汇率'}</span>
     </div>
     <div class="detail-grid">
