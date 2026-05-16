@@ -182,8 +182,8 @@ function logRow(l,type){
     <td style="max-width:120px;">${p?p.name:'已删除'}</td>
     <td style="font-size:11px;"><span style="background:var(--surface2);padding:2px 6px;border-radius:8px;">${p?p.cat||'—':'—'}</span></td>
     <td style="font-family:'DM Mono',monospace;color:${color};text-align:center;">${type==='in'?'+':'−'}${l.qty}</td>
-    <td style="color:var(--gold);text-align:right;white-space:nowrap;">${price?sym+price.toLocaleString()+' <span style="font-size:9px;color:var(--text-muted);">'+cur+'</span>':'—'}</td>
-    <td style="color:var(--gold);font-weight:600;text-align:right;">${subtotal?sym+subtotal.toLocaleString():'—'}</td>
+    <td style="color:var(--gold);text-align:right;white-space:nowrap;">${price?sym+price.toLocaleString()+' <span style="font-size:11px;color:var(--text-dim);font-weight:500;">'+cur+'</span>':'—'}</td>
+    <td style="color:var(--gold);font-weight:600;text-align:right;white-space:nowrap;">${subtotal?sym+subtotal.toLocaleString()+' <span style="font-size:11px;color:var(--text-dim);font-weight:400;">'+cur+'</span>':'—'}</td>
     <td style="color:var(--text-muted);font-size:12px;">${l.note||'—'}</td>
   </tr>`;
 }
@@ -306,8 +306,8 @@ async function openLogDetail(lid){
       <div class="detail-field"><label>商品名称</label><div class="val">${p?p.name:'（已删除）'}</div></div>
       <div class="detail-field"><label>SKU</label><div class="val mono">${p?p.sku||'—':'—'}</div></div>
       <div class="detail-field"><label>数量</label><div class="val" style="font-size:20px;font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</div></div>
-      ${dispPrice?`<div class="detail-field"><label>${priceLabel}</label><div class="val" style="color:${priceColor};">${dispSym}${dispPrice} <span style="font-size:10px;color:var(--text-muted);">${dispCurrency}</span></div></div>`:''}
-      ${dispPrice&&l.qty?`<div class="detail-field"><label>${amtLabel}</label><div class="val" style="color:${priceColor};font-weight:600;">${dispSym}${(parseFloat(dispPrice)*l.qty).toLocaleString()} <span style="font-size:10px;color:var(--text-muted);">${dispCurrency}</span></div></div>`:''}
+      ${dispPrice?`<div class="detail-field"><label>${priceLabel}</label><div class="val" style="color:${priceColor};">${dispSym}${dispPrice} <span style="font-size:12px;color:var(--text-dim);font-weight:500;">${dispCurrency}</span></div></div>`:''}
+      ${dispPrice&&l.qty?`<div class="detail-field"><label>${amtLabel}</label><div class="val" style="color:${priceColor};font-weight:600;">${dispSym}${(parseFloat(dispPrice)*l.qty).toLocaleString()} <span style="font-size:12px;color:var(--text-dim);font-weight:500;">${dispCurrency}</span></div></div>`:''}
       ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
       ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
     </div>

@@ -404,16 +404,9 @@ async function openDetail(id){
 function editFromDetail(){openEditModal(detailId);}
 function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
 function printLabelFromDetail(){const id=detailId;closeModal('modal-detail');setTimeout(()=>openLabelModal([id]),150);}
-async function quickOutFromDetail(){
-  const p=getProduct(detailId);if(!p)return;
-  const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
-  if(!n||n<=0)return;
-  if(p.qty<n){toast('库存不足');return;}
-  p.qty-=n;
-  const log={id:uid(),productId:detailId,type:'out',qty:n,note:'详情页出库',ts:Date.now()};
-  DB.logs.unshift(log);
-  await Promise.all([upsertProduct(p),insertLog(log)]);
-  renderInventory();closeModal('modal-detail');toast(`✅ 出库 ${n} 件`);
+function quickOutFromDetail(){
+  closeModal('modal-detail');
+  setTimeout(()=>openStockOutModal(detailId),150);
 }
 async function deleteFromDetail(){
   if(!confirm('确认删除此商品及其所有记录？'))return;
