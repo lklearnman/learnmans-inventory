@@ -147,26 +147,26 @@ async function deleteShow(id){
 }
 
 // ===================== 货币 / 汇率 =====================
-// 数据库存的金额一律视为 JPY(日元),显示时按 currentCurrency 换算
+// 数据库存的金额一律视为 CNY(人民币),显示时按 currentCurrency 换算
 const CURRENCIES=['JPY','CNY','USD','EUR'];
 const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
 let currentCurrency=localStorage.getItem('mz_currency')||'JPY';
-// 默认 fallback 汇率(API 拉失败时用),会被 loadFxRates 覆盖
-let fxRates={JPY:1,CNY:0.048,USD:0.0064,EUR:0.0059};
+// 默认 fallback 汇率(CNY 基准, API 拉失败时用),会被 loadFxRates 覆盖
+let fxRates={CNY:1,JPY:20.5,USD:0.137,EUR:0.127};
 let fxUpdatedAt=0;
 async function loadFxRates(){
   try{
-    const cached=localStorage.getItem('mz_fx');
+    const cached=localStorage.getItem('mz_fx_v2');
     if(cached){
       const c=JSON.parse(cached);
-      if(c.rates&&Date.now()-c.ts<6*3600*1000){fxRates=c.rates;fxUpdatedAt=c.ts;return;}
+      if(c.rates&&c.base==='CNY'&&Date.now()-c.ts<6*3600*1000){fxRates=c.rates;fxUpdatedAt=c.ts;return;}
     }
-    const r=await fetch('https://api.frankfurter.app/latest?from=JPY&to=CNY,USD,EUR');
+    const r=await fetch('https://api.frankfurter.app/latest?from=CNY&to=JPY,USD,EUR');
     if(!r.ok)throw new Error('fx http '+r.status);
     const j=await r.json();
-    fxRates={JPY:1,CNY:j.rates.CNY,USD:j.rates.USD,EUR:j.rates.EUR};
+    fxRates={CNY:1,JPY:j.rates.JPY,USD:j.rates.USD,EUR:j.rates.EUR};
     fxUpdatedAt=Date.now();
-    localStorage.setItem('mz_fx',JSON.stringify({rates:fxRates,ts:fxUpdatedAt}));
+    localStorage.setItem('mz_fx_v2',JSON.stringify({rates:fxRates,base:'CNY',ts:fxUpdatedAt}));
   }catch(e){/* 用默认 fxRates 兜底 */}
 }
 function fmtPrice(jpy,cur){
