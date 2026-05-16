@@ -26,12 +26,17 @@ function renderLabelList(){
     el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">未选择商品</div>';
     updateLabelCount();return;
   }
-  el.innerHTML=prods.map(p=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);">
-      <span style="flex:1;min-width:0;font-size:13px;line-height:1.4;">${p.name}${p.sku?` <span style="font-size:11px;color:var(--text-muted);">${p.sku}</span>`:''}${p.price?` <span style="font-size:11px;color:var(--gold);">¥${p.price}</span>`:''}</span>
+  el.innerHTML=prods.map(p=>{
+    const tn=p.thumbnail||(p.photos&&p.photos[0]);
+    const thumb=tn
+      ?`<img src="${tn}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
+      :`<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface2);border-radius:4px;flex-shrink:0;">${typeof catEmoji==='function'?catEmoji(p.cat):'💎'}</div>`;
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);">
+      ${thumb}
+      <span style="flex:1;min-width:0;font-size:13px;line-height:1.4;">${p.name}</span>
       <button class="btn btn-outline btn-sm" onclick="removeFromLabelSelection('${p.id}')" style="padding:2px 9px;font-size:13px;line-height:1;flex-shrink:0;" title="从打印列表移除">×</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   updateLabelCount();
 }
 
