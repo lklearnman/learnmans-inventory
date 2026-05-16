@@ -36,8 +36,6 @@ function toggleInventoryView(){
 
 function renderInventory(){
   if(IS_MOBILE())invViewMode='grid';
-  const viewBtn=document.getElementById('view-toggle');
-  if(viewBtn)viewBtn.style.display=IS_MOBILE()?'none':'';
   const q=document.getElementById('inv-search').value.toLowerCase();
   const grid=document.getElementById('product-grid');
   // 预计算showOut，避免每个商品都遍历showItems
