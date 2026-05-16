@@ -93,11 +93,15 @@ async function generateThumbnail(b64){
 async function loadAll(){
   setSyncStatus('syncing');
   try{
-    const [p,s]=await Promise.all([
-      sb.from('products').select('id,name,sku,cat,price,currency,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false}),
-      sb.from('show_items').select('*').order('ts',{ascending:false}).limit(200)
-    ]);
-    DB.products=(p.data||[]).map(dbToProduct);
+    // 优先尝试带 currency 字段,失败回退(支持没跑 ALTER 的情况)
+    let pResp=await sb.from('products').select('id,name,sku,cat,price,currency,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false});
+    if(pResp.error){
+      console.warn('[currency] products 列不存在,回退到旧 schema',pResp.error.message);
+      pResp=await sb.from('products').select('id,name,sku,cat,price,origin,country,note,qty,thumbnail,created_at').order('created_at',{ascending:false});
+      toast('⚠️ 数据库未加 currency 列,请尽快跑 SQL',6000);
+    }
+    const s=await sb.from('show_items').select('*').order('ts',{ascending:false}).limit(200);
+    DB.products=(pResp.data||[]).map(dbToProduct);
     DB.showItems=(s.data||[]).map(dbToShow);
     DB.logs=[];
     setSyncStatus('ok');
@@ -127,7 +131,13 @@ async function upsertProduct(p){
   // 如果没有照片，清空缩略图
   if(!p.photos||!p.photos.length){p.thumbnail=null;}
   setSyncStatus('syncing');
-  const{error}=await sb.from('products').upsert(productToDb(p));
+  const payload=productToDb(p);
+  let{error}=await sb.from('products').upsert(payload);
+  if(error&&/currency/i.test(error.message||'')){
+    // currency 列不存在,去掉重试
+    delete payload.currency;
+    ({error}=await sb.from('products').upsert(payload));
+  }
   if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');}
   else setSyncStatus('ok');
 }
@@ -137,7 +147,13 @@ async function deleteProduct(id){
   await sb.from('products').delete().eq('id',id);
 }
 async function insertLog(l){
-  await sb.from('logs').insert(logToDb(l));
+  const payload=logToDb(l);
+  let{error}=await sb.from('logs').insert(payload);
+  if(error&&/currency/i.test(error.message||'')){
+    delete payload.currency;
+    ({error}=await sb.from('logs').insert(payload));
+  }
+  if(error)toast('❌ 流水保存失败：'+error.message);
 }
 async function upsertShow(s){
   await sb.from('show_items').upsert(showToDb(s));
@@ -150,7 +166,11 @@ async function deleteShow(id){
 // 数据库存的金额一律视为 CNY(人民币),显示时按 currentCurrency 换算
 const CURRENCIES=['JPY','CNY','USD','EUR'];
 const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
-let currentCurrency=localStorage.getItem('mz_currency')||'JPY';
+// 库存页 / 详情页 各自独立的显示货币(都默认 JPY)
+let inventoryCurrency=localStorage.getItem('mz_inv_currency')||'JPY';
+let detailCurrency=localStorage.getItem('mz_detail_currency')||'JPY';
+// currentCurrency 保留作为兜底(用户没指定 toCur 时用)
+let currentCurrency='JPY';
 // 默认 fallback 汇率(CNY 基准, API 拉失败时用),会被 loadFxRates 覆盖
 let fxRates={CNY:1,JPY:20.5,USD:0.137,EUR:0.127};
 let fxUpdatedAt=0;
