@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-1730">
+<link rel="stylesheet" href="inventory.css?v=20260517-1800">
 </head>
 <body>
 
@@ -44,7 +44,7 @@
   <div class="search-row" style="display:flex;align-items:center;gap:8px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
-    <select class="currency-select" onchange="setCurrency(this.value)" title="显示货币" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">
+    <select class="inv-currency-select" onchange="setInventoryCurrency(this.value)" title="库存显示货币" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">
       <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
     </select>
   </div>
@@ -368,11 +368,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-1730"></script>
-<script src="js/inventory-ui.js?v=20260517-1730"></script>
-<script src="js/inventory-logs.js?v=20260517-1730"></script>
-<script src="js/inventory-ai.js?v=20260517-1730"></script>
-<script src="js/inventory-labels.js?v=20260517-1730"></script>
+<script src="js/inventory-core.js?v=20260517-1800"></script>
+<script src="js/inventory-ui.js?v=20260517-1800"></script>
+<script src="js/inventory-logs.js?v=20260517-1800"></script>
+<script src="js/inventory-ai.js?v=20260517-1800"></script>
+<script src="js/inventory-labels.js?v=20260517-1800"></script>
 <script>loadAll();</script>
 </body>
 </html>

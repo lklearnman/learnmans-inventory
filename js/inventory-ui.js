@@ -85,7 +85,7 @@ function renderInventory(){
           <td>${thumb}</td>
           <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
           <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
-          <td style="color:var(--gold);">${fmtPrice(p.price,currentCurrency,p.currency||'CNY')}</td>
+          <td style="color:var(--gold);">${fmtPrice(p.price,inventoryCurrency,p.currency||'CNY')}</td>
           <td style="text-align:center;">${p.qty}</td>
           <td style="text-align:center;color:var(--text-muted);">${showOut||'—'}</td>
           <td style="text-align:center;"><span class="qty-badge ${qc}">${avail}</span></td>
@@ -369,7 +369,7 @@ async function openDetail(id){
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY'))
     .filter(v=>!isNaN(v));
   const recPriceJPY=inJpyPrices.length?Math.round(inJpyPrices.reduce((a,b)=>a+b,0)/inJpyPrices.length*3):0;
-  const currencySelect=`<select class="currency-select" onchange="setCurrency(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 8px;color:var(--text);font-size:11px;">${CURRENCIES.map(c=>`<option value="${c}" ${c===currentCurrency?'selected':''}>${c} ${CURRENCY_SYMBOL[c]}</option>`).join('')}</select>`;
+  const currencySelect=`<select onchange="setDetailCurrency(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">${CURRENCIES.map(c=>`<option value="${c}" ${c===detailCurrency?'selected':''}>${c}</option>`).join('')}</select>`;
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
@@ -381,8 +381,8 @@ async function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price,currentCurrency,p.currency||'CNY')}${p.currency&&p.currency!==currentCurrency?`<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">原 ${fmtPriceRaw(p.price,p.currency)}</span>`:''}</div></div>
-      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价(换算JPY) × 3">${recPriceJPY?'¥'+recPriceJPY.toLocaleString()+' <span style=\"font-size:10px;\">JPY</span>':'—'}</div></div>
+      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price,detailCurrency,p.currency||'CNY')}${p.currency&&p.currency!==detailCurrency?`<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">原 ${fmtPriceRaw(p.price,p.currency)}</span>`:''}</div></div>
+      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价(换算JPY) × 3, 按当前货币显示">${recPriceJPY?fmtPrice(recPriceJPY,detailCurrency,'JPY'):'—'}</div></div>
       ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">${fmtPriceRaw(lastOut.price,lastOut.currency)} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
       <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>

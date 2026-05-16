@@ -219,15 +219,25 @@ function fmtPriceRaw(value,cur){
   const sym=CURRENCY_SYMBOL[cur]||'';
   return sym+n.toLocaleString();
 }
-function setCurrency(c){
+// 库存页货币(只影响库存列表)
+function setInventoryCurrency(c){
   if(!CURRENCIES.includes(c))return;
-  currentCurrency=c;
-  localStorage.setItem('mz_currency',c);
-  document.querySelectorAll('.currency-select').forEach(s=>{if(s.value!==c)s.value=c;});
+  inventoryCurrency=c;
+  localStorage.setItem('mz_inv_currency',c);
+  const sel=document.querySelector('.inv-currency-select');
+  if(sel&&sel.value!==c)sel.value=c;
   if(typeof renderInventory==='function')renderInventory();
+}
+// 详情页货币(只影响详情)
+function setDetailCurrency(c){
+  if(!CURRENCIES.includes(c))return;
+  detailCurrency=c;
+  localStorage.setItem('mz_detail_currency',c);
   if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail')&&document.getElementById('modal-detail').classList.contains('open'))openDetail(detailId);
 }
-// DOM 加载完后,把静态 currency-select 同步到当前货币
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.currency-select').forEach(s=>s.value=currentCurrency));
-else document.querySelectorAll('.currency-select').forEach(s=>s.value=currentCurrency);
+// 兼容:旧 onchange 调用
+function setCurrency(c){setInventoryCurrency(c);}
+// DOM 加载完后,把库存页 select 同步到 inventoryCurrency
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{const s=document.querySelector('.inv-currency-select');if(s)s.value=inventoryCurrency;});
+else {const s=document.querySelector('.inv-currency-select');if(s)s.value=inventoryCurrency;}
 loadFxRates();
