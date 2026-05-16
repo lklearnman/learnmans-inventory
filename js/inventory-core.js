@@ -145,3 +145,44 @@ async function upsertShow(s){
 async function deleteShow(id){
   await sb.from('show_items').delete().eq('id',id);
 }
+
+// ===================== 货币 / 汇率 =====================
+// 数据库存的金额一律视为 JPY(日元),显示时按 currentCurrency 换算
+const CURRENCIES=['JPY','CNY','USD','EUR'];
+const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
+let currentCurrency=localStorage.getItem('mz_currency')||'JPY';
+// 默认 fallback 汇率(API 拉失败时用),会被 loadFxRates 覆盖
+let fxRates={JPY:1,CNY:0.048,USD:0.0064,EUR:0.0059};
+let fxUpdatedAt=0;
+async function loadFxRates(){
+  try{
+    const cached=localStorage.getItem('mz_fx');
+    if(cached){
+      const c=JSON.parse(cached);
+      if(c.rates&&Date.now()-c.ts<6*3600*1000){fxRates=c.rates;fxUpdatedAt=c.ts;return;}
+    }
+    const r=await fetch('https://api.frankfurter.app/latest?from=JPY&to=CNY,USD,EUR');
+    if(!r.ok)throw new Error('fx http '+r.status);
+    const j=await r.json();
+    fxRates={JPY:1,CNY:j.rates.CNY,USD:j.rates.USD,EUR:j.rates.EUR};
+    fxUpdatedAt=Date.now();
+    localStorage.setItem('mz_fx',JSON.stringify({rates:fxRates,ts:fxUpdatedAt}));
+  }catch(e){/* 用默认 fxRates 兜底 */}
+}
+function fmtPrice(jpy,cur){
+  cur=cur||currentCurrency;
+  if(jpy===null||jpy===undefined||jpy==='')return '—';
+  const n=parseFloat(jpy);
+  if(isNaN(n))return '—';
+  const conv=n*(fxRates[cur]||1);
+  const sym=CURRENCY_SYMBOL[cur]||'';
+  if(cur==='JPY'||cur==='CNY')return sym+Math.round(conv).toLocaleString();
+  return sym+conv.toFixed(2);
+}
+function setCurrency(c){
+  if(!CURRENCIES.includes(c))return;
+  currentCurrency=c;
+  localStorage.setItem('mz_currency',c);
+  if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail').classList.contains('open'))openDetail(detailId);
+}
+loadFxRates();

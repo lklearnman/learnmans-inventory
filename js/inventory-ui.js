@@ -358,16 +358,21 @@ async function openDetail(id){
   const lastOut=allLogs.find(l=>l.type==='out'&&l.price);
   const inPrices=allLogs.filter(l=>l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
   const recPrice=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length*3):0;
+  const currencyChips=CURRENCIES.map(c=>`<button class="btn btn-sm ${c===currentCurrency?'btn-gold':'btn-outline'}" style="padding:4px 10px;font-size:11px;" onclick="setCurrency('${c}')">${c}</button>`).join('');
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
+    <div style="display:flex;gap:4px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">货币</span>${currencyChips}
+      <span style="font-size:10px;color:var(--text-muted);margin-left:auto;">${fxUpdatedAt?'汇率 '+new Date(fxUpdatedAt).toLocaleDateString():'离线汇率'}</span>
+    </div>
     <div class="detail-grid">
       <div class="detail-field"><label>SKU</label><div class="val mono">${p.sku||'—'}</div></div>
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      <div class="detail-field"><label>价格（售价）</label><div class="val">${p.price?'¥'+p.price:'—'}</div></div>
-      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?'¥'+recPrice.toLocaleString():'—'}</div></div>
-      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
+      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price)}</div></div>
+      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?fmtPrice(recPrice):'—'}</div></div>
+      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">${fmtPrice(lastOut.price)} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
       <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>
       <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>
