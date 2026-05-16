@@ -284,6 +284,11 @@ async function openLogDetail(lid){
   }
   const p=getProduct(l.productId);
   const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
+  const dispPrice=l.price||(p&&p.price)||null;
+  const isFallback=!l.price&&p&&p.price;
+  const priceLabel=isFallback?'商品标价（参考）':(l.type==='in'?'本次进价':l.type==='out'?'本次售价':'单价');
+  const amtLabel=isFallback?'估算金额':(l.type==='in'?'进货金额':l.type==='out'?'销售金额':'金额');
+  const priceColor=isFallback?'var(--text-muted)':'var(--gold)';
   document.getElementById('log-detail-body').innerHTML=`
     <div style="margin-bottom:14px;">
       <span class="badge badge-${l.type}">${typeLabel[l.type]||l.type}</span>
@@ -293,8 +298,8 @@ async function openLogDetail(lid){
       <div class="detail-field"><label>商品名称</label><div class="val">${p?p.name:'（已删除）'}</div></div>
       <div class="detail-field"><label>SKU</label><div class="val mono">${p?p.sku||'—':'—'}</div></div>
       <div class="detail-field"><label>数量</label><div class="val" style="font-size:20px;font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</div></div>
-      ${l.price?`<div class="detail-field"><label>${l.type==='in'?'本次进价':l.type==='out'?'本次售价':'单价'}</label><div class="val" style="color:var(--gold);">¥${l.price}</div></div>`:''}
-      ${l.price&&l.qty?`<div class="detail-field"><label>${l.type==='in'?'进货金额':l.type==='out'?'销售金额':'金额'}</label><div class="val" style="color:var(--gold);font-weight:600;">¥${(parseFloat(l.price)*l.qty).toLocaleString()}</div></div>`:''}
+      ${dispPrice?`<div class="detail-field"><label>${priceLabel}</label><div class="val" style="color:${priceColor};">¥${dispPrice}</div></div>`:''}
+      ${dispPrice&&l.qty?`<div class="detail-field"><label>${amtLabel}</label><div class="val" style="color:${priceColor};font-weight:600;">¥${(parseFloat(dispPrice)*l.qty).toLocaleString()}</div></div>`:''}
       ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
       ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
     </div>
