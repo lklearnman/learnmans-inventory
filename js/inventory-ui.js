@@ -372,7 +372,7 @@ async function openDetail(id){
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
       <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price)}</div></div>
       <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?fmtPrice(recPrice):'—'}</div></div>
-      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">${fmtPrice(lastOut.price)} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
+      ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
       <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>
       <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>
