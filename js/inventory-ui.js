@@ -263,7 +263,7 @@ function openStockInModal(preId){
   if(!sel.innerHTML){toast('请先建品');return;}
   document.getElementById('si-qty').value=1;
   document.getElementById('si-price').value='';
-  document.getElementById('si-currency').value='CNY';
+  document.getElementById('si-currency').value='JPY';
   document.getElementById('si-note').value='';
   updateStockInInfo();
   document.getElementById('modal-stockin').classList.add('open');
