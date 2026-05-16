@@ -34,18 +34,20 @@ function toggleInventoryView(){
   renderInventory();
 }
 
-function renderInventory(){
-  if(IS_MOBILE())invViewMode='grid';
-  const q=document.getElementById('inv-search').value.toLowerCase();
-  const grid=document.getElementById('product-grid');
-  // 预计算showOut，避免每个商品都遍历showItems
-  const showOutMap={};
-  DB.showItems.forEach(s=>{showOutMap[s.productId]=(showOutMap[s.productId]||0)+s.qty;});
-  let prods=DB.products.filter(p=>{
+function getVisibleProducts(){
+  const q=(document.getElementById('inv-search')?.value||'').toLowerCase();
+  return DB.products.filter(p=>{
     if(catFilter!=='all'&&(p.cat||'未分类')!==catFilter)return false;
     if(q&&!p.name.toLowerCase().includes(q)&&!(p.sku||'').toLowerCase().includes(q)&&!(p.cat||'').toLowerCase().includes(q))return false;
     return true;
   });
+}
+function renderInventory(){
+  if(IS_MOBILE())invViewMode='grid';
+  const grid=document.getElementById('product-grid');
+  const showOutMap={};
+  DB.showItems.forEach(s=>{showOutMap[s.productId]=(showOutMap[s.productId]||0)+s.qty;});
+  let prods=getVisibleProducts();
   if(!prods.length){
     grid.className='product-grid';
     grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div style="font-size:40px;margin-bottom:12px;">${DB.products.length?'🔍':'💎'}</div><div style="margin-bottom:14px;font-size:14px;">${DB.products.length?'没有符合的商品':'还没有商品，开始建品吧'}</div><button class="btn btn-gold" onclick="openAddModal()">＋ 建品</button></div>`;
@@ -115,11 +117,25 @@ function toggleCardSelect(id){
   renderInventory();
 }
 
+function toggleSelectAllVisible(){
+  const visible=getVisibleProducts();
+  if(!visible.length){toast('当前没有可选的商品');return;}
+  const allSelected=visible.every(p=>selectedLabelIds.has(p.id));
+  if(allSelected)visible.forEach(p=>selectedLabelIds.delete(p.id));
+  else visible.forEach(p=>selectedLabelIds.add(p.id));
+  renderInventory();
+}
 function updateLabelButtonCount(){
   const btn=document.getElementById('label-print-btn');
   if(!btn)return;
-  const n=selectedLabelIds.size;
+  const visible=getVisibleProducts();
+  const n=visible.filter(p=>selectedLabelIds.has(p.id)).length;
   btn.textContent=n>0?`🏷️ 标签打印 (${n})`:'🏷️ 标签打印';
+  const all=document.getElementById('select-all-btn');
+  if(all){
+    const isAll=visible.length>0&&n===visible.length;
+    all.textContent=isAll?'☐ 取消全选':'☑ 全选';
+  }
 }
 function renderCatFilters(){
   const cats=allCats();
@@ -334,11 +350,11 @@ function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      ${p.price?`<div class="detail-field"><label>参考售价</label><div class="val">¥${p.price}</div></div>`:''}
+      <div class="detail-field"><label>参考售价</label><div class="val">${p.price?'¥'+p.price:'—'}</div></div>
       ${lastIn?`<div class="detail-field"><label>最近一次进价</label><div class="val" style="color:var(--jade-light);">¥${lastIn.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastIn.ts)})</span></div></div>`:''}
       ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
-      ${p.origin?`<div class="detail-field"><label>产地/规格</label><div class="val">${p.origin}</div></div>`:''}
-      ${p.country?`<div class="detail-field"><label>原产国</label><div class="val">${p.country}</div></div>`:''}
+      <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
+      <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>
       <div class="detail-field"><label>建档时间</label><div class="val mono" style="font-size:11px;">${fmtFull(p.createdAt)}</div></div>
     </div>
     ${p.note?`<div style="font-size:13px;color:var(--text-dim);padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:14px;">${p.note}</div>`:''}
