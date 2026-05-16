@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0413">
+<link rel="stylesheet" href="inventory.css?v=20260517-0421">
 </head>
 <body>
 
@@ -42,13 +42,12 @@
 <!-- 库存 -->
 <div class="section active" id="sec-inventory">
   <div class="search-row">
-    <button class="btn btn-outline btn-sm" id="select-all-btn" onclick="toggleSelectAllVisible()" title="勾选/取消勾选当前可见商品">☑ 全选</button>
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
   </div>
   <div class="search-row">
     <input class="search-input" id="inv-search" placeholder="搜索名称、SKU、类别…" oninput="renderInventory()" style="flex:1;min-width:120px;">
-    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;flex-shrink:0;">
+    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;flex-shrink:0;max-width:140px;">
       <option value="all">全部</option>
     </select>
     <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图" style="flex-shrink:0;">⊞</button>
@@ -348,11 +347,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0413"></script>
-<script src="js/inventory-ui.js?v=20260517-0413"></script>
-<script src="js/inventory-logs.js?v=20260517-0413"></script>
-<script src="js/inventory-ai.js?v=20260517-0413"></script>
-<script src="js/inventory-labels.js?v=20260517-0413"></script>
+<script src="js/inventory-core.js?v=20260517-0421"></script>
+<script src="js/inventory-ui.js?v=20260517-0421"></script>
+<script src="js/inventory-logs.js?v=20260517-0421"></script>
+<script src="js/inventory-ai.js?v=20260517-0421"></script>
+<script src="js/inventory-labels.js?v=20260517-0421"></script>
 <script>loadAll();</script>
 </body>
 </html>
