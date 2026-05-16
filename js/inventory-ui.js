@@ -6,7 +6,6 @@ function switchTab(name,el){
   el.classList.add('active');
   if(name==='inout'){renderOutSelects();renderInLogs();renderOutLogs();}
   if(name==='show'){renderShowSelects();renderShowList();}
-  if(name==='scan'){renderQRSelects();}
   if(name==='stats'){renderStats();}
   if(name!=='scan')stopCamera();
 }
@@ -342,6 +341,7 @@ function openDetail(id){
 }
 function editFromDetail(){openEditModal(detailId);}
 function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
+function printLabelFromDetail(){closeModal('modal-detail');setTimeout(()=>openLabelModal([detailId]),150);}
 async function quickOutFromDetail(){
   const p=getProduct(detailId);if(!p)return;
   const n=parseInt(prompt(`出库数量（当前库存 ${p.qty} 件）：`,1));
