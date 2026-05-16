@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0612">
+<link rel="stylesheet" href="inventory.css?v=20260517-0732">
 </head>
 <body>
 
@@ -265,7 +265,7 @@
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
       <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
-      <div class="form-group"><label>本次进价（可选）</label><input type="text" id="si-price" placeholder="¥ 仅记录到流水，不影响商品定价"></div>
+      <div class="form-group"><label>本次进价</label><input type="text" id="si-price" placeholder="¥ 仅记录到流水，不影响商品定价"></div>
       <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="来源/批次（可选）"></div>
     </div>
     <div class="modal-actions">
@@ -344,11 +344,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0612"></script>
-<script src="js/inventory-ui.js?v=20260517-0612"></script>
-<script src="js/inventory-logs.js?v=20260517-0612"></script>
-<script src="js/inventory-ai.js?v=20260517-0612"></script>
-<script src="js/inventory-labels.js?v=20260517-0612"></script>
+<script src="js/inventory-core.js?v=20260517-0732"></script>
+<script src="js/inventory-ui.js?v=20260517-0732"></script>
+<script src="js/inventory-logs.js?v=20260517-0732"></script>
+<script src="js/inventory-ai.js?v=20260517-0732"></script>
+<script src="js/inventory-labels.js?v=20260517-0732"></script>
 <script>loadAll();</script>
 </body>
 </html>

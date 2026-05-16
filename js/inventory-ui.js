@@ -253,7 +253,7 @@ async function saveProductAndStockIn(){
 // ===================== 入库 =====================
 function openStockInModal(preId){
   const sel=document.getElementById('si-product');
-  sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name}（${p.sku||'—'}）现库存:${p.qty}</option>`).join('');
+  sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name} 现库存:${p.qty}</option>`).join('');
   if(!sel.innerHTML){toast('请先建品');return;}
   document.getElementById('si-qty').value=1;
   document.getElementById('si-price').value='';
@@ -346,6 +346,8 @@ function openDetail(id){
   const logs=allLogs.slice(0,10);
   const lastIn=allLogs.find(l=>l.type==='in'&&l.price);
   const lastOut=allLogs.find(l=>l.type==='out'&&l.price);
+  const inPrices=allLogs.filter(l=>l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
+  const recPrice=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length*3):0;
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
     <div class="detail-grid">
@@ -354,6 +356,7 @@ function openDetail(id){
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
       <div class="detail-field"><label>参考售价</label><div class="val">${p.price?'¥'+p.price:'—'}</div></div>
+      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?'¥'+recPrice.toLocaleString():'—'}</div></div>
       ${lastIn?`<div class="detail-field"><label>最近一次进价</label><div class="val" style="color:var(--jade-light);">¥${lastIn.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastIn.ts)})</span></div></div>`:''}
       ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
