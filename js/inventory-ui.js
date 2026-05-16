@@ -59,7 +59,7 @@ function renderInventory(){
     grid.className='';
     grid.innerHTML=`<table class="inv-table">
       <thead><tr>
-        <th></th>
+        <th style="width:28px;"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()" title="全选/取消全选当前可见商品"></th>
         <th></th>
         <th>商品名称</th>
         <th>类别</th>
@@ -131,10 +131,12 @@ function updateLabelButtonCount(){
   const visible=getVisibleProducts();
   const n=visible.filter(p=>selectedLabelIds.has(p.id)).length;
   btn.textContent=n>0?`🏷️ 标签打印 (${n})`:'🏷️ 标签打印';
-  const all=document.getElementById('select-all-btn');
-  if(all){
-    const isAll=visible.length>0&&n===visible.length;
-    all.textContent=isAll?'☐ 取消全选':'☑ 全选';
+  const cb=document.getElementById('select-all-cb');
+  if(cb){
+    if(visible.length===0){cb.checked=false;cb.indeterminate=false;}
+    else if(n===visible.length){cb.checked=true;cb.indeterminate=false;}
+    else if(n>0){cb.checked=false;cb.indeterminate=true;}
+    else{cb.checked=false;cb.indeterminate=false;}
   }
 }
 function renderCatFilters(){
