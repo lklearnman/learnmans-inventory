@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-1800">
+<link rel="stylesheet" href="inventory.css?v=20260518">
 </head>
 <body>
 
@@ -215,7 +215,14 @@
 
 <!-- 统计 -->
 <div class="section" id="sec-stats">
+  <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <select id="stats-cat" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;"><option value="">全部类别</option></select>
+    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="stats-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;"></div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="stats-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;"></div>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">货币跟随库存页:<b id="stats-cur-label" style="color:var(--gold);">JPY</b></span>
+  </div>
   <div class="stats-row" id="stats-row"></div>
+  <div class="stats-row" id="stats-money-row"></div>
   <div class="card">
     <div class="card-title">📊 各类别库存</div>
     <div class="table-wrap"><table><thead><tr><th>类别</th><th>种类数</th><th>总件数</th></tr></thead><tbody id="cat-stats-tbody"></tbody></table></div>
@@ -368,11 +375,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-1800"></script>
-<script src="js/inventory-ui.js?v=20260517-1800"></script>
-<script src="js/inventory-logs.js?v=20260517-1800"></script>
-<script src="js/inventory-ai.js?v=20260517-1800"></script>
-<script src="js/inventory-labels.js?v=20260517-1800"></script>
+<script src="js/inventory-core.js?v=20260518"></script>
+<script src="js/inventory-ui.js?v=20260518"></script>
+<script src="js/inventory-logs.js?v=20260518"></script>
+<script src="js/inventory-ai.js?v=20260518"></script>
+<script src="js/inventory-labels.js?v=20260518"></script>
 <script>loadAll();</script>
 </body>
 </html>

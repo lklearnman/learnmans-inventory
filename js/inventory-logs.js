@@ -315,20 +315,94 @@ async function openLogDetail(lid){
   document.getElementById('modal-log').classList.add('open');
 }
 // ===================== STATS =====================
+function _updateStatsCatOptions(){
+  const sel=document.getElementById('stats-cat');
+  if(!sel)return;
+  const cats=[...new Set(DB.products.map(p=>p.cat||'').filter(Boolean))].sort();
+  const sig=cats.join('|');
+  if(sel.dataset.sig===sig)return;
+  sel.dataset.sig=sig;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">全部类别</option>'+cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+}
 function renderStats(){
-  const t=DB.products.length,q=DB.products.reduce((a,p)=>a+p.qty,0);
-  const so=DB.showItems.reduce((a,s)=>a+s.qty,0),lw=DB.products.filter(p=>p.qty<3).length;
-  const inc=DB.logs.filter(l=>l.type==='in').length;
+  // ===== 读筛选 + 当前币种 =====
+  const cat=document.getElementById('stats-cat')?.value||'';
+  const fromEl=document.getElementById('stats-date-from');
+  const toEl=document.getElementById('stats-date-to');
+  const from=fromEl&&fromEl.value?new Date(fromEl.value).getTime():null;
+  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').getTime():null;
+  const cur=inventoryCurrency;
+  const sym=CURRENCY_SYMBOL[cur]||'';
+  const lbl=document.getElementById('stats-cur-label');if(lbl)lbl.textContent=cur;
+  _updateStatsCatOptions();
+
+  // ===== 商品筛选(类别)=====
+  const prods=DB.products.filter(p=>!cat||(p.cat||'')===cat);
+  const pids=new Set(prods.map(p=>p.id));
+  const pidOf=l=>l.product_id||l.productId;
+
+  // ===== 数量卡 =====
+  const t=prods.length,q=prods.reduce((a,p)=>a+p.qty,0);
+  const so=DB.showItems.filter(s=>pids.has(pidOf(s))).reduce((a,s)=>a+s.qty,0);
+  const lw=prods.filter(p=>p.qty<3).length;
+  const inc=DB.logs.filter(l=>l.type==='in'&&pids.has(pidOf(l))).length;
   document.getElementById('stats-row').innerHTML=`
     <div class="stat-card"><span class="stat-num">${t}</span><div class="stat-label">商品种类</div></div>
     <div class="stat-card"><span class="stat-num">${q}</span><div class="stat-label">总库存件数</div></div>
     <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${so}</span><div class="stat-label">展会带出中</div></div>
     <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${lw}</span><div class="stat-label">库存不足</div></div>
     <div class="stat-card"><span class="stat-num" style="color:var(--jade-light)">${inc}</span><div class="stat-label">累计入库次数</div></div>`;
+
+  // ===== 金额卡(全换算到 cur)=====
+  // 库存价值(售价)
+  let stockSell=0;
+  prods.forEach(p=>{
+    const v=convertCurrency(p.price,p.currency||'CNY',cur);
+    if(!isNaN(v))stockSell+=v*p.qty;
+  });
+  // 库存成本(每商品最近一次 in log 的进价)
+  let stockCost=0;
+  prods.forEach(p=>{
+    const ins=DB.logs.filter(l=>l.type==='in'&&pidOf(l)===p.id&&parseFloat(l.price)>0);
+    if(!ins.length)return;
+    ins.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+    const last=ins[0];
+    const v=convertCurrency(last.price,last.currency||'CNY',cur);
+    if(!isNaN(v))stockCost+=v*p.qty;
+  });
+  // 累计销售额
+  let totalSales=0;
+  DB.logs.filter(l=>l.type==='out').forEach(l=>{
+    if(!parseFloat(l.price))return;
+    const ts=new Date(l.ts).getTime();
+    if(from&&ts<from)return;if(to&&ts>to)return;
+    if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
+    const v=convertCurrency(l.price,l.currency||'CNY',cur);
+    if(!isNaN(v))totalSales+=v*l.qty;
+  });
+  // 累计进货额
+  let totalPurchase=0;
+  DB.logs.filter(l=>l.type==='in').forEach(l=>{
+    if(!parseFloat(l.price))return;
+    const ts=new Date(l.ts).getTime();
+    if(from&&ts<from)return;if(to&&ts>to)return;
+    if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
+    const v=convertCurrency(l.price,l.currency||'CNY',cur);
+    if(!isNaN(v))totalPurchase+=v*l.qty;
+  });
+  const _fmt=v=>(cur==='JPY'||cur==='CNY')?sym+Math.round(v).toLocaleString():sym+v.toFixed(2);
+  document.getElementById('stats-money-row').innerHTML=`
+    <div class="stat-card"><span class="stat-num" style="color:var(--gold);font-size:18px;">${_fmt(stockSell)}</span><div class="stat-label">库存价值(售价)</div></div>
+    <div class="stat-card"><span class="stat-num" style="font-size:18px;">${_fmt(stockCost)}</span><div class="stat-label">库存成本(最近进价)</div></div>
+    <div class="stat-card"><span class="stat-num" style="color:var(--jade-light);font-size:18px;">${_fmt(totalSales)}</span><div class="stat-label">累计销售额</div></div>
+    <div class="stat-card"><span class="stat-num" style="color:var(--rose);font-size:18px;">${_fmt(totalPurchase)}</span><div class="stat-label">累计进货额</div></div>`;
+
+  // ===== 各类别表 / 低库存 =====
   const cm={};
-  DB.products.forEach(p=>{const c=p.cat||'未分类';if(!cm[c])cm[c]={count:0,qty:0};cm[c].count++;cm[c].qty+=p.qty;});
+  prods.forEach(p=>{const c=p.cat||'未分类';if(!cm[c])cm[c]={count:0,qty:0};cm[c].count++;cm[c].qty+=p.qty;});
   document.getElementById('cat-stats-tbody').innerHTML=Object.entries(cm).sort((a,b)=>b[1].qty-a[1].qty).map(([c,v])=>`<tr><td>${c}</td><td class="td-mono">${v.count}</td><td class="td-mono">${v.qty}</td></tr>`).join('');
-  const low=DB.products.filter(p=>p.qty<3);
+  const low=prods.filter(p=>p.qty<3);
   document.getElementById('low-stock-list').innerHTML=low.length?low.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail('${p.id}')">
     <span style="font-size:13px;">${p.name}</span>
     <span style="color:${p.qty<=0?'var(--text-muted)':'var(--rose)'};font-family:'DM Mono',monospace;">${p.qty}件</span>

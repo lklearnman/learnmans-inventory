@@ -227,6 +227,8 @@ function setInventoryCurrency(c){
   const sel=document.querySelector('.inv-currency-select');
   if(sel&&sel.value!==c)sel.value=c;
   if(typeof renderInventory==='function')renderInventory();
+  // 统计页若已渲染过,跟着切币种
+  if(document.getElementById('stats-money-row')&&typeof renderStats==='function')renderStats();
 }
 // 详情页货币(只影响详情)
 function setDetailCurrency(c){
