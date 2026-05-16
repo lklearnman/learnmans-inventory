@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260517-0801">
+<link rel="stylesheet" href="inventory.css?v=20260517-0830">
 </head>
 <body>
 
@@ -237,7 +237,7 @@
       <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
       <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
-      <div class="form-group"><label>单价（可选）</label><input type="text" id="f-price" placeholder="¥"></div>
+      <div class="form-group"><label>价格（售价）</label><input type="text" id="f-price" placeholder="¥ 留空将自动填入推荐价（平均进价×3）"></div>
       <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
       <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
       <div class="form-group full"><label>备注描述</label><textarea id="f-note" placeholder="成色、特征等…"></textarea></div>
@@ -344,11 +344,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260517-0801"></script>
-<script src="js/inventory-ui.js?v=20260517-0801"></script>
-<script src="js/inventory-logs.js?v=20260517-0801"></script>
-<script src="js/inventory-ai.js?v=20260517-0801"></script>
-<script src="js/inventory-labels.js?v=20260517-0801"></script>
+<script src="js/inventory-core.js?v=20260517-0830"></script>
+<script src="js/inventory-ui.js?v=20260517-0830"></script>
+<script src="js/inventory-logs.js?v=20260517-0830"></script>
+<script src="js/inventory-ai.js?v=20260517-0830"></script>
+<script src="js/inventory-labels.js?v=20260517-0830"></script>
 <script>loadAll();</script>
 </body>
 </html>

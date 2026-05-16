@@ -19,6 +19,7 @@ function setSyncStatus(status){
 // ===================== ZOOM PREVIEW =====================
 let _zoomTimer=null;
 async function showZoomPreview(el,pid){
+  if(matchMedia('(hover:none)').matches)return;
   clearTimeout(_zoomTimer);
   _zoomTimer=setTimeout(async()=>{
     const preview=document.getElementById('zoom-preview');

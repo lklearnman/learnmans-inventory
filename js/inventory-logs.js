@@ -284,10 +284,12 @@ async function openLogDetail(lid){
   }
   const p=getProduct(l.productId);
   const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
-  const dispPrice=l.price||(p&&p.price)||null;
-  const isFallback=!l.price&&p&&p.price;
-  const priceLabel=isFallback?'商品标价（参考）':(l.type==='in'?'本次进价':l.type==='out'?'本次售价':'单价');
-  const amtLabel=isFallback?'估算金额':(l.type==='in'?'进货金额':l.type==='out'?'销售金额':'金额');
+  const inPrices=DB.logs.filter(x=>x.productId===l.productId&&x.type==='in'&&parseFloat(x.price)>0).map(x=>parseFloat(x.price));
+  const avgIn=inPrices.length?Math.round(inPrices.reduce((a,b)=>a+b,0)/inPrices.length):0;
+  const dispPrice=l.price||(avgIn>0?String(avgIn):null);
+  const isFallback=!l.price&&avgIn>0;
+  const priceLabel=l.type==='in'?'进价':(l.type==='out'?'售价':'单价');
+  const amtLabel=l.type==='in'?'进货金额':(l.type==='out'?'销售金额':'金额');
   const priceColor=isFallback?'var(--text-muted)':'var(--gold)';
   document.getElementById('log-detail-body').innerHTML=`
     <div style="margin-bottom:14px;">

@@ -177,7 +177,9 @@ function openEditModal(id){
   document.getElementById('f-name').value=p.name||'';
   document.getElementById('f-sku').value=p.sku||'';
   document.getElementById('f-cat').value=p.cat||'';
-  document.getElementById('f-price').value=p.price||'';
+  const _logs=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0).map(l=>parseFloat(l.price));
+  const _rec=_logs.length?Math.round(_logs.reduce((a,b)=>a+b,0)/_logs.length*3):0;
+  document.getElementById('f-price').value=p.price||(_rec?String(_rec):'');
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
@@ -264,7 +266,7 @@ function openStockInModal(preId){
 function updateStockInInfo(){
   const p=getProduct(document.getElementById('si-product').value);
   const el=document.getElementById('si-current-info');
-  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 参考售价：'+p.price:''}`;}
+  if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：¥'+p.price:''}`;}
   else el.style.display='none';
 }
 async function doStockIn(){
@@ -355,7 +357,7 @@ function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      <div class="detail-field"><label>参考售价</label><div class="val">${p.price?'¥'+p.price:'—'}</div></div>
+      <div class="detail-field"><label>价格（售价）</label><div class="val">${p.price?'¥'+p.price:'—'}</div></div>
       <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价 × 3">${recPrice?'¥'+recPrice.toLocaleString():'—'}</div></div>
       ${lastIn?`<div class="detail-field"><label>最近一次进价</label><div class="val" style="color:var(--jade-light);">¥${lastIn.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastIn.ts)})</span></div></div>`:''}
       ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">¥${lastOut.price} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
