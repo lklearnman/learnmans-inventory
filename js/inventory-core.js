@@ -116,8 +116,8 @@ async function loadAll(){
 // DB field mapping
 function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,currency:p.currency||'JPY',origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
 function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,currency:r.currency||'CNY',origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
-function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,currency:l.currency||'JPY',ts:new Date(l.ts).toISOString()};}
-function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,currency:r.currency||'CNY',ts:new Date(r.ts).getTime()};}
+function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,currency:l.currency||'JPY',counterparty:l.counterparty||null,ts:new Date(l.ts).toISOString()};}
+function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,currency:r.currency||'CNY',counterparty:r.counterparty||null,ts:new Date(r.ts).getTime()};}
 function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
 function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
 
@@ -149,8 +149,11 @@ async function deleteProduct(id){
 async function insertLog(l){
   const payload=logToDb(l);
   let{error}=await sb.from('logs').insert(payload);
-  if(error&&/currency/i.test(error.message||'')){
-    delete payload.currency;
+  // 兜底:列不存在时丢掉该字段重试(支持 currency / counterparty 还没跑 ALTER 的情况)
+  while(error&&/(currency|counterparty)/i.test(error.message||'')){
+    const m=(error.message||'').match(/(currency|counterparty)/i);
+    if(!m)break;
+    delete payload[m[1].toLowerCase()];
     ({error}=await sb.from('logs').insert(payload));
   }
   if(error)toast('❌ 流水保存失败：'+error.message);
@@ -166,9 +169,8 @@ async function deleteShow(id){
 // 数据库存的金额一律视为 CNY(人民币),显示时按 currentCurrency 换算
 const CURRENCIES=['JPY','CNY','USD','EUR'];
 const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
-// 库存页 / 详情页 各自独立的显示货币(都默认 JPY)
+// 库存/详情/统计共用的显示货币(详情页跟随库存页,不再独立)
 let inventoryCurrency=localStorage.getItem('mz_inv_currency')||'JPY';
-let detailCurrency=localStorage.getItem('mz_detail_currency')||'JPY';
 // currentCurrency 保留作为兜底(用户没指定 toCur 时用)
 let currentCurrency='JPY';
 // 默认 fallback 汇率(CNY 基准, API 拉失败时用),会被 loadFxRates 覆盖
@@ -229,13 +231,8 @@ function setInventoryCurrency(c){
   if(typeof renderInventory==='function')renderInventory();
   // 统计页若已渲染过,跟着切币种
   if(document.getElementById('stats-money-row')&&typeof renderStats==='function')renderStats();
-}
-// 详情页货币(只影响详情)
-function setDetailCurrency(c){
-  if(!CURRENCIES.includes(c))return;
-  detailCurrency=c;
-  localStorage.setItem('mz_detail_currency',c);
-  if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail')&&document.getElementById('modal-detail').classList.contains('open'))openDetail(detailId);
+  // 详情 modal 若打开,跟着切币种
+  if(typeof detailId!=='undefined'&&detailId&&document.getElementById('modal-detail')?.classList.contains('open'))openDetail(detailId);
 }
 // 兼容:旧 onchange 调用
 function setCurrency(c){setInventoryCurrency(c);}

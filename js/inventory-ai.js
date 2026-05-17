@@ -337,6 +337,9 @@ function closeAIResult(){document.getElementById('ai-result').style.display='non
 function openStockOutModal(preId){
   switchTab('inout',document.querySelector('[onclick*="inout"]'));
   setTimeout(()=>{
+    // 切到出库 segment(原来漏了,导致跳进去看到的是入库画面)
+    const outBtn=document.querySelector('.mode-btn[onclick*="\'out\'"]');
+    if(outBtn)setIOMode('out',outBtn);
     renderOutSelects();
     if(preId){const sel=document.getElementById('out-product');if(sel)sel.value=preId;}
     document.getElementById('out-qty').focus();
