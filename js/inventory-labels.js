@@ -100,11 +100,11 @@ function getLabelConfig(){
 }
 
 function makeBarcodeDataURL(text,cfg){
-  // 高分辨率渲染:每条 4px,canvas 拉大让 PDF 缩放后依然清晰(>300dpi 等效)
-  // margin:10 — CODE128 标准要求两侧 quiet zone(空白区),没它扫描器找不到 start/stop pattern
+  // 高分辨率渲染:每条 8px,height ×32,canvas 像素 ×4,PDF 缩放后打印锐利(>600dpi 等效)
+  // margin:10 — CODE128 标准要求两侧 quiet zone,没它扫描器找不到 start/stop pattern
   try{
     const c=document.createElement('canvas');
-    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:4,height:cfg.bcH*16,margin:10});
+    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:8,height:cfg.bcH*32,margin:10});
     return c.toDataURL('image/png');
   }catch(e){return null;}
 }
