@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260528e">
+<link rel="stylesheet" href="inventory.css?v=20260528f">
 </head>
 <body>
 
@@ -354,7 +354,7 @@
         <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-sku" checked style="margin-right:5px;">SKU条形码</label>
         <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-qr" style="margin-right:5px;">QR码（扫码查）</label>
       </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4;">💡 小标签(40×30)印 1D 条形码模块 &lt;0.3mm,扫描器和 AI 都识别不了,小标签强制用 QR 码。选小标签时会自动切换</p>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4;">💡 小标签扫不到时再勾 QR 码 — 现在 barcode 渲染到 ~2400px 源分辨率(600 DPI 打印机的 2-3× 超采样),小尺寸 1D 应该也能扫</p>
     </div>
 
     <div class="form-group" style="margin-bottom:12px;">
@@ -395,11 +395,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260528e"></script>
-<script src="js/inventory-ui.js?v=20260528e"></script>
-<script src="js/inventory-logs.js?v=20260528e"></script>
-<script src="js/inventory-ai.js?v=20260528e"></script>
-<script src="js/inventory-labels.js?v=20260528e"></script>
+<script src="js/inventory-core.js?v=20260528f"></script>
+<script src="js/inventory-ui.js?v=20260528f"></script>
+<script src="js/inventory-logs.js?v=20260528f"></script>
+<script src="js/inventory-ai.js?v=20260528f"></script>
+<script src="js/inventory-labels.js?v=20260528f"></script>
 <script>loadAll();</script>
 </body>
 </html>

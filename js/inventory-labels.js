@@ -79,22 +79,10 @@ function updateLabelCount(){
   if(el)el.textContent=selectedLabelIds.size?`(${selectedLabelIds.size} 件)`:'';
 }
 
-// 小标签(40×30)1D barcode 模块 <0.3mm,打印机+扫描器+AI 都识别不了
-// 选小标签时强制切到 QR,中/大标签恢复 1D + 不强制 QR
+// label-size 切换钩子。早期版本会自动 sku→qr,后来用户指出根因是
+// barcode 分辨率不够(不是物理限制),撤回 auto-flip。函数保留以备后续微调。
 function onLabelSizeChange(size){
-  const sku=document.getElementById('lbl-sku');
-  const qr=document.getElementById('lbl-qr');
-  if(!sku||!qr)return;
-  if(size==='small'){
-    if(sku.checked||!qr.checked){
-      sku.checked=false;
-      qr.checked=true;
-      if(typeof toast==='function')toast('小标签自动切到 QR — 1D 条形码这尺寸扫不到');
-    }
-  }else{
-    // 切回中/大标签时,如果 SKU 是关的就帮用户打开(回到默认状态)
-    if(!sku.checked&&qr.checked){sku.checked=true;}
-  }
+  // 当前是 no-op。如果将来想做提示/默认勾选改动,在这里加。
 }
 
 function getLabelConfig(){
@@ -118,11 +106,13 @@ function getLabelConfig(){
 }
 
 function makeBarcodeDataURL(text,cfg){
-  // 高分辨率渲染:每条 8px,height ×32,canvas 像素 ×4,PDF 缩放后打印锐利(>600dpi 等效)
+  // 高分辨率渲染:每条 24px,height ×80,canvas 像素 ×24 vs 早期版本
+  // 36mm 宽 barcode 在 600 DPI 打印机出 850 dots,源 PNG ~2400+px → 2-3× 超采样,
+  // 印 1D 模块 0.25mm 时仍能保持边缘锐利不模糊
   // margin:10 — CODE128 标准要求两侧 quiet zone,没它扫描器找不到 start/stop pattern
   try{
     const c=document.createElement('canvas');
-    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:8,height:cfg.bcH*32,margin:10});
+    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:24,height:cfg.bcH*80,margin:10});
     return c.toDataURL('image/png');
   }catch(e){return null;}
 }
