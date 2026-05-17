@@ -5,7 +5,7 @@
 ## 架构
 
 - **前端**: `inventory.html`(22KB 框架)+ `inventory.css` + `js/inventory-*.js`(5 个模块)
-  - 2026-05-17 从单页 109KB 拆分,缓存版本号 `?v=20260524`(改 JS/CSS 后在 HTML 里同步 bump)
+  - 2026-05-17 从单页 109KB 拆分,缓存版本号 `?v=20260526`(改 JS/CSS 后在 HTML 里同步 bump)
   - GitHub Pages: `lklearnman/learnmans-inventory` → `https://lklearnman.github.io/learnmans-inventory/inventory.html`
   - Vercel 镜像: `https://learnmans-inventory.vercel.app/inventory.html`
 - **后端**: Vercel Functions
@@ -75,4 +75,4 @@
 - `.claude/launch.json` — npx http-server 配置,Claude Preview 本地调试用
 - `矿珍库_交接文档v4.md` — 完整历史,遇到不熟的功能先查这里
 
-**改 JS/CSS 后**: 在 `inventory.html` 里把所有 `?v=20260524` 改成新日期(Cmd-F 全文替换),触发缓存刷新。
+**改 JS/CSS 后**: 在 `inventory.html` 里把所有 `?v=20260526` 改成新日期(Cmd-F 全文替换),触发缓存刷新。
