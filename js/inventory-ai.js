@@ -50,7 +50,10 @@ async function startCamera(){
         useBD=true;
       }catch(_){useBD=false;}
     }
-    const tag=useBD?'[A:BarcodeDetector]':'[B:ZXing 0.19.1]';
+    // 阶段 C: 多库并行(jsQR + Quagga2 + ZXing),BD 优先时不需要
+    const hasJsQR=typeof jsQR==='function';
+    const hasQuagga=typeof Quagga!=='undefined';
+    const tag=useBD?'[A:BarcodeDetector]':`[C:Multi ZXing${hasJsQR?'+jsQR':''}${hasQuagga?'+Quagga':''}]`;
 
     // ZXing reader 仅在 fallback 路径需要
     if(!useBD&&!zxingReader){
@@ -69,6 +72,7 @@ async function startCamera(){
     _scanFrames=0;
     let lastErr='';
     let bdBusy=false;
+    let quaggaBusy=false;
     bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准框内…`;
 
     const canvas=useBD?null:document.createElement('canvas');
@@ -110,30 +114,69 @@ async function startCamera(){
         return;
       }
 
-      // 阶段 B: ZXing fallback — canvas → BinaryBitmap → reader.decode
+      // 阶段 C: 三路并行 — jsQR(sync) + ZXing(sync) + Quagga2(async,每 3 帧)
       canvas.width=videoEl.videoWidth;
       canvas.height=videoEl.videoHeight;
       ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
       _scanFrames++;
-      try{
-        const src=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-        const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-        const result=innerReader.decode(bmp);
-        if(result){
-          const code=result.getText();
-          bar.textContent=`✅ ${tag} 扫到: ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(err){
-        const name=err&&err.name?err.name:String(err);
-        if(name!=='NotFoundException'&&name!==lastErr){
-          lastErr=name;
-          bar.textContent=`⚠️ ${tag} ${resTxt} | 帧 ${_scanFrames} | ${name}`;
-          return;
+      let hit=null;
+
+      // jsQR — QR 专,sync
+      if(hasJsQR){
+        try{
+          const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+          const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+          if(r&&r.data){hit={engine:'jsQR',code:r.data};}
+        }catch(_){}
+      }
+
+      // ZXing — 2D+1D 综合,sync
+      if(!hit){
+        try{
+          const src=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+          const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+          const result=innerReader.decode(bmp);
+          if(result){hit={engine:'ZXing',code:result.getText()};}
+        }catch(err){
+          const name=err&&err.name?err.name:String(err);
+          if(name!=='NotFoundException'&&name!==lastErr){
+            lastErr=name;
+            bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ZXing:${name}`;
+          }
         }
       }
+
+      if(hit){
+        bar.textContent=`✅ [${hit.engine}] 扫到: ${hit.code}`;
+        stopCamera();
+        showScanResult(hit.code,'camera-scan-result');
+        return;
+      }
+
+      // Quagga2 — 1D 专,async,每 3 帧丢一次(decodeSingle 较慢)
+      if(hasQuagga&&!quaggaBusy&&_scanFrames%3===0){
+        quaggaBusy=true;
+        try{
+          Quagga.decodeSingle({
+            src:canvas.toDataURL('image/jpeg',0.8),
+            numOfWorkers:0,
+            inputStream:{size:Math.min(canvas.width,1280)},
+            locator:{patchSize:'medium',halfSample:true},
+            decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','code_39_reader','upc_reader','upc_e_reader','i2of5_reader']},
+            locate:true
+          },(result)=>{
+            quaggaBusy=false;
+            if(!_scanStream)return;
+            if(result&&result.codeResult&&result.codeResult.code){
+              const code=result.codeResult.code;
+              bar.textContent=`✅ [Quagga] 扫到: ${code}`;
+              stopCamera();
+              showScanResult(code,'camera-scan-result');
+            }
+          });
+        }catch(e){quaggaBusy=false;}
+      }
+
       if(_scanFrames%5===0){
         bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ${canvas.width}×${canvas.height} | 对准框内…`;
       }
@@ -151,6 +194,42 @@ function stopCamera(){
   if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
+}
+
+// ===================== 阶段 D: 拍照让 AI 读条码 =====================
+async function scanFromPhoto(input){
+  const file=input.files&&input.files[0];
+  input.value=''; // 让下次拍同一张也能触发 onchange
+  if(!file)return;
+  const resultEl=document.getElementById('camera-scan-result');
+  resultEl.style.display='block';
+  resultEl.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--gold);border-radius:var(--radius);padding:14px;color:var(--text-dim);">🤖 [D:AI] 上传中…</div>`;
+  try{
+    // 压缩(复用 core 的 compressImage:800px max,<200KB)
+    const compressed=await compressImage(file);
+    const base64=compressed.split(',')[1];
+    resultEl.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--gold);border-radius:var(--radius);padding:14px;color:var(--text-dim);">🤖 [D:AI] AI 读图中…(~2 秒)</div>`;
+    const provider=document.querySelector('input[name="ai-provider"]:checked')?.value||'claude';
+    const res=await fetch('/api/scan-barcode',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({imageBase64:base64,mediaType:'image/jpeg',provider})
+    });
+    const data=await res.json();
+    if(!res.ok){
+      resultEl.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;color:var(--rose);">❌ [D:AI] ${data.error||res.status}: ${(data.details||[]).join(' / ')}</div>`;
+      return;
+    }
+    if(!data.code){
+      resultEl.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;color:var(--rose);">❌ [D:AI] 图中没找到条码(${data.provider})</div>`;
+      return;
+    }
+    // AI 拿到 code → 走 showScanResult 在库存里查
+    showScanResult(data.code.trim(),'camera-scan-result');
+    toast(`✅ [D:AI/${data.provider}] 读到 ${data.code}`);
+  }catch(e){
+    resultEl.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;color:var(--rose);">❌ [D:AI] ${e.message||e}</div>`;
+  }
 }
 
 // ===================== 手动扫码 =====================

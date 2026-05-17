@@ -7,10 +7,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260528a">
+<link rel="stylesheet" href="inventory.css?v=20260528b">
 </head>
 <body>
 
@@ -174,6 +176,11 @@
     <div id="camera-start-wrap">
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">用手机摄像头扫条形码或QR码</p>
       <button class="btn btn-gold" onclick="startCamera()">📷 开启摄像头扫码</button>
+      <div style="margin-top:10px;">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('scan-photo-input').click()">🤖 拍照让 AI 读条码</button>
+        <input type="file" id="scan-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="scanFromPhoto(this)">
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px;">摄像头实时扫不到时,拍张清楚的让 AI 直接读(~2 秒)</p>
+      </div>
     </div>
     <div id="camera-wrap" style="display:none;">
       <div class="camera-wrap-inner">
@@ -387,11 +394,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260528a"></script>
-<script src="js/inventory-ui.js?v=20260528a"></script>
-<script src="js/inventory-logs.js?v=20260528a"></script>
-<script src="js/inventory-ai.js?v=20260528a"></script>
-<script src="js/inventory-labels.js?v=20260528a"></script>
+<script src="js/inventory-core.js?v=20260528b"></script>
+<script src="js/inventory-ui.js?v=20260528b"></script>
+<script src="js/inventory-logs.js?v=20260528b"></script>
+<script src="js/inventory-ai.js?v=20260528b"></script>
+<script src="js/inventory-labels.js?v=20260528b"></script>
 <script>loadAll();</script>
 </body>
 </html>
