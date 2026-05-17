@@ -54,28 +54,43 @@ async function startCamera(){
     let lastErr='';
     bar.textContent=`📹 ${resTxt} | 帧 0 | 对准框内…`;
 
-    // 用 decodeFromVideoElement 接已就绪的 video 流
-    zxingReader.decodeFromVideoElement(videoEl,(result,err)=>{
-      _scanFrames++;
-      if(result){
-        const code=result.getText();
-        bar.textContent='✅ 扫到: '+code;
-        stopCamera();
-        showScanResult(code,'camera-scan-result');
+    // 完全手动抓帧 → canvas → BinaryBitmap → reader.decode,确保循环可控
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    const innerReader=zxingReader.reader; // MultiFormatReader (带 hints)
+    _scanLoop=setInterval(()=>{
+      if(!_scanStream)return;
+      if(videoEl.readyState<2||!videoEl.videoWidth){
+        bar.textContent=`📹 ${resTxt} | 等待视频帧 readyState=${videoEl.readyState}`;
         return;
       }
-      if(err){
-        const name=err.name||String(err);
+      canvas.width=videoEl.videoWidth;
+      canvas.height=videoEl.videoHeight;
+      ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+      _scanFrames++;
+      try{
+        const src=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+        const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+        const result=innerReader.decode(bmp);
+        if(result){
+          const code=result.getText();
+          bar.textContent='✅ 扫到: '+code;
+          stopCamera();
+          showScanResult(code,'camera-scan-result');
+          return;
+        }
+      }catch(err){
+        const name=err&&err.name?err.name:String(err);
         if(name!=='NotFoundException'&&name!==lastErr){
           lastErr=name;
           bar.textContent=`⚠️ ${resTxt} | 帧 ${_scanFrames} | ${name}`;
           return;
         }
       }
-      if(_scanFrames%15===0){
-        bar.textContent=`📹 ${resTxt} | 帧 ${_scanFrames} | 对准框内…`;
+      if(_scanFrames%5===0){
+        bar.textContent=`📹 ${resTxt} | 帧 ${_scanFrames} | ${canvas.width}×${canvas.height} | 对准框内…`;
       }
-    });
+    },150);
   }catch(e){
     bar.textContent='❌ '+(e.message||e);
     toast('摄像头错误: '+(e.message||e));
@@ -84,6 +99,7 @@ async function startCamera(){
   }
 }
 function stopCamera(){
+  if(_scanLoop){clearInterval(_scanLoop);_scanLoop=null;}
   if(zxingReader){try{zxingReader.reset();}catch(e){}}
   if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
   document.getElementById('camera-wrap').style.display='none';
