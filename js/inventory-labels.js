@@ -79,6 +79,24 @@ function updateLabelCount(){
   if(el)el.textContent=selectedLabelIds.size?`(${selectedLabelIds.size} 件)`:'';
 }
 
+// 小标签(40×30)1D barcode 模块 <0.3mm,打印机+扫描器+AI 都识别不了
+// 选小标签时强制切到 QR,中/大标签恢复 1D + 不强制 QR
+function onLabelSizeChange(size){
+  const sku=document.getElementById('lbl-sku');
+  const qr=document.getElementById('lbl-qr');
+  if(!sku||!qr)return;
+  if(size==='small'){
+    if(sku.checked||!qr.checked){
+      sku.checked=false;
+      qr.checked=true;
+      if(typeof toast==='function')toast('小标签自动切到 QR — 1D 条形码这尺寸扫不到');
+    }
+  }else{
+    // 切回中/大标签时,如果 SKU 是关的就帮用户打开(回到默认状态)
+    if(!sku.checked&&qr.checked){sku.checked=true;}
+  }
+}
+
 function getLabelConfig(){
   const size=document.getElementById('label-size').value;
   const sizes={
