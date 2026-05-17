@@ -45,7 +45,7 @@ function renderSummary(logs, elId){
   el.innerHTML=`
     <span>📦 共 <b>${logs.length}</b> 条记录</span>
     <span>🔢 总数量 <b>${totalQty}</b> 件</span>
-    ${totalAmt>0?`<span>💰 合计金额 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
+    ${totalAmt>0?`<span>💰 合计金额 <b style="color:var(--gold);">${fmtPrice(totalAmt,'JPY','JPY')}</b><span style="font-size:10px;color:var(--text-muted);margin-left:4px;">(混币累加,待修)</span></span>`:''}
   `;
 }
 
@@ -129,7 +129,7 @@ function renderLogsTable(type,logs){
       <span>📦 共 <b style="color:var(--gold);">${st.total}</b> 条</span>
       <span>📄 第 <b>${st.page}</b> / <b>${st.totalPages}</b> 页</span>
       <span>🔢 本页 <b>${totalQty}</b> 件</span>
-      ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">¥${totalAmt.toLocaleString()}</b></span>`:''}
+      ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">${fmtPrice(totalAmt,'JPY','JPY')}</b><span style="font-size:10px;color:var(--text-muted);margin-left:4px;">(混币累加)</span></span>`:''}
     </div>`;
   }
   const totalPages=st.totalPages||1;
@@ -175,15 +175,14 @@ function logRow(l,type){
   const price=l.price?parseFloat(l.price):null;
   const subtotal=price&&l.qty?price*l.qty:null;
   const cur=l.currency||'CNY';
-  const sym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[cur])||'¥';
   const color=type==='in'?'var(--jade-light)':'var(--rose-light)';
   return`<tr class="clickable" onclick="openLogDetail('${l.id}')">
     <td class="td-mono" style="white-space:nowrap;">${fmt(l.ts)}</td>
     <td style="max-width:120px;">${p?p.name:'已删除'}</td>
     <td style="font-size:11px;"><span style="background:var(--surface2);padding:2px 6px;border-radius:8px;">${p?p.cat||'—':'—'}</span></td>
     <td style="font-family:'DM Mono',monospace;color:${color};text-align:center;">${type==='in'?'+':'−'}${l.qty}</td>
-    <td style="color:var(--gold);text-align:right;white-space:nowrap;">${price?sym+price.toLocaleString()+' <span style="font-size:11px;color:var(--text-dim);font-weight:500;">'+cur+'</span>':'—'}</td>
-    <td style="color:var(--gold);font-weight:600;text-align:right;white-space:nowrap;">${subtotal?sym+subtotal.toLocaleString()+' <span style="font-size:11px;color:var(--text-dim);font-weight:400;">'+cur+'</span>':'—'}</td>
+    <td style="color:var(--gold);text-align:right;white-space:nowrap;">${price?fmtPriceRaw(price,cur):'—'}</td>
+    <td style="color:var(--gold);font-weight:600;text-align:right;white-space:nowrap;">${subtotal?fmtPriceRaw(subtotal,cur):'—'}</td>
     <td style="color:var(--text-muted);font-size:12px;">${l.note||'—'}</td>
   </tr>`;
 }
@@ -236,8 +235,8 @@ async function printLogs(type){
       <td>${p?p.sku||'—':'—'}</td>
       <td>${p?p.cat||'—':'—'}</td>
       <td style="text-align:center;">${l.qty}</td>
-      <td style="text-align:right;">${price?'¥'+price.toLocaleString():'—'}</td>
-      <td style="text-align:right;">${subtotal?'¥'+subtotal.toLocaleString():'—'}</td>
+      <td style="text-align:right;">${price?fmtPriceRaw(price,l.currency||'CNY'):'—'}</td>
+      <td style="text-align:right;">${subtotal?fmtPriceRaw(subtotal,l.currency||'CNY'):'—'}</td>
       <td>${l.note||'—'}</td>
     </tr>`;
   }).join('');
@@ -267,7 +266,7 @@ async function printLogs(type){
     </table>
     <div class="summary">
       <span>总数量：<b>${totalQty}</b> 件</span>
-      ${totalAmt>0?`<span>合计金额：<b>¥${totalAmt.toLocaleString()}</b></span>`:''}
+      ${totalAmt>0?`<span>合计金额(混币累加,JPY)：<b>${fmtPrice(totalAmt,'JPY','JPY')}</b></span>`:''}
     </div>
     <br><button onclick="window.print()">🖨️ 打印</button>
   </body></html>`);

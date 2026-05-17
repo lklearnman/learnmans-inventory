@@ -169,6 +169,8 @@ async function deleteShow(id){
 // 数据库存的金额一律视为 CNY(人民币),显示时按 currentCurrency 换算
 const CURRENCIES=['JPY','CNY','USD','EUR'];
 const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
+// 本地化币种后缀,用于消除 JPY/CNY 同 ¥ 符号歧义。显示形如 "¥450 円" / "¥450 元" / "$100 US"
+const CURRENCY_UNIT={JPY:'円',CNY:'元',USD:'US',EUR:'EU'};
 // 库存/详情/统计共用的显示货币(详情页跟随库存页,不再独立)
 let inventoryCurrency=localStorage.getItem('mz_inv_currency')||'JPY';
 // currentCurrency 保留作为兜底(用户没指定 toCur 时用)
@@ -209,8 +211,9 @@ function fmtPrice(value,toCur,fromCur){
   const conv=convertCurrency(value,fromCur,toCur);
   if(isNaN(conv))return '—';
   const sym=CURRENCY_SYMBOL[toCur]||'';
-  if(toCur==='JPY'||toCur==='CNY')return sym+Math.round(conv).toLocaleString();
-  return sym+conv.toFixed(2);
+  const unit=CURRENCY_UNIT[toCur]||'';
+  const num=(toCur==='JPY'||toCur==='CNY')?Math.round(conv).toLocaleString():conv.toFixed(2);
+  return sym+num+(unit?' '+unit:'');
 }
 // 显示原币种价格(不换算),用于流水
 function fmtPriceRaw(value,cur){
@@ -219,7 +222,8 @@ function fmtPriceRaw(value,cur){
   if(isNaN(n))return '—';
   cur=cur||'CNY';
   const sym=CURRENCY_SYMBOL[cur]||'';
-  return sym+n.toLocaleString();
+  const unit=CURRENCY_UNIT[cur]||'';
+  return sym+n.toLocaleString()+(unit?' '+unit:'');
 }
 // 库存页货币(只影响库存列表)
 function setInventoryCurrency(c){
