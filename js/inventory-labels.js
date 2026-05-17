@@ -101,7 +101,8 @@ function getLabelConfig(){
     showOrigin:document.getElementById('lbl-origin').checked,
     showSku:document.getElementById('lbl-sku').checked,
     showQR:document.getElementById('lbl-qr').checked,
-    labelCurrency:(document.getElementById('label-currency')||{}).value||'' // 空串=按商品原币种
+    labelCurrency:(document.getElementById('label-currency')||{}).value||'', // 空串=按商品原币种
+    pdfMode:(document.getElementById('label-pdf-mode')||{}).value||'single' // single=精臣单页, grid=A4网格
   };
 }
 
@@ -208,15 +209,22 @@ async function exportLabelsPDF(){
   if(!window.jspdf){toast('PDF库加载中，请稍后');return;}
   const cfg=getLabelConfig();
   const prods=DB.products.filter(p=>selectedLabelIds.has(p.id));
-  
-  // A4 = 210 × 297mm，2mm间距
-  const pageW=210,pageH=297,margin=8,gap=2;
-  const cols=Math.floor((pageW-margin*2+gap)/(cfg.w+gap));
-  const rows=Math.floor((pageH-margin*2+gap)/(cfg.h+gap));
+
+  const isSingle=cfg.pdfMode==='single';
+  // 单页模式: 页面=标签尺寸,一页一张 → 进精臣云印 app 连续打印
+  // 网格模式: A4 = 210 × 297mm,多个标签摆一页 → 家用打印机+不干胶贴纸
+  const pageW=isSingle?cfg.w:210;
+  const pageH=isSingle?cfg.h:297;
+  const margin=isSingle?0:8;
+  const gap=isSingle?0:2;
+  const cols=isSingle?1:Math.floor((pageW-margin*2+gap)/(cfg.w+gap));
+  const rows=isSingle?1:Math.floor((pageH-margin*2+gap)/(cfg.h+gap));
   const perPage=cols*rows;
-  
+
   const{jsPDF}=window.jspdf;
-  const pdf=new jsPDF({unit:'mm',format:'a4'});
+  // 单页模式: 显式指定 orientation,否则 jsPDF 默认 portrait 把宽高反转,barcode 会侧着印
+  const orientation=isSingle&&cfg.w>cfg.h?'landscape':'portrait';
+  const pdf=new jsPDF({unit:'mm',orientation,format:isSingle?[cfg.w,cfg.h]:'a4'});
 
   toast('生成PDF中…');
 
@@ -242,13 +250,18 @@ async function exportLabelsPDF(){
     const x=margin+col*(cfg.w+gap);
     const y=margin+row*(cfg.h+gap);
     
-    if(idxInPage===0&&pageIdx>0)pdf.addPage();
-    
-    // 标签外框（虚线）
-    pdf.setDrawColor(200);
-    pdf.setLineDashPattern([1,1],0);
-    pdf.rect(x,y,cfg.w,cfg.h);
-    pdf.setLineDashPattern([],0);
+    if(idxInPage===0&&pageIdx>0){
+      if(isSingle)pdf.addPage([cfg.w,cfg.h],orientation);
+      else pdf.addPage();
+    }
+
+    // 标签外框(虚线)— 仅 A4 网格模式需要给用户裁剪定位用,精臣单页 PDF 不需要
+    if(!isSingle){
+      pdf.setDrawColor(200);
+      pdf.setLineDashPattern([1,1],0);
+      pdf.rect(x,y,cfg.w,cfg.h);
+      pdf.setLineDashPattern([],0);
+    }
     
     const pad=2;
     let cy=y+pad+cfg.nameSize*0.4;
