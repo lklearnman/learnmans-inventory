@@ -207,13 +207,27 @@ async function exportLabelsPDF(){
     
     const pad=2;
     let cy=y+pad+cfg.nameSize*0.4;
-    
+
+    // 价格（右上角，大字） — 先量宽给商品名预留空间
+    let priceW=0;
+    let priceTxt='';
+    if(cfg.showPrice&&p.price){
+      pdf.setFontSize(cfg.priceSize);
+      setFont('bold');
+      const pCur=p.currency||'CNY';
+      priceTxt=cfg.labelCurrency
+        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
+        : fmtPriceRaw(p.price,pCur);
+      priceW=pdf.getTextWidth(priceTxt);
+    }
+
     // 商品名
     if(cfg.showName){
       pdf.setFontSize(cfg.nameSize);
       setFont('bold');
       pdf.setTextColor(0);
-      const nameLines=pdf.splitTextToSize(p.name,cfg.w-pad*2);
+      const nameMaxW=Math.max(cfg.w*0.5,cfg.w-pad*2-priceW-1);
+      const nameLines=pdf.splitTextToSize(p.name,nameMaxW);
       pdf.text(nameLines.slice(0,2),x+pad,cy);
       cy+=cfg.nameSize*0.5*Math.min(nameLines.length,2);
     }
@@ -226,15 +240,11 @@ async function exportLabelsPDF(){
       pdf.text(p.origin,x+pad,cy+cfg.subSize*0.4);
     }
 
-    // 价格（右上角，大字）
-    if(cfg.showPrice&&p.price){
+    // 价格画出来
+    if(priceTxt){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
       pdf.setTextColor(180,140,30);
-      const pCur=p.currency||'CNY';
-      const priceTxt=cfg.labelCurrency
-        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
-        : fmtPriceRaw(p.price,pCur);
       pdf.text(priceTxt,x+cfg.w-pad,y+pad+cfg.priceSize*0.4,{align:'right'});
     }
 
