@@ -242,7 +242,11 @@ function showScanResult(code,targetId){
   const parts=code.split('|');
   const sku=parts[0].trim();
   const nameFromQR=parts[1]?parts[1].trim():'';
-  const p=DB.products.find(pr=>pr.sku===sku||pr.id===sku||pr.sku===code||pr.id===code||pr.name===code||(nameFromQR&&pr.name===nameFromQR));
+  // 优先精确匹配 sku/id/name,失败再用后缀匹配(新标签 barcode 编码 ID 后 8 位)
+  let p=DB.products.find(pr=>pr.sku===sku||pr.id===sku||pr.sku===code||pr.id===code||pr.name===code||(nameFromQR&&pr.name===nameFromQR));
+  if(!p&&sku.length>=6&&sku.length<=12){
+    p=DB.products.find(pr=>(pr.id||'').endsWith(sku)||(pr.sku||'').endsWith(sku));
+  }
   const el=document.getElementById(targetId);
   el.style.display='block';
   if(p){

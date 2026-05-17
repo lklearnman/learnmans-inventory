@@ -105,6 +105,41 @@ function getLabelConfig(){
   };
 }
 
+// barcode 实际编码的字符串:用户设了 SKU 用 SKU,否则用 ID 后 8 位(随机部分,避免 23 字符
+// 长 ID 把 CODE128 module 挤到 0.12mm/格物理上扫不到)。文字标签仍显示完整 SKU/ID 供人眼读。
+function getBarcodeContent(p){
+  const sku=(p.sku||'').trim();
+  if(sku&&sku.length<=12)return sku;
+  const id=p.id||'';
+  return id.length>8?id.slice(-8):id||'NA';
+}
+
+// PDF 端纯矢量画 barcode bars,告别 PNG 中间桥的抗锯齿/缩放损失
+// JsBarcode SVG 输出:外层白底 rect + <g translate(margin,margin)> 包一堆 <rect> 黑条
+function drawBarcodeVector(pdf,text,x_mm,y_mm,w_mm,h_mm){
+  try{
+    const svgEl=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    JsBarcode(svgEl,text||'NA',{format:'CODE128',displayValue:false,width:2,height:100,margin:10});
+    const totalW=parseFloat(svgEl.getAttribute('width'));
+    if(!totalW)return false;
+    const g=svgEl.querySelector('g');
+    let groupX=0;
+    if(g){
+      const m=(g.getAttribute('transform')||'').match(/translate\(\s*([-\d.]+)/);
+      if(m)groupX=parseFloat(m[1]);
+    }
+    const bars=svgEl.querySelectorAll('g rect');
+    if(!bars.length)return false;
+    pdf.setFillColor(0,0,0);
+    bars.forEach(r=>{
+      const xSvg=(parseFloat(r.getAttribute('x'))||0)+groupX;
+      const wSvg=parseFloat(r.getAttribute('width'))||0;
+      pdf.rect(x_mm+(xSvg/totalW)*w_mm,y_mm,(wSvg/totalW)*w_mm,h_mm,'F');
+    });
+    return true;
+  }catch(e){return false;}
+}
+
 function makeBarcodeDataURL(text,cfg){
   // 高分辨率渲染:每条 24px,height ×80,canvas 像素 ×24 vs 早期版本
   // 36mm 宽 barcode 在 600 DPI 打印机出 850 dots,源 PNG ~2400+px → 2-3× 超采样,
@@ -161,7 +196,7 @@ function renderLabelHTML(p,cfg){
     ${cfg.showOrigin&&p.origin?`<div class="lbl-origin">${p.origin}</div>`:''}
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:6px;">
       <div style="flex:1;">
-        ${cfg.showSku?`<div class="lbl-barcode"><img src="${makeBarcodeDataURL(p.sku||p.id,cfg)}"></div><div class="lbl-sku">${p.sku||p.id}</div>`:''}
+        ${cfg.showSku?`<div class="lbl-barcode"><img src="${makeBarcodeDataURL(getBarcodeContent(p),cfg)}"></div><div class="lbl-sku">${p.sku||p.id}</div>`:''}
       </div>
       ${cfg.showQR?`<div class="lbl-qr"><img src="${makeQRDataURL((p.sku||p.id)+'|'+p.name)}"></div>`:''}
     </div>
@@ -264,19 +299,21 @@ async function exportLabelsPDF(){
       pdf.text(priceTxt,x+cfg.w-pad,priceY,{align:'right'});
     }
 
-    // 条形码（底部）
+    // 条形码（底部）— 先尝试矢量,失败 fallback PNG
     if(cfg.showSku){
       try{
-        const bc=makeBarcodeDataURL(p.sku||p.id,cfg);
-        if(bc){
-          const bcH=cfg.bcH*0.7;
-          const bcW=cfg.showQR?cfg.w*0.55:cfg.w-pad*2;
-          pdf.addImage(bc,'PNG',x+pad,y+cfg.h-pad-bcH-3,bcW,bcH);
-          pdf.setFontSize(cfg.subSize*0.8);
-          setFont('normal');
-          pdf.setTextColor(50);
-          pdf.text(p.sku||p.id,x+pad,y+cfg.h-pad);
+        const bcH=cfg.bcH*0.7;
+        const bcW=cfg.showQR?cfg.w*0.55:cfg.w-pad*2;
+        const code=getBarcodeContent(p);
+        const ok=drawBarcodeVector(pdf,code,x+pad,y+cfg.h-pad-bcH-3,bcW,bcH);
+        if(!ok){
+          const bc=makeBarcodeDataURL(code,cfg);
+          if(bc)pdf.addImage(bc,'PNG',x+pad,y+cfg.h-pad-bcH-3,bcW,bcH);
         }
+        pdf.setFontSize(cfg.subSize*0.8);
+        setFont('normal');
+        pdf.setTextColor(50);
+        pdf.text(p.sku||p.id,x+pad,y+cfg.h-pad);
       }catch(e){console.log(e);}
     }
     
