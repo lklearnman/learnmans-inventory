@@ -100,9 +100,10 @@ function getLabelConfig(){
 }
 
 function makeBarcodeDataURL(text,cfg){
+  // 高分辨率渲染:每条 4px,canvas 拉大让 PDF 缩放后依然清晰(>300dpi 等效)
   try{
     const c=document.createElement('canvas');
-    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:cfg.bcW,height:cfg.bcH*3,margin:0});
+    JsBarcode(c,text||'NA',{format:'CODE128',displayValue:false,width:4,height:cfg.bcH*16,margin:0});
     return c.toDataURL('image/png');
   }catch(e){return null;}
 }
