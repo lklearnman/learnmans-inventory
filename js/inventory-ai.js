@@ -36,8 +36,24 @@ async function startCamera(){
     const s=track?track.getSettings():{};
     const resTxt=`${s.width||'?'}×${s.height||'?'}`;
 
-    // 用 hints 构造 reader(明确写法兼容 0.19.x)
-    if(!zxingReader){
+    // 阶段 A: 优先用原生 BarcodeDetector(iOS 16.4+ Safari / Chrome Android)
+    // 没有则 fall-through 到阶段 B(ZXing 0.19.1)
+    let bdDetector=null;
+    let useBD=false;
+    if('BarcodeDetector' in window){
+      try{
+        bdDetector=new window.BarcodeDetector({formats:[
+          'qr_code','code_128','code_39',
+          'ean_13','ean_8','upc_a','upc_e',
+          'itf','data_matrix'
+        ]});
+        useBD=true;
+      }catch(_){useBD=false;}
+    }
+    const tag=useBD?'[A:BarcodeDetector]':'[B:ZXing 0.19.1]';
+
+    // ZXing reader 仅在 fallback 路径需要
+    if(!useBD&&!zxingReader){
       const hints=new Map();
       const fmt=ZXing.BarcodeFormat;
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
@@ -52,18 +68,49 @@ async function startCamera(){
 
     _scanFrames=0;
     let lastErr='';
-    bar.textContent=`📹 ${resTxt} | 帧 0 | 对准框内…`;
+    let bdBusy=false;
+    bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准框内…`;
 
-    // 完全手动抓帧 → canvas → BinaryBitmap → reader.decode,确保循环可控
-    const canvas=document.createElement('canvas');
-    const ctx=canvas.getContext('2d');
-    const innerReader=zxingReader.reader; // MultiFormatReader (带 hints)
+    const canvas=useBD?null:document.createElement('canvas');
+    const ctx=canvas?canvas.getContext('2d'):null;
+    const innerReader=useBD?null:zxingReader.reader;
     _scanLoop=setInterval(()=>{
       if(!_scanStream)return;
       if(videoEl.readyState<2||!videoEl.videoWidth){
-        bar.textContent=`📹 ${resTxt} | 等待视频帧 readyState=${videoEl.readyState}`;
+        bar.textContent=`📹 ${tag} ${resTxt} | 等待视频帧 readyState=${videoEl.readyState}`;
         return;
       }
+
+      // 阶段 A: BarcodeDetector 直读 video 元素
+      if(useBD){
+        if(bdBusy)return;
+        _scanFrames++;
+        bdBusy=true;
+        bdDetector.detect(videoEl).then(codes=>{
+          bdBusy=false;
+          if(!_scanStream)return;
+          if(codes&&codes.length){
+            const code=codes[0].rawValue;
+            bar.textContent=`✅ ${tag} 扫到: ${code}`;
+            stopCamera();
+            showScanResult(code,'camera-scan-result');
+            return;
+          }
+          if(_scanFrames%5===0){
+            bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ${videoEl.videoWidth}×${videoEl.videoHeight} | 对准框内…`;
+          }
+        }).catch(err=>{
+          bdBusy=false;
+          const name=err&&err.name?err.name:String(err);
+          if(name!==lastErr){
+            lastErr=name;
+            bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ${name}: ${err.message||''}`;
+          }
+        });
+        return;
+      }
+
+      // 阶段 B: ZXing fallback — canvas → BinaryBitmap → reader.decode
       canvas.width=videoEl.videoWidth;
       canvas.height=videoEl.videoHeight;
       ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
@@ -74,7 +121,7 @@ async function startCamera(){
         const result=innerReader.decode(bmp);
         if(result){
           const code=result.getText();
-          bar.textContent='✅ 扫到: '+code;
+          bar.textContent=`✅ ${tag} 扫到: ${code}`;
           stopCamera();
           showScanResult(code,'camera-scan-result');
           return;
@@ -83,12 +130,12 @@ async function startCamera(){
         const name=err&&err.name?err.name:String(err);
         if(name!=='NotFoundException'&&name!==lastErr){
           lastErr=name;
-          bar.textContent=`⚠️ ${resTxt} | 帧 ${_scanFrames} | ${name}`;
+          bar.textContent=`⚠️ ${tag} ${resTxt} | 帧 ${_scanFrames} | ${name}`;
           return;
         }
       }
       if(_scanFrames%5===0){
-        bar.textContent=`📹 ${resTxt} | 帧 ${_scanFrames} | ${canvas.width}×${canvas.height} | 对准框内…`;
+        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ${canvas.width}×${canvas.height} | 对准框内…`;
       }
     },150);
   }catch(e){
