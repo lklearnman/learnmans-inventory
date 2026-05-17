@@ -1,6 +1,20 @@
 // ===================== LABELS / 价格标签 =====================
 let selectedLabelIds=new Set();
 
+// jsPDF 默认 latin 字体不支持中文「円/元」和 ¥/€ 符号,PDF 路径专用 ASCII 后缀
+const CURRENCY_UNIT_LATIN={JPY:'JP',CNY:'CN',USD:'US',EUR:'EU'};
+const CURRENCY_SYMBOL_LATIN={JPY:'Y',CNY:'Y',USD:'$',EUR:'E'};
+function fmtPriceForPDF(value,toCur,fromCur){
+  if(value===null||value===undefined||value==='')return '';
+  toCur=toCur||'CNY';fromCur=fromCur||'CNY';
+  const conv=(typeof convertCurrency==='function')?convertCurrency(value,fromCur,toCur):parseFloat(value);
+  if(isNaN(conv))return '';
+  const sym=CURRENCY_SYMBOL_LATIN[toCur]||'';
+  const unit=CURRENCY_UNIT_LATIN[toCur]||'';
+  const num=(toCur==='JPY'||toCur==='CNY')?Math.round(conv).toLocaleString():conv.toFixed(2);
+  return sym+num+(unit?' '+unit:'');
+}
+
 // presetIds: 可选数组,若传入则覆盖当前选择(从详情页 🏷️ 打来,只打这一个)
 // 不传则使用库存页已勾选的 selectedLabelIds
 function openLabelModal(presetIds){
@@ -70,7 +84,8 @@ function getLabelConfig(){
     showPrice:document.getElementById('lbl-price').checked,
     showOrigin:document.getElementById('lbl-origin').checked,
     showSku:document.getElementById('lbl-sku').checked,
-    showQR:document.getElementById('lbl-qr').checked
+    showQR:document.getElementById('lbl-qr').checked,
+    labelCurrency:(document.getElementById('label-currency')||{}).value||'' // 空串=按商品原币种
   };
 }
 
@@ -114,9 +129,15 @@ function previewLabels(){
 }
 
 function renderLabelHTML(p,cfg){
+  const pCur=p.currency||'CNY';
+  const priceTxt=cfg.showPrice&&p.price
+    ? (cfg.labelCurrency
+        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
+        : fmtPriceRaw(p.price,pCur))
+    : '';
   return`<div class="label">
     ${cfg.showName?`<div class="lbl-name">${p.name}</div>`:''}
-    ${cfg.showPrice&&p.price?`<div class="lbl-price">¥${p.price}</div>`:''}
+    ${priceTxt?`<div class="lbl-price">${priceTxt}</div>`:''}
     ${cfg.showOrigin&&p.origin?`<div class="lbl-origin">${p.origin}</div>`:''}
     <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:6px;">
       <div style="flex:1;">
@@ -182,12 +203,16 @@ async function exportLabelsPDF(){
       pdf.text(p.origin,x+pad,cy+cfg.subSize*0.4);
     }
     
-    // 价格（右上角，大字）
+    // 价格（右上角，大字） — jsPDF latin 字体不支持中文,用 ASCII 后缀
     if(cfg.showPrice&&p.price){
       pdf.setFontSize(cfg.priceSize);
       pdf.setFont(undefined,'bold');
       pdf.setTextColor(180,140,30);
-      pdf.text(`¥${p.price}`,x+cfg.w-pad,y+pad+cfg.priceSize*0.4,{align:'right'});
+      const pCur=p.currency||'CNY';
+      const priceTxt=cfg.labelCurrency
+        ? fmtPriceForPDF(p.price,cfg.labelCurrency,pCur)
+        : fmtPriceForPDF(p.price,pCur,pCur);
+      pdf.text(priceTxt,x+cfg.w-pad,y+pad+cfg.priceSize*0.4,{align:'right'});
     }
     
     // 条形码（底部）
