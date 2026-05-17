@@ -208,9 +208,10 @@ async function exportLabelsPDF(){
     const pad=2;
     let cy=y+pad+cfg.nameSize*0.4;
 
-    // 价格（右上角，大字） — 先量宽给商品名预留空间
-    let priceW=0;
+    // 价格位置: 有 QR 时放右上(避让 QR);否则贴条形码上方右对齐
     let priceTxt='';
+    let priceW=0;
+    let priceAtTop=cfg.showQR;
     if(cfg.showPrice&&p.price){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
@@ -221,12 +222,13 @@ async function exportLabelsPDF(){
       priceW=pdf.getTextWidth(priceTxt);
     }
 
-    // 商品名
+    // 商品名: 价格在顶部时让出右侧宽度,否则用全宽
     if(cfg.showName){
       pdf.setFontSize(cfg.nameSize);
       setFont('bold');
       pdf.setTextColor(0);
-      const nameMaxW=Math.max(cfg.w*0.5,cfg.w-pad*2-priceW-1);
+      const reservedR=(priceTxt&&priceAtTop)?priceW+1:0;
+      const nameMaxW=Math.max(cfg.w*0.5,cfg.w-pad*2-reservedR);
       const nameLines=pdf.splitTextToSize(p.name,nameMaxW);
       pdf.text(nameLines.slice(0,2),x+pad,cy);
       cy+=cfg.nameSize*0.5*Math.min(nameLines.length,2);
@@ -245,7 +247,11 @@ async function exportLabelsPDF(){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
       pdf.setTextColor(180,140,30);
-      pdf.text(priceTxt,x+cfg.w-pad,y+pad+cfg.priceSize*0.4,{align:'right'});
+      const bcH=cfg.bcH*0.7;
+      const priceY=priceAtTop
+        ? y+pad+cfg.priceSize*0.4
+        : y+cfg.h-pad-bcH-3-cfg.priceSize*0.15;  // 贴条形码上方,留 0.15*priceSize 间隙
+      pdf.text(priceTxt,x+cfg.w-pad,priceY,{align:'right'});
     }
 
     // 条形码（底部）
