@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260518-1">
+<link rel="stylesheet" href="inventory.css?v=20260518-2-1">
 </head>
 <body>
 
@@ -119,7 +119,8 @@
             </select>
           </div>
         </div>
-        <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="客户/原因（可选）"></div>
+        <div class="form-group"><label>客户/出库商</label><input type="text" id="out-counterparty" placeholder="客户名称（可选）"></div>
+        <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="原因/渠道（可选）"></div>
       </div>
       <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
       <div class="divider"></div>
@@ -256,7 +257,7 @@
       <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
       <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
-      <div class="form-group"><label>价格（售价）</label>
+      <div class="form-group"><label>价格（售价）<span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
         <div style="display:flex;gap:6px;">
           <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)" style="flex:1;">
           <select id="f-currency" onchange="onPriceCurrencyChange('f-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
@@ -299,7 +300,8 @@
           </select>
         </div>
       </div>
-      <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="来源/批次（可选）"></div>
+      <div class="form-group"><label>进货商</label><input type="text" id="si-counterparty" placeholder="供应商名称（可选）"></div>
+      <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="批次/产地（可选）"></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-stockin')">取消</button>
@@ -377,11 +379,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260518-1"></script>
-<script src="js/inventory-ui.js?v=20260518-1"></script>
-<script src="js/inventory-logs.js?v=20260518-1"></script>
-<script src="js/inventory-ai.js?v=20260518-1"></script>
-<script src="js/inventory-labels.js?v=20260518-1"></script>
+<script src="js/inventory-core.js?v=20260518-2-1"></script>
+<script src="js/inventory-ui.js?v=20260518-2-1"></script>
+<script src="js/inventory-logs.js?v=20260518-2-1"></script>
+<script src="js/inventory-ai.js?v=20260518-2-1"></script>
+<script src="js/inventory-labels.js?v=20260518-2-1"></script>
 <script>loadAll();</script>
 </body>
 </html>

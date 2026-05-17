@@ -168,6 +168,7 @@ function openAddModal(prefill){
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-currency').value='JPY';
   initPriceCurrency('f-currency');
+  document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
   document.getElementById('modal-add').classList.add('open');
@@ -192,6 +193,12 @@ function openEditModal(id){
     document.getElementById('f-price').value=_rec?String(_rec):'';
   }
   initPriceCurrency('f-currency');
+  // 推荐价 hint(按当前显示币种换算)
+  const hint=document.getElementById('f-rec-hint');
+  if(_rec){
+    const recDisp=fmtPrice(_rec,inventoryCurrency,'JPY');
+    hint.innerHTML=`推荐 ${recDisp} <a href="#" onclick="event.preventDefault();document.getElementById('f-price').value='${_rec}';document.getElementById('f-currency').value='JPY';initPriceCurrency('f-currency');" style="color:var(--gold);text-decoration:underline;">使用</a>`;
+  }else{hint.innerHTML='';}
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
@@ -289,11 +296,12 @@ async function doStockIn(){
   const note=document.getElementById('si-note').value.trim();
   const price=document.getElementById('si-price').value.trim();
   const currency=document.getElementById('si-currency').value||'CNY';
+  const counterparty=document.getElementById('si-counterparty')?.value.trim()||null;
   if(!pid){toast('请选择商品');return;}
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   p.qty+=qty;
-  const log={id:uid(),productId:pid,type:'in',qty,note,price,currency,ts:Date.now()};
+  const log={id:uid(),productId:pid,type:'in',qty,note,price,currency,counterparty,ts:Date.now()};
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   closeModal('modal-stockin');renderInventory();renderInLogs();
@@ -312,16 +320,18 @@ async function doOut(){
   const currencyEl=document.getElementById('out-currency');
   const currency=currencyEl?(currencyEl.value||'JPY'):'JPY';
   const note=document.getElementById('out-note').value.trim();
+  const counterparty=document.getElementById('out-counterparty')?.value.trim()||null;
   if(!pid){toast('请选择商品');return;}
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  const log={id:uid(),productId:pid,type:'out',qty,note,price:price||null,currency,ts:Date.now()};
+  const log={id:uid(),productId:pid,type:'out',qty,note,price:price||null,currency,counterparty,ts:Date.now()};
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   renderOutSelects();renderInventory();renderOutLogs();
   document.getElementById('out-qty').value=1;document.getElementById('out-note').value='';if(priceEl)priceEl.value='';
+  const cpEl=document.getElementById('out-counterparty');if(cpEl)cpEl.value='';
   toast(`✅ 出库 ${qty} 件`);
 }
 
@@ -378,11 +388,11 @@ async function openDetail(id){
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY'))
     .filter(v=>!isNaN(v));
   const recPriceJPY=inJpyPrices.length?Math.round(inJpyPrices.reduce((a,b)=>a+b,0)/inJpyPrices.length*3):0;
-  const currencySelect=`<select onchange="setDetailCurrency(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">${CURRENCIES.map(c=>`<option value="${c}" ${c===detailCurrency?'selected':''}>${c}</option>`).join('')}</select>`;
+  const currencyLabel=`<span style="font-size:11px;color:var(--gold);font-weight:600;">${inventoryCurrency}</span>`;
   document.getElementById('detail-body').innerHTML=`
     ${p.photos&&p.photos.length?`<div class="detail-photos">${p.photos.map(s=>`<img class="detail-photo" src="${s}" onclick="viewPhoto('${s}')">`).join('')}</div>`:''}
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
-      <span style="font-size:11px;color:var(--text-muted);">货币</span>${currencySelect}
+      <span style="font-size:11px;color:var(--text-muted);">货币 ${currencyLabel} <span style="color:var(--text-muted);font-size:10px;">(跟库存页)</span></span>
       <span style="font-size:10px;color:var(--text-muted);margin-left:auto;">${fxUpdatedAt?'汇率 '+new Date(fxUpdatedAt).toLocaleDateString():'离线汇率'}</span>
     </div>
     <div class="detail-grid">
@@ -390,8 +400,8 @@ async function openDetail(id){
       <div class="detail-field"><label>类别</label><div class="val">${p.cat||'未分类'}</div></div>
       <div class="detail-field"><label>可用库存</label><div class="val big">${avail}</div></div>
       <div class="detail-field"><label>总库存</label><div class="val mono">${p.qty}件${showOut>0?`（展会带出${showOut}件）`:''}</div></div>
-      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price,detailCurrency,p.currency||'CNY')}${p.currency&&p.currency!==detailCurrency?`<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">原 ${fmtPriceRaw(p.price,p.currency)}</span>`:''}</div></div>
-      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价(换算JPY) × 3, 按当前货币显示">${recPriceJPY?fmtPrice(recPriceJPY,detailCurrency,'JPY'):'—'}</div></div>
+      <div class="detail-field"><label>价格（售价）</label><div class="val">${fmtPrice(p.price,inventoryCurrency,p.currency||'CNY')}${p.currency&&p.currency!==inventoryCurrency?`<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">原 ${fmtPriceRaw(p.price,p.currency)}</span>`:''}</div></div>
+      <div class="detail-field"><label>推荐价格</label><div class="val" style="color:var(--text-muted);" title="平均进价(换算JPY) × 3, 按当前货币显示">${recPriceJPY?fmtPrice(recPriceJPY,inventoryCurrency,'JPY'):'—'}</div></div>
       ${lastOut?`<div class="detail-field"><label>最近一次售价</label><div class="val" style="color:var(--rose-light);">${fmtPriceRaw(lastOut.price,lastOut.currency)} <span style="font-size:11px;color:var(--text-muted);">(${fmt(lastOut.ts)})</span></div></div>`:''}
       <div class="detail-field"><label>产地/规格</label><div class="val">${p.origin||'—'}</div></div>
       <div class="detail-field"><label>原产国</label><div class="val">${p.country||'—'}</div></div>
@@ -399,13 +409,21 @@ async function openDetail(id){
     </div>
     ${p.note?`<div style="font-size:13px;color:var(--text-dim);padding:10px;background:var(--surface2);border-radius:6px;margin-bottom:14px;">${p.note}</div>`:''}
     ${logs.length?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">操作历史（点击查看详情）</div>
-    <div class="table-wrap"><table><thead><tr><th>时间</th><th>类型</th><th>数量</th><th>备注</th></tr></thead><tbody>
-    ${logs.map(l=>`<tr class="clickable" onclick="closeModal('modal-detail');openLogDetail('${l.id}')">
+    <div class="table-wrap"><table><thead><tr><th>时间</th><th>类型</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead><tbody>
+    ${logs.map(l=>{
+      const hasP=l.price&&parseFloat(l.price)>0;
+      const priceCell=hasP?`<span style="font-family:'DM Mono',monospace;font-size:11px;">${fmtPriceRaw(l.price,l.currency)}</span>`:'—';
+      const subCell=hasP?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);">${fmtPrice(parseFloat(l.price)*l.qty,inventoryCurrency,l.currency||'CNY')}</span>`:'—';
+      const cpTag=l.counterparty?`<span style="color:var(--gold-dim);font-size:11px;">${l.type==='in'?'进:':'客:'}${l.counterparty}</span>`:'';
+      const noteCell=[cpTag,l.note].filter(Boolean).join(' · ')||'—';
+      return `<tr class="clickable" onclick="closeModal('modal-detail');openLogDetail('${l.id}')">
       <td class="td-mono">${fmt(l.ts)}</td>
       <td><span class="badge badge-${l.type==='in'?'in':l.type==='out'?'out':l.type==='show'?'show':'return'}">${l.type==='in'?'入库':l.type==='out'?'出库':l.type==='show'?'带出':'归还'}</span></td>
       <td style="font-family:'DM Mono',monospace;color:${l.type==='in'||l.type==='return'?'var(--jade-light)':'var(--rose-light)'};">${l.type==='in'||l.type==='return'?'+':'−'}${l.qty}</td>
-      <td style="color:var(--text-muted);">${l.note||'—'}</td>
-    </tr>`).join('')}
+      <td>${priceCell}</td>
+      <td>${subCell}</td>
+      <td style="color:var(--text-muted);">${noteCell}</td>
+    </tr>`;}).join('')}
     </tbody></table></div>`:''}`;
   document.getElementById('modal-detail').classList.add('open');
 }

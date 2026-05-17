@@ -315,6 +315,20 @@ async function openLogDetail(lid){
   document.getElementById('modal-log').classList.add('open');
 }
 // ===================== STATS =====================
+// 启动时 DB.logs 为空,只有进详情/流水 tab 才会拉一部分 — 统计需要全量,首次进 stats tab 时拉一次
+let _statsLogsLoaded=false;
+async function ensureAllLogsLoaded(){
+  if(_statsLogsLoaded)return;
+  try{
+    const{data,error}=await sb.from('logs').select('*').order('ts',{ascending:false}).limit(10000);
+    if(error)throw error;
+    if(data){
+      const existIds=new Set(DB.logs.map(l=>l.id));
+      data.forEach(r=>{if(!existIds.has(r.id))DB.logs.push(dbToLog(r));});
+    }
+    _statsLogsLoaded=true;
+  }catch(e){toast('⚠️ 统计数据加载失败:'+(e.message||e));}
+}
 function _updateStatsCatOptions(){
   const sel=document.getElementById('stats-cat');
   if(!sel)return;
@@ -325,7 +339,9 @@ function _updateStatsCatOptions(){
   const cur=sel.value;
   sel.innerHTML='<option value="">全部类别</option>'+cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
 }
-function renderStats(){
+async function renderStats(){
+  // 首次进统计页时把全部 logs 拉一次(后续操作通过 push/unshift 增量维护)
+  await ensureAllLogsLoaded();
   // ===== 读筛选 + 当前币种 =====
   const cat=document.getElementById('stats-cat')?.value||'';
   const fromEl=document.getElementById('stats-date-from');
