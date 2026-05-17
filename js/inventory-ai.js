@@ -5,9 +5,27 @@ async function startCamera(){
     document.getElementById('camera-start-wrap').style.display='none';
     document.getElementById('camera-scan-result').style.display='none';
     document.getElementById('camera-result-bar').textContent='将条形码或QR码对准框内…';
-    if(!zxingReader)zxingReader=new ZXing.BrowserMultiFormatReader();
+    if(!zxingReader){
+      // 限制常用格式 + TRY_HARDER,提升识别率(默认尝试全部格式很慢且常漏)
+      const hints=new Map();
+      const fmt=ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
+        fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,
+        fmt.EAN_13,fmt.EAN_8,fmt.UPC_A,fmt.UPC_E,
+        fmt.ITF,fmt.DATA_MATRIX
+      ]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      zxingReader=new ZXing.BrowserMultiFormatReader(hints,200); // 200ms 间隔
+    }
+    // 高分辨率 + 连续对焦,iPhone 近拍 barcode 才清晰
+    const constraints={video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920},
+      height:{ideal:1080},
+      advanced:[{focusMode:'continuous'}]
+    }};
     await zxingReader.decodeFromConstraints(
-      {video:{facingMode:'environment'}},
+      constraints,
       document.getElementById('camera-video'),
       (result,err)=>{
         if(result){
