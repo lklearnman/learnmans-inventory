@@ -39,18 +39,20 @@
 
 ## 待办(按优先级)
 
-紧急: PWA、用户登录(Google + 角色权限)、跑多币种 SQL(见交接_20260517_多币种.md)
-重要: CSV/标签/统计适配多币种、精臣打印机标签、Excel 通用导入、AI 识别速度排查
+紧急: PWA、用户登录(Google + 角色权限)
+重要: CSV/标签适配多币种(统计已适配 2026-05-18)、精臣打印机标签、Excel 通用导入、AI 识别速度排查、流水页 `renderSummary` 混币累加问题(`js/inventory-logs.js:41`)
+新需求待办: 手机版库存页顶部 `+建品 / 扫码 / JPY select` 一行布局错位(用户 2026-05-18 反馈,未排查)
 将来: 照片改存 Google Drive、Mac Mini 备份 Supabase
 
-## 多币种(2026-05-17 加)
+## 多币种(2026-05-17 起,2026-05-18 完善)
 
-- 数据库:`products.currency` / `logs.currency` 字段(text, default 'JPY')
+- 数据库:`products.currency` / `logs.currency` 字段(text, default 'JPY')+ `logs.counterparty`(text, 进货商/客户)
 - 旧数据全标 'CNY'(金额数值实际就是 CNY)— ⚠️ 不能光改 currency 不动数值,会失真
 - 推荐价格 = 所有 in logs.price 各自换算 JPY → 平均 → ×3,固定基于 JPY 计算
-- 库存 `inventoryCurrency` 和详情 `detailCurrency` 各自 localStorage 独立
+- **2026-05-18 改**: 详情页删独立 `detailCurrency`,统一跟随 `inventoryCurrency`。库存/详情/统计 modal 三处共用一个 select
 - 汇率源 frankfurter.app(CNY 基准, 6h 缓存)
-- 详情见 `交接_20260517_多币种.md`
+- modal 内 currency select 切换时,价格 input 数字按汇率自动换算(`onPriceCurrencyChange` in `inventory-core.js`)
+- 详情见 `交接_20260517_多币种.md` 和 `交接_20260518.md`
 
 ## 关键文件
 
