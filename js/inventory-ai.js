@@ -1,12 +1,43 @@
 // ===================== 摄像头扫码 =====================
+let _scanFrames=0;
+let _scanStream=null;
+let _scanLoop=null;
 async function startCamera(){
+  const bar=document.getElementById('camera-result-bar');
   try{
     document.getElementById('camera-wrap').style.display='block';
     document.getElementById('camera-start-wrap').style.display='none';
     document.getElementById('camera-scan-result').style.display='none';
-    document.getElementById('camera-result-bar').textContent='将条形码或QR码对准框内…';
+    bar.textContent='① 启动摄像头…';
+
+    // 手动 getUserMedia,逐级降级
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1920},height:{ideal:1080}
+      }});
+    }catch(e1){
+      bar.textContent='② 高清失败,降级…';
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    }
+    _scanStream=stream;
+    const videoEl=document.getElementById('camera-video');
+    videoEl.setAttribute('playsinline','');
+    videoEl.muted=true;
+    videoEl.srcObject=stream;
+    await videoEl.play().catch(e=>{bar.textContent='video.play 失败: '+e.message;});
+
+    // 试着开连续对焦(iOS 经常 ignore)
+    const track=stream.getVideoTracks()[0];
+    if(track&&track.applyConstraints){
+      try{await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
+    }
+    const s=track?track.getSettings():{};
+    const resTxt=`${s.width||'?'}×${s.height||'?'}`;
+
+    // 用 hints 构造 reader(明确写法兼容 0.19.x)
     if(!zxingReader){
-      // 限制常用格式 + TRY_HARDER,提升识别率(默认尝试全部格式很慢且常漏)
       const hints=new Map();
       const fmt=ZXing.BarcodeFormat;
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
@@ -15,35 +46,46 @@ async function startCamera(){
         fmt.ITF,fmt.DATA_MATRIX
       ]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      zxingReader=new ZXing.BrowserMultiFormatReader(hints,200); // 200ms 间隔
+      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,100);}
+      catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
     }
-    // 高分辨率 + 连续对焦,iPhone 近拍 barcode 才清晰
-    const constraints={video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:1920},
-      height:{ideal:1080},
-      advanced:[{focusMode:'continuous'}]
-    }};
-    await zxingReader.decodeFromConstraints(
-      constraints,
-      document.getElementById('camera-video'),
-      (result,err)=>{
-        if(result){
-          const code=result.getText();
-          document.getElementById('camera-result-bar').textContent='✅ 扫到：'+code;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
+
+    _scanFrames=0;
+    let lastErr='';
+    bar.textContent=`📹 ${resTxt} | 帧 0 | 对准框内…`;
+
+    // 用 decodeFromVideoElement 接已就绪的 video 流
+    zxingReader.decodeFromVideoElement(videoEl,(result,err)=>{
+      _scanFrames++;
+      if(result){
+        const code=result.getText();
+        bar.textContent='✅ 扫到: '+code;
+        stopCamera();
+        showScanResult(code,'camera-scan-result');
+        return;
+      }
+      if(err){
+        const name=err.name||String(err);
+        if(name!=='NotFoundException'&&name!==lastErr){
+          lastErr=name;
+          bar.textContent=`⚠️ ${resTxt} | 帧 ${_scanFrames} | ${name}`;
+          return;
         }
       }
-    );
+      if(_scanFrames%15===0){
+        bar.textContent=`📹 ${resTxt} | 帧 ${_scanFrames} | 对准框内…`;
+      }
+    });
   }catch(e){
-    toast('无法访问摄像头：'+e.message);
+    bar.textContent='❌ '+(e.message||e);
+    toast('摄像头错误: '+(e.message||e));
     document.getElementById('camera-wrap').style.display='none';
     document.getElementById('camera-start-wrap').style.display='block';
   }
 }
 function stopCamera(){
   if(zxingReader){try{zxingReader.reset();}catch(e){}}
+  if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
 }
