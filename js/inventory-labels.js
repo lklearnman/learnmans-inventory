@@ -1,18 +1,25 @@
 // ===================== LABELS / 价格标签 =====================
 let selectedLabelIds=new Set();
 
-// jsPDF 默认 latin 字体不支持中文「円/元」和 ¥/€ 符号,PDF 路径专用 ASCII 后缀
-const CURRENCY_UNIT_LATIN={JPY:'JP',CNY:'CN',USD:'US',EUR:'EU'};
-const CURRENCY_SYMBOL_LATIN={JPY:'Y',CNY:'Y',USD:'$',EUR:'E'};
-function fmtPriceForPDF(value,toCur,fromCur){
-  if(value===null||value===undefined||value==='')return '';
-  toCur=toCur||'CNY';fromCur=fromCur||'CNY';
-  const conv=(typeof convertCurrency==='function')?convertCurrency(value,fromCur,toCur):parseFloat(value);
-  if(isNaN(conv))return '';
-  const sym=CURRENCY_SYMBOL_LATIN[toCur]||'';
-  const unit=CURRENCY_UNIT_LATIN[toCur]||'';
-  const num=(toCur==='JPY'||toCur==='CNY')?Math.round(conv).toLocaleString():conv.toFixed(2);
-  return sym+num+(unit?' '+unit:'');
+// jsPDF 中文字体加载(单例,fetch 一次 → base64 缓存到内存供后续 PDF 复用)
+let _chineseFontB64Promise=null;
+function loadChineseFontForPDF(pdf){
+  if(!_chineseFontB64Promise){
+    _chineseFontB64Promise=fetch('fonts/NotoSansSC-Regular-subset.ttf')
+      .then(r=>{if(!r.ok)throw new Error('font http '+r.status);return r.arrayBuffer();})
+      .then(buf=>{
+        let bin='';const bytes=new Uint8Array(buf);
+        const CHUNK=0x8000;
+        for(let i=0;i<bytes.length;i+=CHUNK){
+          bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+CHUNK));
+        }
+        return btoa(bin);
+      });
+  }
+  return _chineseFontB64Promise.then(b64=>{
+    pdf.addFileToVFS('NotoSansSC-Regular.ttf',b64);
+    pdf.addFont('NotoSansSC-Regular.ttf','NotoSansSC','normal');
+  });
 }
 
 // presetIds: 可选数组,若传入则覆盖当前选择(从详情页 🏷️ 打来,只打这一个)
@@ -165,9 +172,22 @@ async function exportLabelsPDF(){
   
   const{jsPDF}=window.jspdf;
   const pdf=new jsPDF({unit:'mm',format:'a4'});
-  
+
   toast('生成PDF中…');
-  
+
+  let chineseOK=false;
+  try{
+    await loadChineseFontForPDF(pdf);
+    chineseOK=true;
+  }catch(e){
+    toast('⚠️ 中文字体加载失败,商品名将乱码');
+    console.error('label font load failed',e);
+  }
+  const setFont=(w)=>{
+    if(chineseOK)pdf.setFont('NotoSansSC','normal');
+    else pdf.setFont(undefined,w||'normal');
+  };
+
   for(let i=0;i<prods.length;i++){
     const p=prods[i];
     const pageIdx=Math.floor(i/perPage);
@@ -191,33 +211,33 @@ async function exportLabelsPDF(){
     // 商品名
     if(cfg.showName){
       pdf.setFontSize(cfg.nameSize);
-      pdf.setFont(undefined,'bold');
+      setFont('bold');
       pdf.setTextColor(0);
       const nameLines=pdf.splitTextToSize(p.name,cfg.w-pad*2);
       pdf.text(nameLines.slice(0,2),x+pad,cy);
       cy+=cfg.nameSize*0.5*Math.min(nameLines.length,2);
     }
-    
+
     // 产地
     if(cfg.showOrigin&&p.origin){
       pdf.setFontSize(cfg.subSize);
-      pdf.setFont(undefined,'normal');
+      setFont('normal');
       pdf.setTextColor(100);
       pdf.text(p.origin,x+pad,cy+cfg.subSize*0.4);
     }
-    
-    // 价格（右上角，大字） — jsPDF latin 字体不支持中文,用 ASCII 后缀
+
+    // 价格（右上角，大字）
     if(cfg.showPrice&&p.price){
       pdf.setFontSize(cfg.priceSize);
-      pdf.setFont(undefined,'bold');
+      setFont('bold');
       pdf.setTextColor(180,140,30);
       const pCur=p.currency||'CNY';
       const priceTxt=cfg.labelCurrency
-        ? fmtPriceForPDF(p.price,cfg.labelCurrency,pCur)
-        : fmtPriceForPDF(p.price,pCur,pCur);
+        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
+        : fmtPriceRaw(p.price,pCur);
       pdf.text(priceTxt,x+cfg.w-pad,y+pad+cfg.priceSize*0.4,{align:'right'});
     }
-    
+
     // 条形码（底部）
     if(cfg.showSku){
       try{
@@ -227,7 +247,7 @@ async function exportLabelsPDF(){
           const bcW=cfg.showQR?cfg.w*0.55:cfg.w-pad*2;
           pdf.addImage(bc,'PNG',x+pad,y+cfg.h-pad-bcH-3,bcW,bcH);
           pdf.setFontSize(cfg.subSize*0.8);
-          pdf.setFont(undefined,'normal');
+          setFont('normal');
           pdf.setTextColor(50);
           pdf.text(p.sku||p.id,x+pad,y+cfg.h-pad);
         }
