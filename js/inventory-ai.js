@@ -341,7 +341,18 @@ function openStockOutModal(preId){
     const outBtn=document.querySelector('.mode-btn[onclick*="\'out\'"]');
     if(outBtn)setIOMode('out',outBtn);
     renderOutSelects();
-    if(preId){const sel=document.getElementById('out-product');if(sel)sel.value=preId;}
+    if(preId){
+      const sel=document.getElementById('out-product');
+      if(sel)sel.value=preId;
+      // 默认带入商品售价 + 币种
+      const p=(typeof getProduct==='function')?getProduct(preId):null;
+      if(p){
+        const priceEl=document.getElementById('out-price');
+        if(priceEl)priceEl.value=p.price||'';
+        const curEl=document.getElementById('out-currency');
+        if(curEl)curEl.value=p.currency||'JPY';
+      }
+    }
     document.getElementById('out-qty').focus();
   },200);
 }

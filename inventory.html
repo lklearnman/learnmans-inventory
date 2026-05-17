@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260518-3-1">
+<link rel="stylesheet" href="inventory.css?v=20260519">
 </head>
 <body>
 
@@ -26,6 +26,9 @@
     <div><span class="sync-dot" id="sync-dot"></span><span id="hdr-total">0</span> 种</div>
     <div>库存 <span id="hdr-qty">0</span></div>
     <div>展会 <span id="hdr-show">0</span></div>
+    <select class="global-currency-select" onchange="setInventoryCurrency(this.value)" title="切换显示币种" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:3px 6px;color:var(--text);font-size:11px;width:62px;margin-left:6px;">
+      <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
+    </select>
   </div>
 </header>
 
@@ -58,9 +61,6 @@
       <span id="select-all-label">全选</span>
     </label>
     <div style="display:flex;align-items:center;gap:8px;">
-      <select class="inv-currency-select" onchange="setInventoryCurrency(this.value)" title="库存显示货币" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px 6px;color:var(--text);font-size:11px;width:62px;">
-        <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
-      </select>
       <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
     </div>
   </div>
@@ -258,12 +258,8 @@
       <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
       <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
       <div class="form-group"><label>价格（售价）<span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
-        <div style="display:flex;gap:6px;">
-          <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)" style="flex:1;">
-          <select id="f-currency" onchange="onPriceCurrencyChange('f-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
-            <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
-          </select>
-        </div>
+        <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)">
+        <div style="font-size:11px;color:var(--text-muted);padding:8px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
       </div>
       <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
       <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
@@ -356,7 +352,7 @@
     <div class="form-group" style="margin-bottom:12px;">
       <label>价格币种</label>
       <select id="label-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;width:100%;">
-        <option value="" selected>原币种（按商品自身）</option>
+        <option value="">原币种（按商品自身）</option>
         <option value="JPY">JPY 円</option>
         <option value="CNY">CNY 元</option>
         <option value="USD">USD $</option>
@@ -391,11 +387,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260518-3-1"></script>
-<script src="js/inventory-ui.js?v=20260518-3-1"></script>
-<script src="js/inventory-logs.js?v=20260518-3-1"></script>
-<script src="js/inventory-ai.js?v=20260518-3-1"></script>
-<script src="js/inventory-labels.js?v=20260518-3-1"></script>
+<script src="js/inventory-core.js?v=20260519"></script>
+<script src="js/inventory-ui.js?v=20260519"></script>
+<script src="js/inventory-logs.js?v=20260519"></script>
+<script src="js/inventory-ai.js?v=20260519"></script>
+<script src="js/inventory-labels.js?v=20260519"></script>
 <script>loadAll();</script>
 </body>
 </html>

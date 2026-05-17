@@ -41,11 +41,15 @@ function updateLogCatOptions(type,force){
 function renderSummary(logs, elId){
   const el=document.getElementById(elId);if(!el)return;
   const totalQty=logs.reduce((a,l)=>a+l.qty,0);
-  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  const totalBaseJpy=logs.reduce((a,l)=>{
+    const bp=l.basePrice; const q=l.qty;
+    return a + (bp && q ? parseFloat(bp)*q : 0);
+  }, 0);
+  const totalDisp=convertCurrency(totalBaseJpy,'JPY',inventoryCurrency);
   el.innerHTML=`
     <span>📦 共 <b>${logs.length}</b> 条记录</span>
     <span>🔢 总数量 <b>${totalQty}</b> 件</span>
-    ${totalAmt>0?`<span>💰 合计金额 <b style="color:var(--gold);">${fmtPrice(totalAmt,'JPY','JPY')}</b><span style="font-size:10px;color:var(--text-muted);margin-left:4px;">(混币累加,待修)</span></span>`:''}
+    ${totalBaseJpy>0?`<span>💰 合计金额 <b style="color:var(--gold);">${fmtPrice(totalDisp||totalBaseJpy, inventoryCurrency, inventoryCurrency)}</b></span>`:''}
   `;
 }
 
@@ -121,15 +125,16 @@ function renderLogsTable(type,logs){
   
   // 汇总(只算当前页)
   const totalQty=logs.reduce((a,l)=>a+l.qty,0);
-  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
-  
+  const totalBaseJpy=logs.reduce((a,l)=>a+(l.basePrice&&l.qty?parseFloat(l.basePrice)*l.qty:0),0);
+  const totalDisp=convertCurrency(totalBaseJpy,'JPY',inventoryCurrency);
+
   const sumEl=document.getElementById(type+'-log-summary');
   if(sumEl){
     sumEl.innerHTML=`<div style="display:flex;gap:14px;flex-wrap:wrap;">
       <span>📦 共 <b style="color:var(--gold);">${st.total}</b> 条</span>
       <span>📄 第 <b>${st.page}</b> / <b>${st.totalPages}</b> 页</span>
       <span>🔢 本页 <b>${totalQty}</b> 件</span>
-      ${totalAmt>0?`<span>💰 <b style="color:var(--gold);">${fmtPrice(totalAmt,'JPY','JPY')}</b><span style="font-size:10px;color:var(--text-muted);margin-left:4px;">(混币累加)</span></span>`:''}
+      ${totalBaseJpy>0?`<span>💰 <b style="color:var(--gold);">${fmtPrice(totalDisp||totalBaseJpy, inventoryCurrency, inventoryCurrency)}</b></span>`:''}
     </div>`;
   }
   const totalPages=st.totalPages||1;
@@ -172,9 +177,9 @@ function renderOutLogs(){
 }
 function logRow(l,type){
   const p=getProduct(l.productId);
-  const price=l.price?parseFloat(l.price):null;
+  const price=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):null);
   const subtotal=price&&l.qty?price*l.qty:null;
-  const cur=l.currency||'CNY';
+  const cur=l.originalCurrency||l.currency||'CNY';
   const color=type==='in'?'var(--jade-light)':'var(--rose-light)';
   return`<tr class="clickable" onclick="openLogDetail('${l.id}')">
     <td class="td-mono" style="white-space:nowrap;">${fmt(l.ts)}</td>
@@ -189,26 +194,34 @@ function logRow(l,type){
 async function exportLogCSV(type){
   const logs=await filterLogs(type);
   const label=type==='in'?'入库':'出库';
-  const rows=[['日期','商品名','SKU','类别','数量','单价','小计','备注']];
+  const rows=[['日期','商品名','SKU','类别','数量','原始单价','原始币种','汇率','本位单价(JPY)','小计(JPY)','备注']];
   logs.forEach(l=>{
     const p=getProduct(l.productId);
-    const price=l.price?parseFloat(l.price):'';
-    const subtotal=price&&l.qty?price*l.qty:'';
+    const op=l.originalPrice||l.price||'';
+    const oc=l.originalCurrency||l.currency||'';
+    const fx=l.fxRate||'';
+    const bp=l.basePrice||'';
+    const subBase=(bp&&l.qty)?parseFloat(bp)*l.qty:'';
     rows.push([
       fmtFull(l.ts),
       p?p.name:'已删除',
       p?p.sku||'':'',
       p?p.cat||'':'',
       l.qty,
-      price,
-      subtotal,
+      op,
+      oc,
+      fx,
+      bp,
+      subBase,
       l.note||''
     ]);
   });
   // 合计行
   const totalQty=logs.reduce((a,l)=>a+l.qty,0);
-  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
-  rows.push(['合计','','','',totalQty,'',totalAmt,'']);
+  const totalBaseJpy=logs.reduce((a,l)=>a+(l.basePrice&&l.qty?parseFloat(l.basePrice)*l.qty:0),0);
+  const totalDisp=convertCurrency(totalBaseJpy,'JPY',inventoryCurrency)||totalBaseJpy;
+  rows.push(['合计','','','',totalQty,'','','','',totalBaseJpy,'']);
+  rows.push([`全局币种合计(${inventoryCurrency})`,'','','','','','','','',Math.round(totalDisp),'']);
   
   const bom='﻿';
   const csv=bom+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -224,19 +237,21 @@ async function printLogs(type){
   const logs=await filterLogs(type);
   const label=type==='in'?'入库':'出库';
   const totalQty=logs.reduce((a,l)=>a+l.qty,0);
-  const totalAmt=logs.reduce((a,l)=>a+(l.price&&l.qty?parseFloat(l.price)*l.qty:0),0);
+  const totalBaseJpy=logs.reduce((a,l)=>a+(l.basePrice&&l.qty?parseFloat(l.basePrice)*l.qty:0),0);
+  const totalDisp=convertCurrency(totalBaseJpy,'JPY',inventoryCurrency)||totalBaseJpy;
   const rows=logs.map(l=>{
     const p=getProduct(l.productId);
-    const price=l.price?parseFloat(l.price):null;
+    const price=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):null);
     const subtotal=price&&l.qty?price*l.qty:null;
+    const oc=l.originalCurrency||l.currency||'CNY';
     return`<tr>
       <td>${fmtFull(l.ts)}</td>
       <td>${p?p.name:'已删除'}</td>
       <td>${p?p.sku||'—':'—'}</td>
       <td>${p?p.cat||'—':'—'}</td>
       <td style="text-align:center;">${l.qty}</td>
-      <td style="text-align:right;">${price?fmtPriceRaw(price,l.currency||'CNY'):'—'}</td>
-      <td style="text-align:right;">${subtotal?fmtPriceRaw(subtotal,l.currency||'CNY'):'—'}</td>
+      <td style="text-align:right;">${price?fmtPriceRaw(price,oc):'—'}</td>
+      <td style="text-align:right;">${subtotal?fmtPriceRaw(subtotal,oc):'—'}</td>
       <td>${l.note||'—'}</td>
     </tr>`;
   }).join('');
@@ -266,7 +281,7 @@ async function printLogs(type){
     </table>
     <div class="summary">
       <span>总数量：<b>${totalQty}</b> 件</span>
-      ${totalAmt>0?`<span>合计金额(混币累加,JPY)：<b>${fmtPrice(totalAmt,'JPY','JPY')}</b></span>`:''}
+      ${totalBaseJpy>0?`<span>合计金额(按当前显示币种)：<b>${fmtPrice(totalDisp, inventoryCurrency, inventoryCurrency)}</b></span>`:''}
     </div>
     <br><button onclick="window.print()">🖨️ 打印</button>
   </body></html>`);
@@ -286,13 +301,13 @@ async function openLogDetail(lid){
   const p=getProduct(l.productId);
   const typeLabel={in:'⬆️ 入库',out:'⬇️ 出库',show:'🎪 展会带出',return:'↩️ 展会归还'};
   // fallback:本条没填进价,用同商品所有 in logs 换算到 JPY 的平均
-  const inJpy=DB.logs.filter(x=>x.productId===l.productId&&x.type==='in'&&parseFloat(x.price)>0)
-    .map(x=>convertCurrency(x.price,x.currency||'CNY','JPY')).filter(v=>!isNaN(v));
+  const inJpy=DB.logs.filter(x=>x.productId===l.productId&&x.type==='in'&&parseFloat(x.originalPrice||x.price)>0)
+    .map(x=>convertCurrency(x.originalPrice||x.price, x.originalCurrency||x.currency||'CNY','JPY')).filter(v=>!isNaN(v));
   const avgInJpy=inJpy.length?Math.round(inJpy.reduce((a,b)=>a+b,0)/inJpy.length):0;
-  const dispPrice=l.price||(avgInJpy>0?String(avgInJpy):null);
-  const dispCurrency=l.price?(l.currency||'CNY'):'JPY';
+  const dispPrice=l.originalPrice||l.price||(avgInJpy>0?String(avgInJpy):null);
+  const dispCurrency=(l.originalPrice||l.price)?(l.originalCurrency||l.currency||'CNY'):'JPY';
   const dispSym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[dispCurrency])||'¥';
-  const isFallback=!l.price&&avgInJpy>0;
+  const isFallback=!(l.originalPrice||l.price)&&avgInJpy>0;
   const priceLabel=l.type==='in'?'进价':(l.type==='out'?'售价':'单价');
   const amtLabel=l.type==='in'?'进货金额':(l.type==='out'?'销售金额':'金额');
   const priceColor=isFallback?'var(--text-muted)':'var(--gold)';
@@ -379,31 +394,31 @@ async function renderStats(){
   // 库存成本(每商品最近一次 in log 的进价)
   let stockCost=0;
   prods.forEach(p=>{
-    const ins=DB.logs.filter(l=>l.type==='in'&&pidOf(l)===p.id&&parseFloat(l.price)>0);
+    const ins=DB.logs.filter(l=>l.type==='in'&&pidOf(l)===p.id&&parseFloat(l.originalPrice||l.price)>0);
     if(!ins.length)return;
     ins.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
     const last=ins[0];
-    const v=convertCurrency(last.price,last.currency||'CNY',cur);
+    const v=convertCurrency(last.originalPrice||last.price, last.originalCurrency||last.currency||'CNY', cur);
     if(!isNaN(v))stockCost+=v*p.qty;
   });
   // 累计销售额
   let totalSales=0;
   DB.logs.filter(l=>l.type==='out').forEach(l=>{
-    if(!parseFloat(l.price))return;
+    if(!parseFloat(l.originalPrice||l.price))return;
     const ts=new Date(l.ts).getTime();
     if(from&&ts<from)return;if(to&&ts>to)return;
     if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
-    const v=convertCurrency(l.price,l.currency||'CNY',cur);
+    const v=convertCurrency(l.originalPrice||l.price, l.originalCurrency||l.currency||'CNY', cur);
     if(!isNaN(v))totalSales+=v*l.qty;
   });
   // 累计进货额
   let totalPurchase=0;
   DB.logs.filter(l=>l.type==='in').forEach(l=>{
-    if(!parseFloat(l.price))return;
+    if(!parseFloat(l.originalPrice||l.price))return;
     const ts=new Date(l.ts).getTime();
     if(from&&ts<from)return;if(to&&ts>to)return;
     if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
-    const v=convertCurrency(l.price,l.currency||'CNY',cur);
+    const v=convertCurrency(l.originalPrice||l.price, l.originalCurrency||l.currency||'CNY', cur);
     if(!isNaN(v))totalPurchase+=v*l.qty;
   });
   const _fmt=v=>(cur==='JPY'||cur==='CNY')?sym+Math.round(v).toLocaleString():sym+v.toFixed(2);
