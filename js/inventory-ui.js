@@ -166,8 +166,6 @@ function openAddModal(prefill){
   editingId=null;pendingPhotos=[];
   document.getElementById('modal-add-title').textContent='新建商品档案';
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-currency').value='JPY';
-  initPriceCurrency('f-currency');
   document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
@@ -184,20 +182,17 @@ function openEditModal(id){
   const _jpy=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0)
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY')).filter(v=>!isNaN(v));
   const _rec=_jpy.length?Math.round(_jpy.reduce((a,b)=>a+b,0)/_jpy.length*3):0;
-  // 如果商品有自己的售价就用原币种;留空时用推荐价(JPY 单位)
+  // 价格统一以 JPY 显示/录入(本位币)
   if(p.price){
-    document.getElementById('f-currency').value=p.currency||'JPY';
     document.getElementById('f-price').value=p.price;
   }else{
-    document.getElementById('f-currency').value='JPY';
     document.getElementById('f-price').value=_rec?String(_rec):'';
   }
-  initPriceCurrency('f-currency');
   // 推荐价 hint(按当前显示币种换算)
   const hint=document.getElementById('f-rec-hint');
   if(_rec){
     const recDisp=fmtPrice(_rec,inventoryCurrency,'JPY');
-    hint.innerHTML=`推荐 ${recDisp} <a href="#" onclick="event.preventDefault();document.getElementById('f-price').value='${_rec}';document.getElementById('f-currency').value='JPY';initPriceCurrency('f-currency');" style="color:var(--gold);text-decoration:underline;">使用</a>`;
+    hint.innerHTML=`推荐 ${recDisp} <a href="#" onclick="event.preventDefault();document.getElementById('f-price').value='${_rec}';" style="color:var(--gold);text-decoration:underline;">使用</a>`;
   }else{hint.innerHTML='';}
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
@@ -221,7 +216,7 @@ function buildProduct(){
   if(!name){toast('请填写商品名称');return null;}
   const sku=document.getElementById('f-sku').value.trim()||('MZ-'+uid().toUpperCase().slice(0,6));
   const id=editingId||uid();
-  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),currency:document.getElementById('f-currency').value||'CNY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),currency:'JPY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
 }
 async function saveProductOnly(){
   const btn=document.getElementById('btn-save-only');
@@ -301,7 +296,20 @@ async function doStockIn(){
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   p.qty+=qty;
-  const log={id:uid(),productId:pid,type:'in',qty,note,price,currency,counterparty,ts:Date.now()};
+  const fxRate=(typeof getFxRate==='function')?getFxRate(currency,'JPY'):null;
+  const basePrice=(price&&fxRate)?Math.round(parseFloat(price)*fxRate):null;
+  const log={
+    id:uid(),productId:pid,type:'in',qty,note,
+    originalPrice:price,
+    originalCurrency:currency,
+    basePrice:basePrice,
+    baseCurrency:'JPY',
+    fxRate:fxRate,
+    // 兼容老 UI 代码
+    price:price,
+    currency:currency,
+    counterparty,ts:Date.now()
+  };
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   closeModal('modal-stockin');renderInventory();renderInLogs();
@@ -326,7 +334,20 @@ async function doOut(){
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  const log={id:uid(),productId:pid,type:'out',qty,note,price:price||null,currency,counterparty,ts:Date.now()};
+  const fxRate=(typeof getFxRate==='function')?getFxRate(currency,'JPY'):null;
+  const basePrice=(price&&fxRate)?Math.round(parseFloat(price)*fxRate):null;
+  const log={
+    id:uid(),productId:pid,type:'out',qty,note,
+    originalPrice:price||null,
+    originalCurrency:currency,
+    basePrice:basePrice,
+    baseCurrency:'JPY',
+    fxRate:fxRate,
+    // 兼容
+    price:price||null,
+    currency,
+    counterparty,ts:Date.now()
+  };
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
   renderOutSelects();renderInventory();renderOutLogs();

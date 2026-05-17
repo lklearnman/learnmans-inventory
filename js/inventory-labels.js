@@ -25,6 +25,9 @@ function openLabelModal(presetIds){
     toast('请先在库存页勾选要打印的商品');
     return;
   }
+  // 默认币种跟随库存页全局币种
+  const curSel=document.getElementById('label-currency');
+  if(curSel&&typeof inventoryCurrency!=='undefined')curSel.value=inventoryCurrency;
   renderLabelList();
   document.getElementById('modal-label').classList.add('open');
 }

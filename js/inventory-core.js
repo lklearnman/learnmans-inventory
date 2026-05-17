@@ -116,8 +116,46 @@ async function loadAll(){
 // DB field mapping
 function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,currency:p.currency||'JPY',origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
 function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,currency:r.currency||'CNY',origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
-function logToDb(l){return{id:l.id,product_id:l.productId,type:l.type,qty:l.qty,note:l.note,price:l.price,currency:l.currency||'JPY',counterparty:l.counterparty||null,ts:new Date(l.ts).toISOString()};}
-function dbToLog(r){return{id:r.id,productId:r.product_id,type:r.type,qty:r.qty,note:r.note,price:r.price,currency:r.currency||'CNY',counterparty:r.counterparty||null,ts:new Date(r.ts).getTime()};}
+function logToDb(l){
+  const originalPrice=(l.originalPrice!==undefined?l.originalPrice:l.price);
+  const originalCurrency=l.originalCurrency||l.currency||'CNY';
+  const basePrice=(l.basePrice!==undefined?l.basePrice:null);
+  const baseCurrency=l.baseCurrency||'JPY';
+  const fxRate=(l.fxRate!==undefined?l.fxRate:null);
+  return{
+    id:l.id,
+    product_id:l.productId,
+    type:l.type,
+    qty:l.qty,
+    note:l.note,
+    counterparty:l.counterparty||null,
+    original_price:originalPrice,
+    original_currency:originalCurrency,
+    base_price:basePrice,
+    base_currency:baseCurrency,
+    fx_rate:fxRate,
+    ts:new Date(l.ts).toISOString()
+  };
+}
+function dbToLog(r){return{
+  id:r.id,
+  productId:r.product_id,
+  type:r.type,
+  qty:r.qty,
+  note:r.note,
+  // 原始(新字段)
+  originalPrice:r.original_price,
+  originalCurrency:r.original_currency||'CNY',
+  // 本位(新字段)
+  basePrice:r.base_price,
+  baseCurrency:r.base_currency||'JPY',
+  fxRate:r.fx_rate,
+  // 兼容老 JS 代码(price/currency 沿用旧名义指向"原始")
+  price:r.original_price,
+  currency:r.original_currency||'CNY',
+  counterparty:r.counterparty||null,
+  ts:new Date(r.ts).getTime()
+};}
 function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
 function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
 
@@ -149,9 +187,9 @@ async function deleteProduct(id){
 async function insertLog(l){
   const payload=logToDb(l);
   let{error}=await sb.from('logs').insert(payload);
-  // 兜底:列不存在时丢掉该字段重试(支持 currency / counterparty 还没跑 ALTER 的情况)
-  while(error&&/(currency|counterparty)/i.test(error.message||'')){
-    const m=(error.message||'').match(/(currency|counterparty)/i);
+  // 兜底:列不存在时丢掉该字段重试(支持还没跑 ALTER 的旧库)
+  while(error&&/(original_price|original_currency|base_price|base_currency|fx_rate|counterparty)/i.test(error.message||'')){
+    const m=(error.message||'').match(/(original_price|original_currency|base_price|base_currency|fx_rate|counterparty)/i);
     if(!m)break;
     delete payload[m[1].toLowerCase()];
     ({error}=await sb.from('logs').insert(payload));
@@ -171,6 +209,8 @@ const CURRENCIES=['JPY','CNY','USD','EUR'];
 const CURRENCY_SYMBOL={JPY:'¥',CNY:'¥',USD:'$',EUR:'€'};
 // 本地化币种后缀,用于消除 JPY/CNY 同 ¥ 符号歧义。显示形如 "¥450 円" / "¥450 元" / "$100 US"
 const CURRENCY_UNIT={JPY:'円',CNY:'元',USD:'US',EUR:'EU'};
+// 本位币(数据库 base_price/base_currency 的固定单位)
+const BASE_CURRENCY='JPY';
 // 库存/详情/统计共用的显示货币(详情页跟随库存页,不再独立)
 let inventoryCurrency=localStorage.getItem('mz_inv_currency')||'JPY';
 // currentCurrency 保留作为兜底(用户没指定 toCur 时用)
@@ -202,6 +242,13 @@ function convertCurrency(value,fromCur,toCur){
   // fxRates 是 CNY 基准: 1 CNY = fxRates[X] X
   const valInCNY=n/(fxRates[fromCur]||1);
   return valInCNY*(fxRates[toCur]||1);
+}
+// 取 from -> to 的汇率(value=1 换算一次)。汇率未加载或异常返回 null。
+function getFxRate(from, to){
+  if(from===to)return 1;
+  if(!fxRates||!fxRates[from]||!fxRates[to])return null;
+  const v=convertCurrency(1, from, to);
+  return (typeof v==='number'&&!isNaN(v))?v:null;
 }
 // 显示价格:value 是 fromCur 单位,要按 toCur 显示(默认按 currentCurrency)
 function fmtPrice(value,toCur,fromCur){
