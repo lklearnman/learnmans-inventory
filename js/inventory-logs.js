@@ -241,17 +241,22 @@ async function printLogs(type){
   const totalDisp=convertCurrency(totalBaseJpy,'JPY',inventoryCurrency)||totalBaseJpy;
   const rows=logs.map(l=>{
     const p=getProduct(l.productId);
-    const price=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):null);
-    const subtotal=price&&l.qty?price*l.qty:null;
+    const op=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):null);
     const oc=l.originalCurrency||l.currency||'CNY';
+    const fx=l.fxRate?parseFloat(l.fxRate):null;
+    const bp=l.basePrice?parseFloat(l.basePrice):null;
+    const subBase=bp&&l.qty?bp*l.qty:null;
     return`<tr>
       <td>${fmtFull(l.ts)}</td>
       <td>${p?p.name:'已删除'}</td>
       <td>${p?p.sku||'—':'—'}</td>
       <td>${p?p.cat||'—':'—'}</td>
       <td style="text-align:center;">${l.qty}</td>
-      <td style="text-align:right;">${price?fmtPriceRaw(price,oc):'—'}</td>
-      <td style="text-align:right;">${subtotal?fmtPriceRaw(subtotal,oc):'—'}</td>
+      <td style="text-align:right;">${op?fmtPriceRaw(op,oc):'—'}</td>
+      <td style="text-align:center;">${oc}</td>
+      <td style="text-align:right;">${fx?fx.toFixed(4):'—'}</td>
+      <td style="text-align:right;">${bp?fmtPriceRaw(bp,'JPY'):'—'}</td>
+      <td style="text-align:right;">${subBase?fmtPriceRaw(subBase,'JPY'):'—'}</td>
       <td>${l.note||'—'}</td>
     </tr>`;
   }).join('');
@@ -276,7 +281,7 @@ async function printLogs(type){
     <h2>矿珍库 · ${label}记录</h2>
     <div class="sub">导出时间：${fmtFull(Date.now())} · 共${logs.length}条</div>
     <table>
-      <thead><tr><th>日期</th><th>商品名</th><th>SKU</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
+      <thead><tr><th>日期</th><th>商品名</th><th>SKU</th><th>类别</th><th>数量</th><th>原始单价</th><th>原始币种</th><th>汇率</th><th>本位单价(JPY)</th><th>小计(JPY)</th><th>备注</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="summary">
