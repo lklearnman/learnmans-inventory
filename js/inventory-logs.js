@@ -348,100 +348,255 @@ async function ensureAllLogsLoaded(){
     _statsLogsLoaded=true;
   }catch(e){toast('⚠️ 统计数据加载失败:'+(e.message||e));}
 }
-function _updateStatsCatOptions(){
-  const sel=document.getElementById('stats-cat');
-  if(!sel)return;
-  const cats=[...new Set(DB.products.map(p=>p.cat||'').filter(Boolean))].sort();
-  const sig=cats.join('|');
-  if(sel.dataset.sig===sig)return;
-  sel.dataset.sig=sig;
-  const cur=sel.value;
-  sel.innerHTML='<option value="">全部类别</option>'+cats.map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c}</option>`).join('');
+const STATS_RANGES = [
+  {key:'today', label:'今日', titleLabel:'今日'},
+  {key:'week', label:'本周', titleLabel:'本周'},
+  {key:'month', label:'本月', titleLabel:'本月'},
+  {key:'quarter', label:'本季', titleLabel:'本季'},
+  {key:'year', label:'本年', titleLabel:'本年'},
+  {key:'all', label:'全部', titleLabel:'全部'}
+];
+let statsRangeIdx = 2; // 默认本月
+
+function cycleStatsRange(el){
+  statsRangeIdx = (statsRangeIdx + 1) % STATS_RANGES.length;
+  const r = STATS_RANGES[statsRangeIdx];
+  if(el) el.textContent = r.label + ' ▼';
+  const titleEl = document.querySelector('.s8-range-title');
+  if(titleEl) titleEl.textContent = r.titleLabel + '概况';
+  renderStats();
 }
+
+function getStatsRange(){
+  const now = new Date();
+  const r = STATS_RANGES[statsRangeIdx];
+  let from, to = now.getTime(), prevFrom = null, prevTo = null, bucketBy = 'day', bucketCount = 30;
+  const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); };
+
+  if(r.key === 'today'){
+    from = startOfDay(now);
+    prevTo = from - 1;
+    prevFrom = startOfDay(prevTo);
+    bucketBy = 'hour'; bucketCount = 24;
+  } else if(r.key === 'week'){
+    const d = new Date(now);
+    const day = (d.getDay() + 6) % 7; // 周一 0
+    from = startOfDay(new Date(d.getTime() - day * 86400000));
+    prevTo = from - 1;
+    prevFrom = from - 7 * 86400000;
+    bucketBy = 'day'; bucketCount = 7;
+  } else if(r.key === 'month'){
+    from = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+    prevTo = from - 1;
+    prevFrom = startOfDay(new Date(now.getFullYear(), now.getMonth()-1, 1));
+    bucketBy = 'day'; bucketCount = 30;
+  } else if(r.key === 'quarter'){
+    const qStart = Math.floor(now.getMonth()/3) * 3;
+    from = startOfDay(new Date(now.getFullYear(), qStart, 1));
+    prevTo = from - 1;
+    prevFrom = startOfDay(new Date(now.getFullYear(), qStart-3, 1));
+    bucketBy = 'week'; bucketCount = 13;
+  } else if(r.key === 'year'){
+    from = startOfDay(new Date(now.getFullYear(), 0, 1));
+    prevTo = from - 1;
+    prevFrom = startOfDay(new Date(now.getFullYear()-1, 0, 1));
+    bucketBy = 'month'; bucketCount = 12;
+  } else { // all
+    const earliest = DB.logs.length
+      ? DB.logs.reduce((m, l) => Math.min(m, new Date(l.ts).getTime()), Date.now())
+      : Date.now();
+    from = earliest;
+    bucketBy = 'month'; bucketCount = 12;
+  }
+  return {from, to, prevFrom, prevTo, bucketBy, bucketCount};
+}
+
 async function renderStats(){
-  // 首次进统计页时把全部 logs 拉一次(后续操作通过 push/unshift 增量维护)
   await ensureAllLogsLoaded();
-  // ===== 读筛选 + 当前币种 =====
-  const cat=document.getElementById('stats-cat')?.value||'';
-  const fromEl=document.getElementById('stats-date-from');
-  const toEl=document.getElementById('stats-date-to');
-  const from=fromEl&&fromEl.value?new Date(fromEl.value).getTime():null;
-  const to=toEl&&toEl.value?new Date(toEl.value+'T23:59:59').getTime():null;
-  const cur=inventoryCurrency;
-  const sym=CURRENCY_SYMBOL[cur]||'';
-  const lbl=document.getElementById('stats-cur-label');if(lbl)lbl.textContent=cur;
-  _updateStatsCatOptions();
+  const cur = inventoryCurrency;
+  const sym = CURRENCY_SYMBOL[cur] || '';
+  const range = getStatsRange();
 
-  // ===== 商品筛选(类别)=====
-  const prods=DB.products.filter(p=>!cat||(p.cat||'')===cat);
-  const pids=new Set(prods.map(p=>p.id));
-  const pidOf=l=>l.product_id||l.productId;
+  const pidOf = l => l.product_id || l.productId;
+  const _origPrice = l => parseFloat(l.originalPrice || l.price) || 0;
+  const _origCur = l => l.originalCurrency || l.currency || 'CNY';
+  const logAmt = l => {
+    if(l.basePrice && !isNaN(l.basePrice)){
+      const v = convertCurrency(parseFloat(l.basePrice), 'JPY', cur);
+      return (typeof v === 'number' && !isNaN(v)) ? v * l.qty : 0;
+    }
+    const v = convertCurrency(_origPrice(l), _origCur(l), cur);
+    return (typeof v === 'number' && !isNaN(v)) ? v * l.qty : 0;
+  };
+  const inRange = (ts, from, to) => ts >= from && ts <= to;
 
-  // ===== 数量卡 =====
-  const t=prods.length,q=prods.reduce((a,p)=>a+p.qty,0);
-  const so=DB.showItems.filter(s=>pids.has(pidOf(s))).reduce((a,s)=>a+s.qty,0);
-  const lw=prods.filter(p=>p.qty<3).length;
-  const inc=DB.logs.filter(l=>l.type==='in'&&pids.has(pidOf(l))).length;
-  document.getElementById('stats-row').innerHTML=`
-    <div class="stat-card"><span class="stat-num">${t}</span><div class="stat-label">商品种类</div></div>
-    <div class="stat-card"><span class="stat-num">${q}</span><div class="stat-label">总库存件数</div></div>
-    <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${so}</span><div class="stat-label">展会带出中</div></div>
-    <div class="stat-card"><span class="stat-num" style="color:var(--rose)">${lw}</span><div class="stat-label">库存不足</div></div>
-    <div class="stat-card"><span class="stat-num" style="color:var(--jade-light)">${inc}</span><div class="stat-label">累计入库次数</div></div>`;
-
-  // ===== 金额卡(全换算到 cur)=====
-  // 库存价值(售价)
-  let stockSell=0;
-  prods.forEach(p=>{
-    const v=convertCurrency(p.price,p.currency||'CNY',cur);
-    if(!isNaN(v))stockSell+=v*p.qty;
+  // ===== 1. 库存价值(售价 ×当前库存,跟期间无关)=====
+  let stockValue = 0;
+  DB.products.forEach(p=>{
+    const v = convertCurrency(p.price, p.currency||'JPY', cur);
+    if(!isNaN(v)) stockValue += v * p.qty;
   });
-  // 库存成本(每商品最近一次 in log 的进价)
-  let stockCost=0;
-  prods.forEach(p=>{
-    const ins=DB.logs.filter(l=>l.type==='in'&&pidOf(l)===p.id&&parseFloat(l.originalPrice||l.price)>0);
-    if(!ins.length)return;
-    ins.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
-    const last=ins[0];
-    const v=convertCurrency(last.originalPrice||last.price, last.originalCurrency||last.currency||'CNY', cur);
-    if(!isNaN(v))stockCost+=v*p.qty;
-  });
-  // 累计销售额
-  let totalSales=0;
+
+  // ===== 2. 期间销售额 / 期间销售件数 =====
+  let salesAmt = 0, salesQty = 0;
   DB.logs.filter(l=>l.type==='out').forEach(l=>{
-    if(!parseFloat(l.originalPrice||l.price))return;
-    const ts=new Date(l.ts).getTime();
-    if(from&&ts<from)return;if(to&&ts>to)return;
-    if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
-    const v=convertCurrency(l.originalPrice||l.price, l.originalCurrency||l.currency||'CNY', cur);
-    if(!isNaN(v))totalSales+=v*l.qty;
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    salesAmt += logAmt(l);
+    salesQty += l.qty;
   });
-  // 累计进货额
-  let totalPurchase=0;
-  DB.logs.filter(l=>l.type==='in').forEach(l=>{
-    if(!parseFloat(l.originalPrice||l.price))return;
-    const ts=new Date(l.ts).getTime();
-    if(from&&ts<from)return;if(to&&ts>to)return;
-    if(cat){const p=DB.products.find(x=>x.id===pidOf(l));if(!p||(p.cat||'')!==cat)return;}
-    const v=convertCurrency(l.originalPrice||l.price, l.originalCurrency||l.currency||'CNY', cur);
-    if(!isNaN(v))totalPurchase+=v*l.qty;
-  });
-  const _fmt=v=>(cur==='JPY'||cur==='CNY')?sym+Math.round(v).toLocaleString():sym+v.toFixed(2);
-  document.getElementById('stats-money-row').innerHTML=`
-    <div class="stat-card"><span class="stat-num" style="color:var(--gold);font-size:18px;">${_fmt(stockSell)}</span><div class="stat-label">库存价值(售价)</div></div>
-    <div class="stat-card"><span class="stat-num" style="font-size:18px;">${_fmt(stockCost)}</span><div class="stat-label">库存成本(最近进价)</div></div>
-    <div class="stat-card"><span class="stat-num" style="color:var(--jade-light);font-size:18px;">${_fmt(totalSales)}</span><div class="stat-label">累计销售额</div></div>
-    <div class="stat-card"><span class="stat-num" style="color:var(--rose);font-size:18px;">${_fmt(totalPurchase)}</span><div class="stat-label">累计进货额</div></div>`;
 
-  // ===== 各类别表 / 低库存 =====
-  const cm={};
-  prods.forEach(p=>{const c=p.cat||'未分类';if(!cm[c])cm[c]={count:0,qty:0};cm[c].count++;cm[c].qty+=p.qty;});
-  document.getElementById('cat-stats-tbody').innerHTML=Object.entries(cm).sort((a,b)=>b[1].qty-a[1].qty).map(([c,v])=>`<tr><td>${c}</td><td class="td-mono">${v.count}</td><td class="td-mono">${v.qty}</td></tr>`).join('');
-  const low=prods.filter(p=>p.qty<3);
-  document.getElementById('low-stock-list').innerHTML=low.length?low.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail('${p.id}')">
-    <span style="font-size:13px;">${p.name}</span>
-    <span style="color:${p.qty<=0?'var(--text-muted)':'var(--rose)'};font-family:'DM Mono',monospace;">${p.qty}件</span>
-  </div>`).join(''):`<div style="color:var(--jade-light);font-size:13px;padding:8px;">✅ 所有商品库存充足</div>`;
+  // ===== 3. 期间销售对应成本 =====
+  let salesCost = 0;
+  DB.logs.filter(l=>l.type==='out').forEach(l=>{
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    const pid = pidOf(l);
+    const ins = DB.logs.filter(x=>x.type==='in' && pidOf(x)===pid && _origPrice(x)>0);
+    if(!ins.length) return;
+    ins.sort((a,b)=>new Date(b.ts) - new Date(a.ts));
+    const lastIn = ins[0];
+    const unitCost = (lastIn.basePrice && !isNaN(lastIn.basePrice))
+      ? (convertCurrency(parseFloat(lastIn.basePrice),'JPY',cur)||0)
+      : (convertCurrency(_origPrice(lastIn), _origCur(lastIn), cur)||0);
+    salesCost += unitCost * l.qty;
+  });
+  const profit = salesAmt - salesCost;
+
+  // ===== 4. 周转率 = 期间销售件数 / 期末库存件数 =====
+  const totalStockQty = DB.products.reduce((a,p)=>a+p.qty,0);
+  const turnover = totalStockQty > 0 ? (salesQty / totalStockQty) : 0;
+
+  // ===== 5. 上期数据(算趋势) =====
+  let prevSalesAmt = 0, prevProfit = 0;
+  if(range.prevFrom !== null && range.prevTo !== null){
+    let prevSalesCost = 0;
+    DB.logs.filter(l=>l.type==='out').forEach(l=>{
+      const ts = new Date(l.ts).getTime();
+      if(!inRange(ts, range.prevFrom, range.prevTo)) return;
+      prevSalesAmt += logAmt(l);
+      const pid = pidOf(l);
+      const ins = DB.logs.filter(x=>x.type==='in' && pidOf(x)===pid && new Date(x.ts).getTime()<=ts && _origPrice(x)>0);
+      if(ins.length){
+        ins.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+        const lastIn = ins[0];
+        const unitCost = (lastIn.basePrice && !isNaN(lastIn.basePrice))
+          ? (convertCurrency(parseFloat(lastIn.basePrice),'JPY',cur)||0)
+          : (convertCurrency(_origPrice(lastIn), _origCur(lastIn), cur)||0);
+        prevSalesCost += unitCost * l.qty;
+      }
+    });
+    prevProfit = prevSalesAmt - prevSalesCost;
+  }
+
+  // ===== 6. 渲染 4 张卡 =====
+  const fmtMoney = v => {
+    if(v >= 10000) return sym + (v/1000).toFixed(1) + 'K';
+    return sym + Math.round(v).toLocaleString();
+  };
+  const fmtTrend = (cur_, prev_) => {
+    if(!prev_ || prev_ === 0) return {txt: '—', cls: ''};
+    const pct = (cur_ - prev_) / prev_ * 100;
+    const cls = pct >= 0 ? 'up' : 'down';
+    const arrow = pct >= 0 ? '↑' : '↓';
+    return {txt: arrow + ' ' + Math.abs(pct).toFixed(1) + '%', cls};
+  };
+
+  const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+  const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+  const setAttr = (id, name, val) => { const el = document.getElementById(id); if(el) el.setAttribute(name, val); };
+
+  setText('stats-v-stockvalue', fmtMoney(stockValue));
+  setText('stats-v-sales', fmtMoney(salesAmt));
+  setText('stats-v-profit', fmtMoney(profit));
+  setText('stats-v-turnover', turnover.toFixed(2));
+
+  const tStockEl = document.getElementById('stats-t-stockvalue');
+  if(tStockEl){ tStockEl.textContent = ''; tStockEl.className = 's8-stat-trend'; }
+  const tSales = fmtTrend(salesAmt, prevSalesAmt);
+  const tSalesEl = document.getElementById('stats-t-sales');
+  if(tSalesEl){ tSalesEl.textContent = tSales.txt; tSalesEl.className = 's8-stat-trend ' + tSales.cls; }
+  const tProfit = fmtTrend(profit, prevProfit);
+  const tProfitEl = document.getElementById('stats-t-profit');
+  if(tProfitEl){ tProfitEl.textContent = tProfit.txt; tProfitEl.className = 's8-stat-trend ' + tProfit.cls; }
+  const tTurnEl = document.getElementById('stats-t-turnover');
+  if(tTurnEl){ tTurnEl.textContent = ''; tTurnEl.className = 's8-stat-trend'; }
+
+  // ===== 7. 销售趋势图 SVG =====
+  const buckets = new Array(range.bucketCount).fill(0);
+  DB.logs.filter(l=>l.type==='out').forEach(l=>{
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    const span = Math.max(1, range.to - range.from);
+    const idx = Math.floor((ts - range.from) / span * range.bucketCount);
+    const i = Math.min(range.bucketCount - 1, Math.max(0, idx));
+    buckets[i] += logAmt(l);
+  });
+  const maxVal = Math.max(...buckets, 1);
+  const w = 300, h = 140;
+  const stepX = w / Math.max(1, range.bucketCount - 1);
+  const points = buckets.map((v, i) => {
+    const x = i * stepX;
+    const y = h - (v / maxVal) * (h - 20) - 10;
+    return {x, y};
+  });
+  const linePath = points.map((p, i) => (i === 0 ? 'M' : 'L') + ' ' + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  const fillPath = linePath + ' L ' + w + ',' + h + ' L 0,' + h + ' Z';
+  setAttr('stats-chart-line', 'd', linePath);
+  setAttr('stats-chart-fill', 'd', fillPath);
+  const last = points[points.length - 1];
+  const dot = document.getElementById('stats-chart-dot');
+  if(dot){
+    if(last && buckets[buckets.length - 1] > 0){
+      dot.setAttribute('cx', last.x.toFixed(1));
+      dot.setAttribute('cy', last.y.toFixed(1));
+      dot.style.display = '';
+    } else {
+      dot.style.display = 'none';
+    }
+  }
+  const subTexts = {today:'今日', week:'本周', month:'近 30 天', quarter:'本季', year:'本年 12 月', all:'全部'};
+  const r = STATS_RANGES[statsRangeIdx];
+  setText('stats-chart-sub', subTexts[r.key] || r.label);
+  setText('stats-top-range', r.label);
+
+  // ===== 8. 畅销榜 TOP 5 =====
+  const prodSales = {};
+  DB.logs.filter(l=>l.type==='out').forEach(l=>{
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    const pid = pidOf(l);
+    if(!prodSales[pid]) prodSales[pid] = {qty: 0, amt: 0};
+    prodSales[pid].qty += l.qty;
+    prodSales[pid].amt += logAmt(l);
+  });
+  const top5 = Object.entries(prodSales)
+    .map(([pid, v]) => ({pid, ...v, name: (DB.products.find(p=>p.id===pid)||{}).name || '已删除'}))
+    .sort((a,b) => b.qty - a.qty || b.amt - a.amt)
+    .slice(0, 5);
+  if(top5.length === 0){
+    setHTML('stats-top-list', '<div class="s8-top-item"><div class="s8-top-rank">—</div><div class="s8-top-name" style="color:var(--text-muted);">期间无销售</div></div>');
+  } else {
+    setHTML('stats-top-list', top5.map((p, i) => `
+      <div class="s8-top-item">
+        <div class="s8-top-rank">${i+1}</div>
+        <div class="s8-top-name" onclick="openDetail('${p.pid}')" style="cursor:pointer;">${p.name}</div>
+        <div class="s8-top-val">${fmtMoney(p.amt)} · ${p.qty}件</div>
+      </div>`).join(''));
+  }
+
+  // ===== 9. 预警 =====
+  const lowCount = DB.products.filter(p => p.qty <= 2 && p.qty > 0).length;
+  const SIXTY_DAYS = 60 * 24 * 3600 * 1000;
+  const now = Date.now();
+  const idleCount = DB.products.filter(p => {
+    const recent = DB.logs.find(l => pidOf(l) === p.id && (now - new Date(l.ts).getTime()) <= SIXTY_DAYS);
+    return !recent;
+  }).length;
+  const showCount = (DB.showItems||[]).reduce((a, s) => a + (s.qty || 0), 0);
+  setText('stats-alert-low', lowCount + ' 项');
+  setText('stats-alert-idle', idleCount + ' 项');
+  setText('stats-alert-show', showCount + ' 项');
 }
 
 // ===================== 导入旧数据 =====================
