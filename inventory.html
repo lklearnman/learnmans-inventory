@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260528l">
+<link rel="stylesheet" href="inventory.css?v=20260528m">
 </head>
 <body>
 
@@ -340,6 +340,7 @@
       <select id="label-size" onchange="onLabelSizeChange(this.value)">
         <option value="tiny">超迷你 25×15mm（戒指/耳钉吊牌，建议勾 QR）</option>
         <option value="mini">迷你 30×20mm（小吊坠/小标本，建议勾 QR）</option>
+        <option value="fold-ring">F型珠宝标签 25×30+45mm 对折（精臣 M3/B32/Z401，上半 barcode/下半 名+价）</option>
         <option value="small">小标签 40×30mm（一般首饰商品贴）</option>
         <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
         <option value="large">价格牌 90×60mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
@@ -404,11 +405,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260528l"></script>
-<script src="js/inventory-ui.js?v=20260528l"></script>
-<script src="js/inventory-logs.js?v=20260528l"></script>
-<script src="js/inventory-ai.js?v=20260528l"></script>
-<script src="js/inventory-labels.js?v=20260528l"></script>
+<script src="js/inventory-core.js?v=20260528m"></script>
+<script src="js/inventory-ui.js?v=20260528m"></script>
+<script src="js/inventory-logs.js?v=20260528m"></script>
+<script src="js/inventory-ai.js?v=20260528m"></script>
+<script src="js/inventory-labels.js?v=20260528m"></script>
 <script>loadAll();</script>
 </body>
 </html>
