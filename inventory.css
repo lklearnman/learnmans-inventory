@@ -1542,6 +1542,17 @@ tr.clickable{cursor:pointer;}
 }
 .sio-preview-val .plus{color:var(--jade-light);}
 .sio-preview-val .minus{color:var(--rose-light);}
+.sio-qty{display:flex;align-items:center;gap:8px;}
+.sio-qty input{flex:1;text-align:center;font-family:'DM Mono',monospace;font-size:18px;color:var(--gold-light);font-weight:500;}
+.sio-qty-btn{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--surface2);border:1px solid var(--gold-dim);color:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;
+  transition:all 0.15s ease;user-select:none;
+}
+.sio-qty-btn:hover{background:var(--gold-glow);border-color:var(--gold);}
+.sio-qty-btn:active{transform:scale(0.94);}
 
 @media (max-width:480px){
   .logs-summary{grid-template-columns:1fr;gap:6px;}
