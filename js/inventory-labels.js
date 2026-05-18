@@ -184,8 +184,8 @@ function previewLabels(){
     .lbl-bot{flex-shrink:0;display:flex;flex-direction:column;gap:2px;}
     .lbl-name{font-size:${cfg.nameSize*1.15}px;font-weight:bold;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word;}
     .lbl-origin{font-size:${cfg.subSize*1.15}px;color:#666;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .lbl-price{font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#d4af37;text-align:right;line-height:1.1;}
-    .lbl-price-tr{position:absolute;top:${Math.max(4,cfg.w*0.05)}px;right:${Math.max(4,cfg.w*0.05)}px;font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#d4af37;line-height:1;}
+    .lbl-price{font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#000;text-align:right;line-height:1.1;}
+    .lbl-price-tr{position:absolute;top:${Math.max(4,cfg.w*0.05)}px;right:${Math.max(4,cfg.w*0.05)}px;font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#000;line-height:1;}
     .lbl-sku{font-size:${cfg.subSize}px;font-family:monospace;color:#444;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .lbl-bc-row{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;}
     .lbl-bc-stack{flex:1;min-width:0;}
@@ -339,7 +339,7 @@ async function exportLabelsPDF(){
         if(priceTxt){
           pdf.setFontSize(cfg.priceSize);
           setFont('bold');
-          pdf.setTextColor(180,140,30);
+          pdf.setTextColor(0,0,0);
           // 价格垂直居中在下半 + 名字之后剩余空间
           const remainH=(y+cfg.h-fpad)-bcy;
           const priceY=bcy+remainH/2+cfg.priceSize*0.15;
@@ -383,7 +383,7 @@ async function exportLabelsPDF(){
     if(priceTxt){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
-      pdf.setTextColor(180,140,30);
+      pdf.setTextColor(0,0,0);
       const bcH=cfg.bcH*0.7;
       const priceY=priceAtTop
         ? y+pad+cfg.priceSize*0.4
