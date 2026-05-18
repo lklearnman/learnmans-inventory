@@ -153,6 +153,8 @@ tr.clickable{cursor:pointer;}
   .main{padding:12px;}
   .product-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
   .detail-grid{grid-template-columns:1fr;}
-  .header-stats{display:none;}
+  /* 手机版隐藏 stats 文字(种/库存/展会),但保留币种 select */
+  .header-stats>div{display:none;}
+  .header-stats>select{margin-left:0;}
   .form-grid{grid-template-columns:1fr;}
 }
