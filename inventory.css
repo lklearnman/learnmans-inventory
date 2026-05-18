@@ -459,6 +459,372 @@ tr.clickable{cursor:pointer;}
 }
 .s8-alert-item .v{font-family:'DM Mono',monospace;color:var(--amber);}
 
+/* ============================================ */
+/* 详情 modal(画面 3 落地) ===================== */
+/* ============================================ */
+/* 详情 modal 容器:去掉内 padding 让照片 full-bleed */
+#modal-detail .modal{padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:92vh;}
+#modal-detail .modal-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:14px;
+  letter-spacing:6px;
+  color:var(--text);
+  text-align:center;
+  padding:14px 48px 12px;
+  margin-bottom:0;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(26,25,21,0.95) 0%,rgba(26,25,21,0.7) 100%);
+  backdrop-filter:blur(8px);
+  flex-shrink:0;
+}
+#modal-detail .modal-close{top:10px;right:14px;}
+#modal-detail .modal-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#modal-detail .modal-actions{
+  padding:10px 14px;
+  background:linear-gradient(0deg,rgba(14,13,11,0.98) 0%,rgba(14,13,11,0.85) 100%);
+  backdrop-filter:blur(12px);
+  border-top:1px solid var(--border);
+  margin-top:0;
+  flex-shrink:0;
+  justify-content:stretch;
+  gap:8px;
+}
+#modal-detail .modal-actions .btn{flex:1;justify-content:center;padding:10px 8px;}
+
+/* 主图区 */
+.d3-photo{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  max-height:380px;
+  background:linear-gradient(135deg,#1a1410 0%,#0a0a0a 100%);
+  overflow:hidden;
+  flex-shrink:0;
+}
+.d3-photo::before,.d3-photo::after{
+  content:'';
+  position:absolute;
+  width:120px;height:120px;
+  background:radial-gradient(circle,rgba(201,168,76,0.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.d3-photo::before{top:-40px;right:-40px;}
+.d3-photo::after{bottom:-40px;left:-40px;}
+.d3-photo-img{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  z-index:1;
+}
+.d3-photo-img img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 12px 32px rgba(0,0,0,0.6));
+  cursor:zoom-in;
+}
+.d3-photo-empty{
+  font-size:80px;
+  opacity:0.35;
+}
+.d3-photo-dots{
+  position:absolute;
+  bottom:14px;left:50%;
+  transform:translateX(-50%);
+  display:flex;gap:5px;
+  z-index:2;
+}
+.d3-photo-dot{
+  width:6px;height:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.25);
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.d3-photo-dot.cur{
+  background:var(--gold);
+  width:18px;
+  border-radius:3px;
+}
+.d3-photo-counter{
+  position:absolute;
+  top:14px;left:14px;
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--text-dim);
+  background:rgba(0,0,0,0.55);
+  padding:3px 8px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  z-index:2;
+}
+
+/* 标题/产地 */
+.d3-head{
+  padding:18px 16px 14px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.d3-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:20px;
+  color:var(--text);
+  letter-spacing:1px;
+  margin-bottom:8px;
+}
+.d3-meta{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:var(--text-muted);
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.d3-meta .dot{width:3px;height:3px;background:var(--text-muted);border-radius:50%;display:inline-block;}
+.d3-meta .badge{
+  display:inline-block;
+  padding:2px 8px;
+  font-size:10px;
+  border-radius:10px;
+  letter-spacing:0.5px;
+  background:rgba(201,168,76,0.15);
+  border:1px solid var(--gold-dim);
+  color:var(--gold-light);
+}
+
+/* 价格卡 */
+.d3-price{
+  margin:14px;
+  padding:16px;
+  background:linear-gradient(135deg,#1a1410 0%,#161616 100%);
+  border:1px solid var(--gold-dim);
+  border-radius:12px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 20px rgba(201,168,76,0.08);
+}
+.d3-price::before{
+  content:'';
+  position:absolute;
+  top:-50%;right:-30%;
+  width:160px;height:160px;
+  background:radial-gradient(circle,rgba(201,168,76,0.18) 0%,transparent 60%);
+}
+.d3-price-label{
+  font-size:10px;
+  color:var(--gold-dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:2px;
+  position:relative;
+}
+.d3-price-main{display:flex;align-items:baseline;gap:4px;margin-bottom:10px;position:relative;}
+.d3-price-cur{font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);}
+.d3-price-val{
+  font-family:'DM Mono',monospace;
+  font-size:32px;
+  color:var(--gold-light);
+  font-weight:500;
+  letter-spacing:1px;
+  text-shadow:0 0 24px rgba(201,168,76,0.4);
+  line-height:1;
+}
+.d3-price-raw{
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  color:var(--text-muted);
+  margin-left:8px;
+}
+.d3-price-sub{
+  display:flex;
+  gap:12px;
+  padding-top:10px;
+  border-top:1px dashed var(--border);
+  font-size:11px;
+  position:relative;
+}
+.d3-price-sub-item{flex:1;}
+.d3-price-sub-l{color:var(--text-muted);font-size:9px;letter-spacing:0.5px;margin-bottom:2px;}
+.d3-price-sub-v{font-family:'DM Mono',monospace;color:var(--text);font-size:12px;}
+.d3-price-sub-v.profit{color:var(--jade-light);}
+
+/* 库存卡 */
+.d3-stock{
+  margin:0 14px 14px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.d3-stock-main{flex:1;}
+.d3-stock-l{font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:4px;}
+.d3-stock-v{font-family:'DM Mono',monospace;font-size:36px;color:var(--text);line-height:1;}
+.d3-stock-u{font-size:13px;color:var(--text-muted);margin-left:4px;}
+.d3-stock-det{
+  flex:1;
+  font-size:11px;
+  color:var(--text-muted);
+  line-height:1.8;
+  padding-left:16px;
+  border-left:1px solid var(--border);
+}
+.d3-stock-det .num{font-family:'DM Mono',monospace;color:var(--text);}
+.d3-stock-det .num.show{color:var(--amber);}
+
+/* section */
+.d3-sec{margin:0 14px 14px;}
+.d3-sec-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:10px;
+  color:var(--gold-dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:10px;
+  padding-left:4px;
+}
+.d3-sec-title::before{
+  content:'';
+  width:12px;height:1px;
+  background:var(--gold-dim);
+}
+.d3-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+}
+
+/* 销售概况 */
+.d3-sales-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-bottom:14px;
+}
+.d3-sales-stat{
+  text-align:center;
+  padding:8px 4px;
+  background:var(--surface2);
+  border-radius:6px;
+}
+.d3-sales-v{font-family:'DM Mono',monospace;font-size:16px;color:var(--gold);font-weight:500;}
+.d3-sales-l{font-size:9px;color:var(--text-muted);margin-top:2px;letter-spacing:0.5px;}
+.d3-spark-label{font-size:10px;color:var(--text-muted);margin-bottom:4px;}
+.d3-spark{display:flex;align-items:flex-end;gap:2px;height:36px;}
+.d3-spark-b{
+  flex:1;
+  background:linear-gradient(180deg,var(--gold) 0%,var(--gold-dim) 100%);
+  border-radius:1px;
+  opacity:0.7;
+  min-height:2px;
+}
+.d3-spark-lab{
+  display:flex;justify-content:space-between;
+  font-size:9px;color:var(--text-muted);
+  font-family:'DM Mono',monospace;
+  margin-top:4px;
+}
+
+/* SKU barcode */
+.d3-barcode{
+  background:#f5e6c8;
+  border-radius:8px;
+  padding:10px;
+  text-align:center;
+}
+.d3-barcode svg{width:100%;max-width:240px;height:auto;}
+
+/* 备注 */
+.d3-note{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:3px solid var(--gold-dim);
+  border-radius:8px;
+  padding:12px 14px;
+  font-size:12px;
+  color:var(--text);
+  line-height:1.7;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+/* 操作历史 timeline */
+.d3-hist{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+.d3-hist-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.d3-hist-item:last-of-type{border-bottom:none;}
+.d3-hist-item:hover{background:var(--surface2);}
+.d3-hist-icon{
+  width:28px;height:28px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;
+  flex-shrink:0;
+  font-family:'DM Mono',monospace;
+}
+.d3-hist-icon.in{background:rgba(74,158,122,0.15);color:var(--jade-light);}
+.d3-hist-icon.out{background:rgba(176,90,106,0.15);color:var(--rose-light);}
+.d3-hist-icon.show{background:rgba(212,165,116,0.15);color:var(--amber);}
+.d3-hist-icon.return{background:rgba(74,100,158,0.15);color:#7a9ad0;}
+.d3-hist-main{flex:1;min-width:0;}
+.d3-hist-type{font-size:12px;color:var(--text);}
+.d3-hist-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:2px;}
+.d3-hist-qty{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;}
+.d3-hist-qty.in{color:var(--jade-light);}
+.d3-hist-qty.out{color:var(--rose-light);}
+.d3-hist-qty.show{color:var(--amber);}
+.d3-hist-qty.return{color:#7a9ad0;}
+.d3-hist-more{
+  display:block;
+  text-align:center;
+  padding:10px;
+  font-size:11px;
+  color:var(--gold);
+  cursor:pointer;
+  border-top:1px solid var(--border);
+  background:var(--surface2);
+}
+
+/* 汇率提示行 */
+.d3-fx-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:8px 16px;
+  font-size:10px;
+  color:var(--text-muted);
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+}
+.d3-fx-row .ccy{color:var(--gold);font-family:'DM Mono',monospace;font-weight:600;}
+
+/* 手机版微调 */
+@media(max-width:480px){
+  .d3-photo{max-height:320px;}
+  .d3-name{font-size:18px;}
+  .d3-price-val{font-size:28px;}
+  .d3-stock-v{font-size:30px;}
+}
+
 /* ==================================================== */
 /* 标签打印 MODAL — screen-7 风格 (2026-05-19) =========== */
 /* ==================================================== */
