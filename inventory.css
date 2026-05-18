@@ -293,3 +293,121 @@ tr.clickable{cursor:pointer;}
   color:var(--text-muted);
 }
 .s8-alert-item .v{font-family:'DM Mono',monospace;color:var(--amber);}
+
+/* 任务C: 卡内副值小字(毛利率/周转天数)*/
+.s8-stat-sub{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--text-dim);
+  margin-top:2px;
+  letter-spacing:0.3px;
+}
+
+/* 任务A: 各类别表现 */
+.s8-cat{
+  margin:0 14px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+}
+.s8-cat-head{
+  font-size:12px;
+  color:var(--gold);
+  letter-spacing:1px;
+  margin-bottom:8px;
+}
+.s8-cat-tablewrap{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.s8-cat-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+  min-width:430px;
+}
+.s8-cat-table th{
+  text-align:left;
+  font-weight:500;
+  color:var(--text-dim);
+  border-bottom:1px solid var(--border);
+  padding:6px 6px 6px 0;
+  white-space:nowrap;
+}
+.s8-cat-table td{
+  padding:6px 6px 6px 0;
+  color:var(--text);
+  border-bottom:1px dashed rgba(255,255,255,0.04);
+  white-space:nowrap;
+}
+.s8-cat-table tbody tr:last-child td{border-bottom:none;}
+.s8-cat-table td:nth-child(n+2),
+.s8-cat-table th:nth-child(n+2){
+  font-family:'DM Mono',monospace;
+  text-align:right;
+}
+
+/* 任务B: 供应商 / 客户排行 */
+.s8-cp-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:0 14px 14px;
+}
+.s8-cp-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 12px;
+  min-width:0;
+}
+.s8-cp-head{
+  font-size:11px;
+  color:var(--gold);
+  letter-spacing:1px;
+  margin-bottom:8px;
+}
+.s8-cp-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  padding:4px 0;
+  border-bottom:1px dashed rgba(255,255,255,0.04);
+}
+.s8-cp-item:last-child{border-bottom:none;}
+.s8-cp-rank{
+  display:inline-flex;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:rgba(212,165,116,0.18);
+  color:var(--gold-light);
+  align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;
+  flex:none;
+}
+.s8-cp-name{
+  flex:1;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.s8-cp-val{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--gold);
+  flex:none;
+}
+.s8-cp-repeat{
+  color:var(--jade-light);
+  font-size:11px;
+  margin-left:2px;
+}
+.s8-cp-empty{
+  font-size:11px;
+  color:var(--text-muted);
+  padding:8px 0;
+  text-align:center;
+}
+@media (max-width: 480px){
+  .s8-cp-row{grid-template-columns:1fr;}
+}
