@@ -88,6 +88,8 @@ function onLabelSizeChange(size){
 function getLabelConfig(){
   const size=document.getElementById('label-size').value;
   const sizes={
+    tiny:{w:25,h:15,nameSize:5,priceSize:7,subSize:4,bcW:0.45,bcH:5},
+    mini:{w:30,h:20,nameSize:6,priceSize:9,subSize:5,bcW:0.55,bcH:6},
     small:{w:40,h:30,nameSize:8,priceSize:11,subSize:6,bcW:0.6,bcH:8},
     medium:{w:60,h:40,nameSize:10,priceSize:14,subSize:7,bcW:0.8,bcH:10},
     large:{w:90,h:60,nameSize:14,priceSize:20,subSize:9,bcW:1.2,bcH:14},
