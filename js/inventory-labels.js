@@ -90,6 +90,7 @@ function getLabelConfig(){
   const sizes={
     tiny:{w:25,h:15,nameSize:5,priceSize:7,subSize:4,bcW:0.45,bcH:5},
     mini:{w:30,h:20,nameSize:6,priceSize:9,subSize:5,bcW:0.55,bcH:6},
+    'fold-ring':{w:25,h:30,nameSize:6,priceSize:10,subSize:4,bcW:0.5,bcH:9,fold:true},
     small:{w:40,h:30,nameSize:8,priceSize:11,subSize:6,bcW:0.6,bcH:8},
     medium:{w:60,h:40,nameSize:10,priceSize:14,subSize:7,bcW:0.8,bcH:10},
     large:{w:90,h:60,nameSize:14,priceSize:20,subSize:9,bcW:1.2,bcH:14},
@@ -301,6 +302,51 @@ async function exportLabelsPDF(){
         ? fmtPrice(p.price,cfg.labelCurrency,pCur)
         : fmtPriceRaw(p.price,pCur);
       priceW=pdf.getTextWidth(priceTxt);
+    }
+
+    // F型对折标签:上下分区,上半 barcode/SKU(对折后变背面),下半 名+价(正面)
+    // bars 用满下半的 22×9mm,模块比 tiny 宽近 2 倍 → 扫描稳
+    if(cfg.fold){
+      const halfH=cfg.h/2;
+      const fpad=1.5;
+      // 上半 (y+0 → y+halfH): barcode + SKU 文字
+      {
+        const code=getBarcodeContent(p);
+        const bcW=cfg.w-fpad*2;
+        const bcH=halfH-fpad*2-2; // 留 2mm 给 SKU 文字
+        const ok=drawBarcodeVector(pdf,code,x+fpad,y+fpad,bcW,bcH);
+        if(!ok){
+          const bc=makeBarcodeDataURL(code,cfg);
+          if(bc)pdf.addImage(bc,'PNG',x+fpad,y+fpad,bcW,bcH);
+        }
+        pdf.setFontSize(cfg.subSize*0.9);
+        setFont('normal');
+        pdf.setTextColor(50);
+        pdf.text(p.sku||p.id,x+cfg.w/2,y+halfH-fpad*0.3,{align:'center'});
+      }
+      // 下半 (y+halfH → y+h): 名+价 (对折后是正面)
+      {
+        const bot=y+halfH;
+        let bcy=bot+fpad+cfg.nameSize*0.4;
+        if(cfg.showName&&p.name){
+          pdf.setFontSize(cfg.nameSize);
+          setFont('bold');
+          pdf.setTextColor(0);
+          const nameLines=pdf.splitTextToSize(p.name,cfg.w-fpad*2).slice(0,2);
+          pdf.text(nameLines,x+cfg.w/2,bcy,{align:'center'});
+          bcy+=cfg.nameSize*0.5*nameLines.length;
+        }
+        if(priceTxt){
+          pdf.setFontSize(cfg.priceSize);
+          setFont('bold');
+          pdf.setTextColor(180,140,30);
+          // 价格垂直居中在下半 + 名字之后剩余空间
+          const remainH=(y+cfg.h-fpad)-bcy;
+          const priceY=bcy+remainH/2+cfg.priceSize*0.15;
+          pdf.text(priceTxt,x+cfg.w/2,priceY,{align:'center'});
+        }
+      }
+      continue; // 跳过常规渲染
     }
 
     // 商品名行数预探(用 full width - priceW 试):>1 行的话价格挪到右上角,
