@@ -155,19 +155,34 @@
 
 <!-- 展会 -->
 <div class="section" id="sec-show">
+  <!-- Hero 概览卡:聚合展示当前展会带出统计(placeholder 静态结构,等后续 JS 接入数据) -->
+  <div class="show-hero">
+    <div class="show-hero-name" id="show-hero-name">🎪 展会带货</div>
+    <div class="show-hero-date" id="show-hero-date">展会期间累计带出 <span class="show-hero-live" id="show-hero-live">● 进行中</span></div>
+    <div class="show-hero-stats">
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-out">0</div><div class="show-hero-stat-l">带出件数</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-types">0</div><div class="show-hero-stat-l">商品种类</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-shows">0</div><div class="show-hero-stat-l">展会场数</div></div>
+    </div>
+  </div>
+
+  <!-- 带出表单 -->
   <div class="card">
-    <div class="card-title">🎪 展会带货</div>
+    <div class="card-title">＋ 新建带出</div>
     <div class="form-grid">
       <div class="form-group"><label>选择商品</label><select id="show-product"></select></div>
       <div class="form-group"><label>带出数量</label><input type="number" id="show-qty" value="1" min="1"></div>
       <div class="form-group full"><label>展会名称</label><input type="text" id="show-name-input" placeholder="例：2025东京矿物展"></div>
     </div>
-    <div style="margin-top:14px;"><button class="btn btn-gold" onclick="doShowOut()">带出</button></div>
+    <div class="show-form-actions"><button class="btn btn-gold" onclick="doShowOut()">带出</button></div>
   </div>
-  <div class="card">
-    <div class="card-title">📤 展会中（未归还）</div>
-    <div id="show-list"></div>
-  </div>
+
+  <!-- 展会中商品列表 -->
+  <div class="show-list-header">带出商品</div>
+  <div id="show-list" class="show-list-wrap"></div>
+
+  <!-- 结算入口:跳到流水查看成交 -->
+  <div class="show-finish"><button class="btn btn-gold show-finish-btn" onclick="switchTab('inout',document.querySelectorAll('.nav-tab')[1])">⚖ 展 会 结 算 · 查看成交</button></div>
 </div>
 
 <!-- 扫码 (screen-5 设计) -->
@@ -570,6 +585,28 @@
 <script src="js/inventory-logs.js?v=20260528p"></script>
 <script src="js/inventory-ai.js?v=20260528p"></script>
 <script src="js/inventory-labels.js?v=20260528p"></script>
-<script>loadAll();</script>
+<script>
+// 展会 hero 卡数字更新(包装 renderShowList,不改 inventory-ui.js)
+(function(){
+  if(typeof renderShowList!=='function')return;
+  const _orig=renderShowList;
+  window.renderShowList=function(){
+    _orig.apply(this,arguments);
+    try{
+      const items=(window.DB&&DB.showItems)||[];
+      const totalOut=items.reduce((a,s)=>a+(s.qty||0),0);
+      const types=new Set(items.map(s=>s.productId)).size;
+      const shows=new Set(items.map(s=>(s.showName||'').trim()).filter(Boolean)).size;
+      const setTx=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+      setTx('show-hero-stat-out',totalOut);
+      setTx('show-hero-stat-types',types);
+      setTx('show-hero-stat-shows',shows);
+      const live=document.getElementById('show-hero-live');
+      if(live)live.style.display=totalOut>0?'inline-block':'none';
+    }catch(e){console.warn('hero stat update failed',e);}
+  };
+})();
+loadAll();
+</script>
 </body>
 </html>
