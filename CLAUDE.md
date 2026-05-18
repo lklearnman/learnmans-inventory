@@ -47,18 +47,26 @@
 ## 待办(按优先级)
 
 紧急: 摄像头扫码线上仍失败 (P0,见 `交接_20260518_标签PDF和扫码.md`)、PWA、用户登录(Google + 角色权限)
-重要: 手机版顶部全局币种 select 不可见 (P1)、流水打印表头同步 11 列 (P3)、标签打印前显示价格确认 (P4)、精臣打印机标签、Excel 通用导入、AI 识别速度排查、流水页 `renderSummary` 混币累加问题(`js/inventory-logs.js:41`)
+重要: 手机版顶部全局币种 select 不可见 (P1)、流水打印表头同步 11 列 (P3)、标签打印前显示价格确认 (P4)、精臣打印机标签、Excel 通用导入、AI 识别速度排查
 将来: 照片改存 Google Drive、Mac Mini 备份 Supabase
 
-## 多币种(2026-05-17 起,2026-05-18 完善)
+## 多币种 + 本位币双轨(2026-05-17 起步,2026-05-19 双轨改造定型)
 
-- 数据库:`products.currency` / `logs.currency` 字段(text, default 'JPY')+ `logs.counterparty`(text, 进货商/客户)
-- 旧数据全标 'CNY'(金额数值实际就是 CNY)— ⚠️ 不能光改 currency 不动数值,会失真
-- 推荐价格 = 所有 in logs.price 各自换算 JPY → 平均 → ×3,固定基于 JPY 计算
-- **2026-05-18 改**: 详情页删独立 `detailCurrency`,统一跟随 `inventoryCurrency`。库存/详情/统计 modal 三处共用一个 select
-- 汇率源 frankfurter.app(CNY 基准, 6h 缓存)
-- modal 内 currency select 切换时,价格 input 数字按汇率自动换算(`onPriceCurrencyChange` in `inventory-core.js`)
-- 详情见 `交接_20260517_多币种.md` 和 `交接_20260518.md`
+- **数据库 schema(双轨)** — `logs` 表 6 个相关列:
+  - `original_price` / `original_currency` — 用户录入时的原始金额和币种(进货商付什么币、客户付什么币,如实保留)
+  - `base_price` / `base_currency` — 记账瞬间按汇率换算成本位币的金额,`base_currency` 全部 'JPY'
+  - `fx_rate` — 当时换算用的汇率,留作审计追溯
+  - `counterparty`(text)— 进货商/客户名称
+  - 旧字段 `price` / `currency` 仍然存在(只读兜底,前端 `originalPrice||price`、`originalCurrency||currency||'CNY'`)
+- **`products.currency`** 全部统一为 'JPY'(本位币),不再随商品变。商品本身没有"币种属性",只有进/出流水才有原始币种
+- **旧数据迁移完成** — 历史 logs 已经全部回填 `base_price`(按当时汇率换算成 JPY),累加统计直接 sum `basePrice` 就准确,不再有「混币累加失真」问题
+- **统计逻辑** — `renderSummary` / `renderStats` / `printLogs` 全部以 `basePrice`(JPY)为底层累加,再用 `convertCurrency(totalJpy,'JPY',displayCur)` 换算到用户当前选的显示币种。`js/inventory-logs.js:128/221/240` 等处
+- **CSV/打印 11 列** — 含 `original_price / original_currency / fx_rate / base_price / base_currency` 双轨字段,完整保留审计信息(`exportLogCSV` / `printLogs` in `inventory-logs.js`)
+- **UI 币种 select 统一**(2026-05-18 起)— 删了独立的 `detailCurrency`,详情页统一跟随全局 `inventoryCurrency`。库存/详情/统计三处共用一个 select(顶部全局)
+- **modal 内价格联动** — 录入时切 currency select,价格 input 数字按汇率自动换算(`onPriceCurrencyChange` in `inventory-core.js`)。提交时同时存 `originalPrice/originalCurrency`(用户看到的)+ `basePrice/baseCurrency=JPY/fxRate`(系统记账的)
+- **推荐价格** — 所有 in logs 各自取 `basePrice`(已是 JPY)平均 → ×3,固定基于 JPY 计算
+- **汇率源** frankfurter.app(CNY 基准, 6h 缓存,`fxRates` 在 `inventory-core.js:219`)。`convertCurrency(n, from, to)` 走 CNY 中转
+- 历史快照见 `交接_20260517_多币种.md`、`交接_20260518.md`、`交接_20260519_本位币改造.md`(本节是 v4 现状,文档以代码为准)
 
 ## 关键文件
 
