@@ -442,7 +442,13 @@
     <div class="form-grid">
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
-      <div class="form-group"><label id="si-qty-label">入库数量</label><input type="number" id="si-qty" value="1" min="1" oninput="renderStockioPreview()"></div>
+      <div class="form-group"><label id="si-qty-label">入库数量</label>
+        <div class="sio-qty">
+          <button type="button" class="sio-qty-btn" onclick="adjustStockioQty(-1)">−</button>
+          <input type="number" id="si-qty" value="1" min="1" oninput="renderStockioPreview()">
+          <button type="button" class="sio-qty-btn" onclick="adjustStockioQty(1)">+</button>
+        </div>
+      </div>
       <div class="form-group"><label id="si-price-label">本次进价</label>
         <div style="display:flex;gap:6px;">
           <input type="text" id="si-price" placeholder="进货成本" style="flex:1;" oninput="renderStockioPreview()">
@@ -452,7 +458,7 @@
         </div>
       </div>
       <div class="form-group"><label id="si-counterparty-label">进货商</label><input type="text" id="si-counterparty" placeholder="供应商名称（可选）"></div>
-      <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="批次/产地（可选）"></div>
+      <div class="form-group full"><label>备注</label><textarea id="si-note" rows="2" placeholder="批次/产地（可选）" style="resize:vertical;min-height:36px;"></textarea></div>
     </div>
     <div class="sio-preview" id="sio-preview">
       <div class="sio-preview-label" id="sio-preview-label">本 次 入 库</div>
@@ -510,7 +516,7 @@
     <!-- 已选汇总 -->
     <div class="label-summary">
       <span>已选商品 <b id="label-selected-count">0</b></span>
-      <span id="label-summary-meta" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);"></span>
+      <span id="label-summary-meta" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);"></span>
     </div>
 
     <!-- 标签尺寸卡片 -->
@@ -593,7 +599,7 @@
         <option value="USD">USD $</option>
         <option value="EUR">EUR €</option>
       </select>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.4;">「原币种」每张按商品自己的币种;选具体币种则按汇率统一换算后打印</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4;">「原币种」每张按商品自己的币种;选具体币种则按汇率统一换算后打印</div>
     </div>
 
     <!-- 商品列表 -->

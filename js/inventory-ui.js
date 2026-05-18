@@ -393,6 +393,14 @@ function _applyStockioMode(){
   renderStockioPreview();
 }
 
+function adjustStockioQty(delta){
+  const el=document.getElementById('si-qty');if(!el)return;
+  const cur=parseInt(el.value)||0;
+  const next=Math.max(1,cur+delta);
+  el.value=next;
+  renderStockioPreview();
+}
+
 function renderStockioPreview(){
   const qty=parseInt(document.getElementById('si-qty')?.value)||0;
   const price=parseFloat(document.getElementById('si-price')?.value)||0;
