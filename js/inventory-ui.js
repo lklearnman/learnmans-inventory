@@ -136,7 +136,8 @@ function renderInventory(){
       const tn=p.thumbnail||(p.photos&&p.photos[0]);
       const thumb=tn?`<div class="product-thumb"><img src="${tn}" loading="lazy" class="zoomable" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()"></div>`:`<div class="product-thumb">${catEmoji(p.cat)}</div>`;
       const isSel=selectedLabelIds.has(p.id);
-      return`<div class="product-card${isSel?' selected':''}" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="card-select" onclick="event.stopPropagation();toggleCardSelect('${p.id}')" title="选择打印标签">${isSel?'✓':''}</div><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">${p.sku||'—'}</div></div></div>`;
+      const priceTxt=(p.price!=null&&p.price!=='')?fmtPrice(p.price,inventoryCurrency,p.currency||'CNY'):'';
+      return`<div class="product-card${isSel?' selected':''}" onclick="openDetail('${p.id}')">${thumb}<div class="category-badge">${p.cat||'未分类'}</div><div class="product-qty${qc}">${avail}</div><div class="card-select" onclick="event.stopPropagation();toggleCardSelect('${p.id}')" title="选择打印标签">${isSel?'✓':''}</div><div class="product-info"><div class="product-name">${p.name}</div>${priceTxt?`<div class="product-price">${priceTxt}</div>`:''}<div class="product-sku">${p.sku||'—'}</div></div></div>`;
     }).join('');
   }
   updateHeader();renderCatFilters();updateLabelButtonCount();
