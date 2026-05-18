@@ -119,10 +119,12 @@ function getBarcodeContent(p){
 
 // PDF 端纯矢量画 barcode bars,告别 PNG 中间桥的抗锯齿/缩放损失
 // JsBarcode SVG 输出:外层白底 rect + <g translate(margin,margin)> 包一堆 <rect> 黑条
+// margin:24 = 12 × width:2 → quiet zone ≥10× 模块宽,满足 CODE128 标准
+// (之前 margin:10 = 5×,扫描器有时找不到 start/stop pattern,看起来「粗糙」)
 function drawBarcodeVector(pdf,text,x_mm,y_mm,w_mm,h_mm){
   try{
     const svgEl=document.createElementNS('http://www.w3.org/2000/svg','svg');
-    JsBarcode(svgEl,text||'NA',{format:'CODE128',displayValue:false,width:2,height:100,margin:10});
+    JsBarcode(svgEl,text||'NA',{format:'CODE128',displayValue:false,width:2,height:100,margin:24});
     const totalW=parseFloat(svgEl.getAttribute('width'));
     if(!totalW)return false;
     const g=svgEl.querySelector('g');
