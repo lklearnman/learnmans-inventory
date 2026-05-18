@@ -18,16 +18,30 @@ function setIOMode(mode,el){
 
 // ===================== INVENTORY =====================
 let invViewMode='grid'; // 'grid' or 'list'
-function toggleInventoryView(){
-  invViewMode=invViewMode==='grid'?'list':'grid';
-  const btn=document.getElementById('view-toggle');
+let invSortMode='new';  // 'new' | 'qty' | 'price' | 'az'
+function setInventoryView(mode){
+  if(mode!=='grid'&&mode!=='list')return;
+  invViewMode=mode;
   const grid=document.getElementById('product-grid');
-  if(invViewMode==='list'){
-    btn.textContent='⊟';btn.title='切换到卡片视图';
-    grid.style.display='block';
-  }else{
-    btn.textContent='⊞';btn.title='切换到列表视图';
-    grid.style.display='';
+  if(grid)grid.style.display='';
+  // 同步 view-toggle 按钮高亮
+  document.querySelectorAll('#inv-view-toggle>button[data-view]').forEach(b=>{
+    if(b.dataset.view==='grid'||b.dataset.view==='list'){
+      b.classList.toggle('cur',b.dataset.view===mode);
+    }
+  });
+  renderInventory();
+}
+function toggleInventoryView(){
+  // 兼容旧调用入口
+  setInventoryView(invViewMode==='grid'?'list':'grid');
+}
+function setInvSort(mode,el){
+  if(['new','qty','price','az'].indexOf(mode)<0)return;
+  invSortMode=mode;
+  if(el&&el.parentNode){
+    el.parentNode.querySelectorAll('.inv-sort-btn').forEach(b=>b.classList.remove('cur'));
+    el.classList.add('cur');
   }
   renderInventory();
 }
@@ -39,11 +53,30 @@ function quickScan(){
 
 function getVisibleProducts(){
   const q=(document.getElementById('inv-search')?.value||'').toLowerCase();
-  return DB.products.filter(p=>{
+  const list=DB.products.filter(p=>{
     if(catFilter!=='all'&&(p.cat||'未分类')!==catFilter)return false;
     if(q&&!p.name.toLowerCase().includes(q)&&!(p.sku||'').toLowerCase().includes(q)&&!(p.cat||'').toLowerCase().includes(q))return false;
     return true;
   });
+  // 排序
+  const showOutMap={};
+  if(invSortMode==='qty'){
+    DB.showItems.forEach(s=>{showOutMap[s.productId]=(showOutMap[s.productId]||0)+s.qty;});
+  }
+  switch(invSortMode){
+    case 'qty':
+      return list.slice().sort((a,b)=>((b.qty-(showOutMap[b.id]||0))-(a.qty-(showOutMap[a.id]||0))));
+    case 'price':
+      return list.slice().sort((a,b)=>(+b.price||0)-(+a.price||0));
+    case 'az':
+      return list.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','zh'));
+    case 'new':
+    default:
+      return list.slice().sort((a,b)=>{
+        const ta=a.createdAt||a.created_at||0,tb=b.createdAt||b.created_at||0;
+        return (tb>ta?1:tb<ta?-1:0);
+      });
+  }
 }
 function renderInventory(){
   const grid=document.getElementById('product-grid');
@@ -57,47 +90,39 @@ function renderInventory(){
   }
 
   if(invViewMode==='list'){
-    // 列表视图
-    grid.className='';
-    grid.innerHTML=`<table class="inv-table">
-      <thead><tr>
-        <th style="width:28px;"></th>
-        <th></th>
-        <th>商品名称</th>
-        <th>类别</th>
-        <th>单价</th>
-        <th>库存</th>
-        <th>展会</th>
-        <th>可用</th>
-        <th>操作</th>
-      </tr></thead>
-      <tbody>${prods.map(p=>{
-        const showOut=showOutMap[p.id]||0;
-        const avail=p.qty-showOut;
-        const qc=avail<=0?'zero':avail<3?'low':'ok';
-        const tn=p.thumbnail||(p.photos&&p.photos[0]);
-        const thumb=tn
-          ?`<img class="thumb-sm zoomable" src="${tn}" loading="lazy" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()">`
-          :`<div class="thumb-emoji">${catEmoji(p.cat)}</div>`;
-        const isSel=selectedLabelIds.has(p.id);
-        return`<tr class="clickable${isSel?' row-selected':''}" onclick="openDetail('${p.id}')">
-          <td onclick="event.stopPropagation()"><input type="checkbox" class="row-sel-cb" ${isSel?'checked':''} onchange="toggleCardSelect('${p.id}')"></td>
-          <td>${thumb}</td>
-          <td style="font-weight:600;color:var(--text);max-width:140px;">${p.name}</td>
-          <td><span style="font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:10px;">${p.cat||'未分类'}</span></td>
-          <td style="color:var(--gold);">${fmtPrice(p.price,inventoryCurrency,p.currency||'CNY')}</td>
-          <td style="text-align:center;">${p.qty}</td>
-          <td style="text-align:center;color:var(--text-muted);">${showOut||'—'}</td>
-          <td style="text-align:center;"><span class="qty-badge ${qc}">${avail}</span></td>
-          <td onclick="event.stopPropagation()">
-            <div style="display:flex;gap:5px;">
-              <button class="btn btn-jade btn-sm" style="padding:4px 8px;font-size:11px;" onclick="openStockInModal('${p.id}')">入库</button>
-              <button class="btn btn-sm" style="padding:4px 8px;font-size:11px;background:var(--rose-dim);color:var(--rose-light);" onclick="openStockOutModal('${p.id}')">出库</button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>`;
+    // 列表视图 — mock screen-2 .s2-row 行式卡片
+    grid.className='inv-list';
+    grid.innerHTML=prods.map(p=>{
+      const showOut=showOutMap[p.id]||0;
+      const avail=p.qty-showOut;
+      const qc=avail<=0?'out':avail<3?'low':'';
+      const tn=p.thumbnail||(p.photos&&p.photos[0]);
+      const thumb=tn
+        ?`<img src="${tn}" loading="lazy" alt="" onmouseenter="showZoomPreview(this,'${p.id}')" onmouseleave="hideZoomPreview()">`
+        :`<span class="emo">${catEmoji(p.cat)}</span>`;
+      const isSel=selectedLabelIds.has(p.id);
+      const availText=avail<=0?'缺货':('可用 '+avail);
+      return`<div class="inv-row${isSel?' selected':''}" onclick="openDetail('${p.id}')">
+        <input type="checkbox" class="inv-row-sel" ${isSel?'checked':''} onclick="event.stopPropagation()" onchange="toggleCardSelect('${p.id}')">
+        <div class="inv-row-thumb">${thumb}</div>
+        <div class="inv-row-body">
+          <div class="inv-row-name">${p.name}</div>
+          <div class="inv-row-meta">
+            <span class="inv-row-cat">${p.cat||'未分类'}</span>
+            <span class="inv-row-price">${fmtPrice(p.price,inventoryCurrency,p.currency||'CNY')}</span>
+            <span>${p.sku||'—'}</span>
+          </div>
+        </div>
+        <div class="inv-row-right">
+          <div class="inv-row-qty ${qc}">${avail}</div>
+          <div class="inv-row-avail">${availText}</div>
+        </div>
+        <div class="inv-row-actions" onclick="event.stopPropagation()">
+          <button class="inv-row-act in" title="入库" onclick="openStockInModal('${p.id}')">⬆</button>
+          <button class="inv-row-act out" title="出库" onclick="openStockOutModal('${p.id}')">⬇</button>
+        </div>
+      </div>`;
+    }).join('');
   } else {
     // 卡片视图
     grid.className='product-grid';
@@ -156,9 +181,30 @@ function renderCatFilters(){
 }
 function setCatFilter(cat){catFilter=cat;renderInventory();}
 function updateHeader(){
+  const totalQty=DB.products.reduce((a,p)=>a+p.qty,0);
+  const showQty=DB.showItems.reduce((a,s)=>a+s.qty,0);
   document.getElementById('hdr-total').textContent=DB.products.length;
-  document.getElementById('hdr-qty').textContent=DB.products.reduce((a,p)=>a+p.qty,0);
-  document.getElementById('hdr-show').textContent=DB.showItems.reduce((a,s)=>a+s.qty,0);
+  document.getElementById('hdr-qty').textContent=totalQty;
+  document.getElementById('hdr-show').textContent=showQty;
+  // 库存主页概览(mock screen-2 顶部统计)
+  const ovQty=document.getElementById('inv-ov-qty');
+  const ovKinds=document.getElementById('inv-ov-kinds');
+  const ovTotal=document.getElementById('inv-ov-total');
+  if(ovQty)ovQty.textContent=totalQty;
+  if(ovKinds)ovKinds.textContent=DB.products.length;
+  if(ovTotal){
+    try{
+      const cur=(typeof inventoryCurrency!=='undefined'&&inventoryCurrency)||'JPY';
+      let sum=0;
+      DB.products.forEach(p=>{
+        const price=+p.price||0;
+        const from=p.currency||'CNY';
+        if(typeof convertCurrency==='function')sum+=convertCurrency(price,from,cur)*(p.qty||0);
+        else sum+=price*(p.qty||0);
+      });
+      ovTotal.textContent=(typeof fmtPrice==='function')?fmtPrice(sum,cur,cur):(cur+' '+Math.round(sum));
+    }catch(e){ovTotal.textContent='—';}
+  }
 }
 
 // ===================== 建品 =====================

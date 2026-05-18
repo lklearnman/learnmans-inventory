@@ -47,19 +47,43 @@
 
 <!-- 库存 -->
 <div class="section active" id="sec-inventory">
+  <div class="inv-overview" id="inv-overview">
+    <div>
+      <div class="inv-overview-main">
+        <span class="inv-overview-num" id="inv-ov-qty">0</span>
+        <span class="inv-overview-label">件 · <span id="inv-ov-kinds">0</span> 种</span>
+      </div>
+    </div>
+    <div>
+      <div class="inv-overview-total-label">总 价 值</div>
+      <div class="inv-overview-total" id="inv-ov-total">—</div>
+    </div>
+  </div>
   <div class="search-row" style="display:flex;align-items:center;gap:8px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
   </div>
-  <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:center;margin-bottom:16px;">
-    <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:12px;">
     <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
     <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;min-width:0;">
       <option value="all">全部</option>
     </select>
   </div>
-  <div id="inv-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;gap:8px;">
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
+  <div class="inv-toolbar-row">
+    <div class="inv-sort" id="inv-sort">
+      <div class="inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
+      <div class="inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
+      <div class="inv-sort-btn" data-sort="price" onclick="setInvSort('price',this)" title="按价格倒序">¥ 价格</div>
+      <div class="inv-sort-btn" data-sort="az" onclick="setInvSort('az',this)" title="按名称 A-Z">A-Z</div>
+    </div>
+    <div class="inv-view-toggle" id="inv-view-toggle">
+      <button class="cur" id="view-toggle-grid" data-view="grid" onclick="setInventoryView('grid')" title="网格视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+      <button id="view-toggle-list" data-view="list" onclick="setInventoryView('list')" title="列表视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button id="view-toggle" data-view="legacy-toggle" onclick="toggleInventoryView()" style="display:none;" title="切换视图"></button>
+    </div>
+  </div>
+  <div id="inv-toolbar" class="inv-toolbar-row inv-toolbar-row-2">
+    <label class="inv-select-all" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
       <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
       <span id="select-all-label">全选</span>
     </label>
