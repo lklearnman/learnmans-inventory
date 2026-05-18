@@ -170,17 +170,26 @@ function previewLabels(){
   const prods=DB.products.filter(p=>selectedLabelIds.has(p.id));
   const w=window.open('','_blank');
   const html=prods.map(p=>renderLabelHTML(p,cfg)).join('');
+  // 字号公式: pt to px 是 1.06× (96dpi 屏 + 3px/mm 标签缩放),为可读再×1.1 = ~1.15
+  // 价格字号原 1.8× 太大,在 tiny/mini/small 上压商品名第二行。统一 1.15 跟商品名一致 weight
+  // 商品名限制 2 行 (-webkit-line-clamp),溢出加省略号防视觉撞车
+  // 价格位置: 有 QR 时绝对定位右上(避让 QR);无 QR 时贴 barcode 上方右对齐(跟 PDF 一致)
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>价格标签预览</title>
   <style>
     body{background:#e5e5e5;padding:20px;font-family:sans-serif;}
     .label-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(${cfg.w*3}px,1fr));gap:10px;}
-    .label{background:#fff;padding:8px;border:1px dashed #999;display:flex;flex-direction:column;justify-content:space-between;width:${cfg.w*3}px;height:${cfg.h*3}px;color:#000;box-sizing:border-box;}
-    .lbl-name{font-size:${cfg.nameSize*1.5}px;font-weight:bold;line-height:1.2;}
-    .lbl-price{font-size:${cfg.priceSize*1.8}px;font-weight:bold;color:#d4af37;text-align:right;}
-    .lbl-origin{font-size:${cfg.subSize*1.5}px;color:#666;}
-    .lbl-sku{font-size:${cfg.subSize*1.3}px;font-family:monospace;color:#444;}
-    .lbl-barcode img{width:100%;height:${cfg.bcH*3}px;object-fit:contain;}
-    .lbl-qr img{width:${cfg.h*1.5}px;height:${cfg.h*1.5}px;}
+    .label{position:relative;background:#fff;padding:${Math.max(4,cfg.w*0.05)}px;border:1px dashed #999;display:flex;flex-direction:column;justify-content:space-between;width:${cfg.w*3}px;height:${cfg.h*3}px;color:#000;box-sizing:border-box;overflow:hidden;}
+    .lbl-top{flex-shrink:1;min-height:0;overflow:hidden;${cfg.showQR?`padding-right:${cfg.h*1.5+4}px;`:''}}
+    .lbl-bot{flex-shrink:0;display:flex;flex-direction:column;gap:2px;}
+    .lbl-name{font-size:${cfg.nameSize*1.15}px;font-weight:bold;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word;}
+    .lbl-origin{font-size:${cfg.subSize*1.15}px;color:#666;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .lbl-price{font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#d4af37;text-align:right;line-height:1.1;}
+    .lbl-price-tr{position:absolute;top:${Math.max(4,cfg.w*0.05)}px;right:${Math.max(4,cfg.w*0.05)}px;font-size:${cfg.priceSize*1.15}px;font-weight:bold;color:#d4af37;line-height:1;}
+    .lbl-sku{font-size:${cfg.subSize}px;font-family:monospace;color:#444;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .lbl-bc-row{display:flex;align-items:flex-end;justify-content:space-between;gap:4px;}
+    .lbl-bc-stack{flex:1;min-width:0;}
+    .lbl-barcode img{display:block;width:100%;height:${cfg.bcH*3}px;object-fit:contain;}
+    .lbl-qr img{display:block;width:${cfg.h*1.5}px;height:${cfg.h*1.5}px;}
   </style></head><body>
     <h3>价格标签预览（${prods.length}个 · ${cfg.w}×${cfg.h}mm）</h3>
     <div class="label-grid">${html}</div>
@@ -195,16 +204,27 @@ function renderLabelHTML(p,cfg){
         ? fmtPrice(p.price,cfg.labelCurrency,pCur)
         : fmtPriceRaw(p.price,pCur))
     : '';
+  // 镜像 PDF 布局:
+  // - 顶区: 商品名 (2 行 clamp) + 产地 (1 行 clamp)
+  // - 底区: 价格(无 QR 时贴 barcode 上方右对齐) + barcode + SKU 文字
+  //         + QR(右下,有时)
+  // - 价格(有 QR 时):绝对定位右上角避让 QR
+  const priceAtTopRight=cfg.showQR;
   return`<div class="label">
-    ${cfg.showName?`<div class="lbl-name">${p.name}</div>`:''}
-    ${priceTxt?`<div class="lbl-price">${priceTxt}</div>`:''}
-    ${cfg.showOrigin&&p.origin?`<div class="lbl-origin">${p.origin}</div>`:''}
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:6px;">
-      <div style="flex:1;">
-        ${cfg.showSku?`<div class="lbl-barcode"><img src="${makeBarcodeDataURL(getBarcodeContent(p),cfg)}"></div><div class="lbl-sku">${p.sku||p.id}</div>`:''}
-      </div>
-      ${cfg.showQR?`<div class="lbl-qr"><img src="${makeQRDataURL((p.sku||p.id)+'|'+p.name)}"></div>`:''}
+    <div class="lbl-top">
+      ${cfg.showName?`<div class="lbl-name">${p.name}</div>`:''}
+      ${cfg.showOrigin&&p.origin?`<div class="lbl-origin">${p.origin}</div>`:''}
     </div>
+    <div class="lbl-bot">
+      ${priceTxt&&!priceAtTopRight?`<div class="lbl-price">${priceTxt}</div>`:''}
+      <div class="lbl-bc-row">
+        <div class="lbl-bc-stack">
+          ${cfg.showSku?`<div class="lbl-barcode"><img src="${makeBarcodeDataURL(getBarcodeContent(p),cfg)}"></div><div class="lbl-sku">${p.sku||p.id}</div>`:''}
+        </div>
+        ${cfg.showQR?`<div class="lbl-qr"><img src="${makeQRDataURL((p.sku||p.id)+'|'+p.name)}"></div>`:''}
+      </div>
+    </div>
+    ${priceTxt&&priceAtTopRight?`<div class="lbl-price-tr">${priceTxt}</div>`:''}
   </div>`;
 }
 
