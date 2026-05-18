@@ -667,6 +667,8 @@ tr.clickable{cursor:pointer;}
 }
 @media (max-width: 480px){
   .s8-cp-row{grid-template-columns:1fr;}
+}
+
 /* ============================================ */
 /* 库存主页 (mock screen-2) ===================== */
 /* ============================================ */
