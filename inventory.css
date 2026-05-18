@@ -899,7 +899,7 @@ tr.clickable{cursor:pointer;}
 }
 .d3-photo-counter{
   position:absolute;
-  top:14px;left:14px;
+  top:14px;right:14px;
   font-family:'DM Mono',monospace;
   font-size:10px;
   color:var(--text-dim);
@@ -932,7 +932,7 @@ tr.clickable{cursor:pointer;}
   flex-wrap:wrap;
   justify-content:center;
 }
-.d3-meta .dot{width:3px;height:3px;background:var(--text-muted);border-radius:50%;display:inline-block;}
+.d3-meta .dot{width:3px;height:3px;background:var(--text-dim);border-radius:50%;display:inline-block;}
 .d3-meta .badge{
   display:inline-block;
   padding:2px 8px;
