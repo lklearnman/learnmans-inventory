@@ -636,3 +636,271 @@ async function importData(e){
   };
   r.readAsText(f);
 }
+
+// ===================== 流水 tab (screen-10) =====================
+// 流水 tab 用直接从 DB.logs (内存)+supabase 拉。状态:
+let logsTabState={type:'all', page:1, perPage:20};
+
+function setLogsTypeChip(type, el){
+  if(el){
+    el.parentNode.querySelectorAll('.logs-chip').forEach(c=>c.classList.remove('cur'));
+    el.classList.add('cur');
+  }
+  logsTabState.type=type;
+  logsTabState.page=1;
+  renderLogsPage();
+}
+
+async function _ensureLogsForTab(){
+  // 流水 tab 需要全量;复用 stats 的同款加载
+  if(typeof ensureAllLogsLoaded==='function')await ensureAllLogsLoaded();
+}
+
+function _filterLogsForTab(){
+  const type=logsTabState.type;
+  const q=(document.getElementById('logs-search')?.value||'').toLowerCase();
+  const fromV=document.getElementById('logs-date-from')?.value;
+  const toV=document.getElementById('logs-date-to')?.value;
+  const from=fromV?new Date(fromV).getTime():null;
+  const to=toV?new Date(toV+'T23:59:59').getTime():null;
+  return (DB.logs||[]).filter(l=>{
+    if(type!=='all'){
+      if(type==='show'&&!(l.type==='show'||l.type==='return'))return false;
+      if(type!=='show'&&l.type!==type)return false;
+    }
+    const ts=new Date(l.ts).getTime();
+    if(from&&ts<from)return false;
+    if(to&&ts>to)return false;
+    if(q){
+      const p=getProduct(l.productId);
+      const name=(p&&p.name||'').toLowerCase();
+      const sku=(p&&p.sku||'').toLowerCase();
+      const cp=(l.counterparty||'').toLowerCase();
+      const note=(l.note||'').toLowerCase();
+      if(!name.includes(q)&&!sku.includes(q)&&!cp.includes(q)&&!note.includes(q))return false;
+    }
+    return true;
+  }).sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+}
+
+function _logTypeIcon(t){
+  if(t==='in')return {cls:'in',ch:'⬆'};
+  if(t==='out')return {cls:'out',ch:'⬇'};
+  if(t==='show')return {cls:'show',ch:'🎪'};
+  if(t==='return')return {cls:'return',ch:'↩'};
+  return {cls:'',ch:'•'};
+}
+function _logTypeLabel(t){
+  return {in:'入库',out:'出库',show:'展会带出',return:'展会归还'}[t]||t;
+}
+
+function _formatLogDay(ts){
+  const d=new Date(ts);
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
+  const day=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  const diff=Math.round((today-day)/86400000);
+  const ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if(diff===0)return `今 天 · ${ymd}`;
+  if(diff===1)return `昨 天 · ${ymd}`;
+  return ymd;
+}
+
+async function renderLogsPage(){
+  await _ensureLogsForTab();
+  const all=_filterLogsForTab();
+  const st=logsTabState;
+  st.totalPages=Math.max(1,Math.ceil(all.length/st.perPage));
+  if(st.page>st.totalPages)st.page=st.totalPages;
+  if(st.page<1)st.page=1;
+  const start=(st.page-1)*st.perPage;
+  const pageItems=all.slice(start,start+st.perPage);
+
+  // 4 个 chip 计数 (按当前日期/搜索过滤后的全部类型)
+  // 为了 chip 计数,我们用类型不过滤后的版本
+  const baseAll=(()=>{
+    const savedType=st.type; st.type='all'; const r=_filterLogsForTab(); st.type=savedType; return r;
+  })();
+  const cnt={all:baseAll.length,in:0,out:0,show:0};
+  baseAll.forEach(l=>{
+    if(l.type==='in')cnt.in++;
+    else if(l.type==='out')cnt.out++;
+    else if(l.type==='show'||l.type==='return')cnt.show++;
+  });
+  ['all','in','out','show'].forEach(k=>{
+    const el=document.getElementById('lc-'+k);if(el)el.textContent=cnt[k];
+  });
+
+  // 汇总(基于全部页过滤后,而不仅当前页 — 给用户更直觉)
+  const cur=inventoryCurrency||'JPY';
+  const sym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[cur])||'¥';
+  let inAmt=0,outAmt=0,inN=0,outN=0;
+  all.forEach(l=>{
+    const bp=l.basePrice?parseFloat(l.basePrice):null;
+    const amtJpy=bp?bp*l.qty:0;
+    const amtDisp=amtJpy?(convertCurrency(amtJpy,'JPY',cur)||amtJpy):0;
+    if(l.type==='in'){inAmt+=amtDisp;inN++;}
+    else if(l.type==='out'){outAmt+=amtDisp;outN++;}
+  });
+  const fmtK=v=>{
+    if(!v)return sym+'0';
+    if(v>=10000)return sym+(v/1000).toFixed(1)+'K';
+    return sym+Math.round(v).toLocaleString();
+  };
+  const setHTML=(id,html)=>{const el=document.getElementById(id);if(el)el.innerHTML=html;};
+  setHTML('logs-sum-in', `+${fmtK(inAmt)}<span class="sub">/${inN}笔</span>`);
+  setHTML('logs-sum-out', `−${fmtK(outAmt)}<span class="sub">/${outN}笔</span>`);
+  setHTML('logs-sum-net', `${inAmt-outAmt>=0?'':'−'}${fmtK(Math.abs(inAmt-outAmt))}`);
+
+  // 列表(按天分组)
+  const listEl=document.getElementById('logs-list');
+  if(!listEl)return;
+  if(!pageItems.length){
+    listEl.innerHTML=`<div class="empty-state" style="padding:32px 12px;">${all.length===0?'暂无流水记录':'当前条件无记录'}</div>`;
+  }else{
+    let html='';
+    let lastDay=null;
+    // 先按 day 分组
+    const groups={};const order=[];
+    pageItems.forEach(l=>{
+      const d=new Date(l.ts);
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if(!groups[key]){groups[key]=[];order.push(key);}
+      groups[key].push(l);
+    });
+    order.forEach(key=>{
+      const items=groups[key];
+      const head=_formatLogDay(items[0].ts);
+      html+=`<div class="logs-day">${head}<span class="cnt">${items.length} 笔</span></div>`;
+      items.forEach(l=>{
+        const p=getProduct(l.productId);
+        const icon=_logTypeIcon(l.type);
+        const tagLabel=_logTypeLabel(l.type);
+        const op=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):0);
+        const oc=l.originalCurrency||l.currency||'JPY';
+        const osym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[oc])||'¥';
+        const sub=op*l.qty;
+        const amtCls=l.type==='in'?'in':(l.type==='out'?'out':'');
+        const amtSign=l.type==='in'||l.type==='return'?'+':(l.type==='out'?'−':'');
+        const amtTxt=sub>0?`${amtSign}${osym} ${sub.toLocaleString()}`:'—';
+        const time=new Date(l.ts).toTimeString().slice(0,5);
+        const cp=l.counterparty?(l.type==='in'?'进:':'客:')+l.counterparty:'';
+        const noteHtml=(cp||l.note)?`<div class="logs-item-note">${[cp,l.note].filter(Boolean).join(' · ')}</div>`:'';
+        html+=`<div class="logs-item" onclick="openLogDetail('${l.id}')">
+          <div class="logs-item-icon ${icon.cls}">${icon.ch}</div>
+          <div class="logs-item-body">
+            <div class="logs-item-row1">
+              <div class="logs-item-name">${p?p.name:'已删除'}</div>
+              <div class="logs-item-amt ${amtCls}">${amtTxt}</div>
+            </div>
+            <div class="logs-item-row2">
+              <div>
+                <span class="logs-item-tag">${tagLabel}</span>
+                <span class="logs-item-qty">×${l.qty}${op>0?` · 单价 ${osym}${op.toLocaleString()} · ${oc}`:''}</span>
+              </div>
+              <div>${time}</div>
+            </div>
+            ${noteHtml}
+          </div>
+        </div>`;
+      });
+    });
+    listEl.innerHTML=html;
+  }
+
+  // 分页
+  const txtEl=document.getElementById('logs-pager-text');
+  if(txtEl)txtEl.innerHTML=`第 <b>${st.page}</b> / ${st.totalPages} 页 · 共 ${all.length} 笔`;
+  const btnsEl=document.getElementById('logs-pager-btns');
+  if(btnsEl){
+    const dis=(c)=>c?'disabled':'';
+    btnsEl.innerHTML=`
+      <div class="logs-pager-btn ${dis(st.page<=1)}" onclick="goLogsPage(1)">«</div>
+      <div class="logs-pager-btn ${dis(st.page<=1)}" onclick="goLogsPage(${st.page-1})">‹</div>
+      <div class="logs-pager-btn cur">${st.page}</div>
+      <div class="logs-pager-btn ${dis(st.page>=st.totalPages)}" onclick="goLogsPage(${st.page+1})">›</div>
+      <div class="logs-pager-btn ${dis(st.page>=st.totalPages)}" onclick="goLogsPage(${st.totalPages})">»</div>
+    `;
+  }
+}
+
+function goLogsPage(n){
+  const st=logsTabState;
+  n=parseInt(n)||1;
+  if(n<1)n=1;
+  if(st.totalPages&&n>st.totalPages)n=st.totalPages;
+  st.page=n;
+  renderLogsPage();
+}
+
+async function exportLogsAllCSV(){
+  await _ensureLogsForTab();
+  const all=_filterLogsForTab();
+  const rows=[['日期','时间','类型','商品','SKU','类别','数量','原始单价','原始币种','汇率','本位单价(JPY)','小计(JPY)','对手方','备注']];
+  all.forEach(l=>{
+    const p=getProduct(l.productId);
+    const op=l.originalPrice||l.price||'';
+    const oc=l.originalCurrency||l.currency||'';
+    const fx=l.fxRate||'';
+    const bp=l.basePrice||'';
+    const subBase=(bp&&l.qty)?parseFloat(bp)*l.qty:'';
+    const d=new Date(l.ts);
+    const ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const hms=d.toTimeString().slice(0,8);
+    rows.push([ymd,hms,_logTypeLabel(l.type),p?p.name:'已删除',p?p.sku||'':'',p?p.cat||'':'',l.qty,op,oc,fx,bp,subBase,l.counterparty||'',l.note||'']);
+  });
+  const bom='﻿';
+  const csv=bom+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`矿珍库_流水_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`✅ 已导出 ${all.length} 条流水`);
+}
+
+async function printAllLogs(){
+  await _ensureLogsForTab();
+  const all=_filterLogsForTab();
+  const cur=inventoryCurrency||'JPY';
+  const rows=all.map(l=>{
+    const p=getProduct(l.productId);
+    const op=l.originalPrice?parseFloat(l.originalPrice):(l.price?parseFloat(l.price):null);
+    const oc=l.originalCurrency||l.currency||'CNY';
+    const bp=l.basePrice?parseFloat(l.basePrice):null;
+    const subBase=bp&&l.qty?bp*l.qty:null;
+    return`<tr>
+      <td>${fmtFull(l.ts)}</td>
+      <td>${_logTypeLabel(l.type)}</td>
+      <td>${p?p.name:'已删除'}</td>
+      <td>${p?p.sku||'—':'—'}</td>
+      <td style="text-align:center;">${l.qty}</td>
+      <td style="text-align:right;">${op?fmtPriceRaw(op,oc):'—'}</td>
+      <td style="text-align:center;">${oc}</td>
+      <td style="text-align:right;">${subBase?fmtPriceRaw(subBase,'JPY'):'—'}</td>
+      <td>${l.counterparty||'—'}</td>
+      <td>${l.note||'—'}</td>
+    </tr>`;
+  }).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>矿珍库 流水</title>
+    <style>
+      body{font-family:sans-serif;font-size:12px;padding:20px;color:#111;}
+      h2{margin-bottom:4px;}
+      .sub{color:#666;margin-bottom:16px;font-size:11px;}
+      table{width:100%;border-collapse:collapse;}
+      th{background:#f0f0f0;padding:6px 8px;text-align:left;border:1px solid #ddd;font-size:11px;}
+      td{padding:5px 8px;border:1px solid #eee;}
+      tr:nth-child(even){background:#fafafa;}
+      @media print{button{display:none;}}
+    </style></head><body>
+    <h2>矿珍库 · 流水记录</h2>
+    <div class="sub">导出时间：${fmtFull(Date.now())} · 共${all.length}条</div>
+    <table>
+      <thead><tr><th>日期</th><th>类型</th><th>商品</th><th>SKU</th><th>数量</th><th>原始单价</th><th>币种</th><th>小计(JPY)</th><th>对手方</th><th>备注</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <br><button onclick="window.print()">🖨️ 打印</button>
+  </body></html>`);
+  w.document.close();
+}
