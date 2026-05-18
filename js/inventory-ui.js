@@ -2,18 +2,21 @@
 function switchTab(name,el){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('sec-'+name).classList.add('active');
-  el.classList.add('active');
-  if(name==='inout'){renderOutSelects();renderInLogs();renderOutLogs();}
+  const target=document.getElementById('sec-'+name);
+  if(target)target.classList.add('active');
+  if(el)el.classList.add('active');
+  // FAB 只在流水 tab 显示
+  const fab=document.getElementById('logs-fab');
+  if(fab)fab.style.display=(name==='logs')?'flex':'none';
   if(name==='show'){renderShowSelects();renderShowList();}
   if(name==='stats'){renderStats();}
+  if(name==='logs'){if(typeof renderLogsPage==='function')renderLogsPage();}
   if(name!=='scan')stopCamera();
 }
+// 旧版兼容(防其他地方误调);新流水 tab 不需要 segment 切换
 function setIOMode(mode,el){
-  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');
-  document.querySelectorAll('.segment').forEach(s=>s.classList.remove('active'));
-  document.getElementById('seg-'+mode).classList.add('active');
-  if(mode==='out')renderOutSelects();
+  // legacy noop:入出库已 modal 化
+  if(typeof switchStockioMode==='function')switchStockioMode(mode);
 }
 
 // ===================== INVENTORY =====================
@@ -90,7 +93,7 @@ function renderInventory(){
   }
 
   if(invViewMode==='list'){
-    // 列表视图 — mock screen-2 .s2-row 行式卡片
+    // 列表视图 — mock screen-2 .inv-row 行式卡片(E PR #41)
     grid.className='inv-list';
     grid.innerHTML=prods.map(p=>{
       const showOut=showOutMap[p.id]||0;
@@ -312,25 +315,108 @@ async function saveProductAndStockIn(){
   setTimeout(()=>openStockInModal(data.id),200);
 }
 
-// ===================== 入库 =====================
+// ===================== 入库 / 出库(合并 modal) =====================
+let stockioMode='in'; // 'in' 或 'out'
+
 function openStockInModal(preId){
+  stockioMode='in';
+  _renderStockioModal(preId);
+}
+function openStockOutModal(preId){
+  stockioMode='out';
+  _renderStockioModal(preId);
+}
+
+function _renderStockioModal(preId){
   const sel=document.getElementById('si-product');
-  sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name} 现库存:${p.qty}</option>`).join('');
+  if(stockioMode==='out'){
+    sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name}（库存:${p.qty}）</option>`).join('');
+  }else{
+    sel.innerHTML=DB.products.map(p=>`<option value="${p.id}" ${p.id===preId?'selected':''}>${p.name} 现库存:${p.qty}</option>`).join('');
+  }
   if(!sel.innerHTML){toast('请先建品');return;}
   document.getElementById('si-qty').value=1;
   document.getElementById('si-price').value='';
   document.getElementById('si-currency').value='JPY';
   initPriceCurrency('si-currency');
   document.getElementById('si-note').value='';
+  const cpEl=document.getElementById('si-counterparty');if(cpEl)cpEl.value='';
+  // 出库默认带入商品售价
+  if(stockioMode==='out'&&preId){
+    const p=getProduct(preId);
+    if(p){
+      document.getElementById('si-price').value=p.price||'';
+      document.getElementById('si-currency').value=p.currency||'JPY';
+    }
+  }
+  _applyStockioMode();
   updateStockInInfo();
   document.getElementById('modal-stockin').classList.add('open');
 }
+
+function switchStockioMode(mode){
+  stockioMode=(mode==='out')?'out':'in';
+  // 重建 select 列表(出库展示库存量)
+  const preId=document.getElementById('si-product').value;
+  _renderStockioModal(preId);
+}
+
+function _applyStockioMode(){
+  const tabs=document.querySelectorAll('#modal-stockin .sio-tab');
+  tabs.forEach(t=>t.classList.remove('cur','in','out'));
+  if(stockioMode==='in'){
+    const t=document.querySelector('#modal-stockin .sio-tab[data-mode="in"]');if(t)t.classList.add('cur','in');
+    document.getElementById('modal-stockin-title').textContent='⬆️ 入库';
+    document.getElementById('si-qty-label').textContent='入库数量';
+    document.getElementById('si-price-label').textContent='本次进价';
+    document.getElementById('si-counterparty-label').textContent='进货商';
+    document.getElementById('si-counterparty').placeholder='供应商名称（可选）';
+    document.getElementById('si-note').placeholder='批次/产地（可选）';
+    document.getElementById('sio-preview-label').textContent='本 次 入 库';
+    const btn=document.getElementById('sio-confirm-btn');
+    btn.textContent='✓ 确认入库';
+    btn.className='btn btn-jade';
+  }else{
+    const t=document.querySelector('#modal-stockin .sio-tab[data-mode="out"]');if(t)t.classList.add('cur','out');
+    document.getElementById('modal-stockin-title').textContent='⬇️ 出库';
+    document.getElementById('si-qty-label').textContent='出库数量';
+    document.getElementById('si-price-label').textContent='本次售价（可选）';
+    document.getElementById('si-counterparty-label').textContent='客户/出库商';
+    document.getElementById('si-counterparty').placeholder='客户名称（可选）';
+    document.getElementById('si-note').placeholder='原因/渠道（可选）';
+    document.getElementById('sio-preview-label').textContent='本 次 出 库';
+    const btn=document.getElementById('sio-confirm-btn');
+    btn.textContent='✓ 确认出库';
+    btn.className='btn btn-rose';
+  }
+  renderStockioPreview();
+}
+
+function renderStockioPreview(){
+  const qty=parseInt(document.getElementById('si-qty')?.value)||0;
+  const price=parseFloat(document.getElementById('si-price')?.value)||0;
+  const cur=document.getElementById('si-currency')?.value||'JPY';
+  const sym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[cur])||'¥';
+  const sub=qty*price;
+  const valEl=document.getElementById('sio-preview-val');if(!valEl)return;
+  const cls=stockioMode==='in'?'plus':'minus';
+  const sign=stockioMode==='in'?'+':'−';
+  valEl.innerHTML=`<span class="${cls}">${sign}${qty} 件</span>${sub>0?` · ${sym}${sub.toLocaleString()}`:''}`;
+}
+
 function updateStockInInfo(){
   const p=getProduct(document.getElementById('si-product').value);
   const el=document.getElementById('si-current-info');
   if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：'+fmtPriceRaw(p.price,p.currency||'CNY'):''}`;}
   else el.style.display='none';
+  renderStockioPreview();
 }
+
+async function doStockIo(){
+  if(stockioMode==='out'){return doStockOut();}
+  return doStockIn();
+}
+
 async function doStockIn(){
   const pid=document.getElementById('si-product').value;
   const qty=parseInt(document.getElementById('si-qty').value)||0;
@@ -351,30 +437,24 @@ async function doStockIn(){
     basePrice:basePrice,
     baseCurrency:'JPY',
     fxRate:fxRate,
-    // 兼容老 UI 代码
     price:price,
     currency:currency,
     counterparty,ts:Date.now()
   };
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
-  closeModal('modal-stockin');renderInventory();renderInLogs();
+  closeModal('modal-stockin');renderInventory();
+  if(typeof renderLogsPage==='function')renderLogsPage();
   toast(`✅ 入库 ${qty} 件，当前库存 ${p.qty} 件`);
 }
 
-// ===================== 出库 =====================
-function renderOutSelects(){
-  document.getElementById('out-product').innerHTML='<option value="">-- 请选择商品 --</option>'+DB.products.map(p=>`<option value="${p.id}">${p.name}（库存:${p.qty}）</option>`).join('');
-}
-async function doOut(){
-  const pid=document.getElementById('out-product').value;
-  const qty=parseInt(document.getElementById('out-qty').value)||0;
-  const priceEl=document.getElementById('out-price');
-  const price=priceEl?priceEl.value.trim():'';
-  const currencyEl=document.getElementById('out-currency');
-  const currency=currencyEl?(currencyEl.value||'JPY'):'JPY';
-  const note=document.getElementById('out-note').value.trim();
-  const counterparty=document.getElementById('out-counterparty')?.value.trim()||null;
+async function doStockOut(){
+  const pid=document.getElementById('si-product').value;
+  const qty=parseInt(document.getElementById('si-qty').value)||0;
+  const note=document.getElementById('si-note').value.trim();
+  const price=document.getElementById('si-price').value.trim();
+  const currency=document.getElementById('si-currency').value||'JPY';
+  const counterparty=document.getElementById('si-counterparty')?.value.trim()||null;
   if(!pid){toast('请选择商品');return;}
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
@@ -389,18 +469,20 @@ async function doOut(){
     basePrice:basePrice,
     baseCurrency:'JPY',
     fxRate:fxRate,
-    // 兼容
     price:price||null,
     currency,
     counterparty,ts:Date.now()
   };
   DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),insertLog(log)]);
-  renderOutSelects();renderInventory();renderOutLogs();
-  document.getElementById('out-qty').value=1;document.getElementById('out-note').value='';if(priceEl)priceEl.value='';
-  const cpEl=document.getElementById('out-counterparty');if(cpEl)cpEl.value='';
+  closeModal('modal-stockin');renderInventory();
+  if(typeof renderLogsPage==='function')renderLogsPage();
   toast(`✅ 出库 ${qty} 件`);
 }
+
+// 旧版兼容
+function renderOutSelects(){/* legacy noop */}
+async function doOut(){return doStockOut();}
 
 function toggleDateFilter(type){
   const panel=document.getElementById(type+'-log-date-panel');

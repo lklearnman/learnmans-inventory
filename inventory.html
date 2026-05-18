@@ -24,7 +24,13 @@
 </div>
 
 <header class="app-header">
-  <div class="logo">💎 矿珍库</div>
+  <div class="logo">
+    <div class="logo-mark">矿</div>
+    <div class="logo-text">
+      <div class="logo-name">矿珍库</div>
+      <div class="logo-sub">MINERAL VAULT</div>
+    </div>
+  </div>
   <div class="header-stats">
     <div><span class="sync-dot" id="sync-dot"></span><span id="hdr-total">0</span> 种</div>
     <div>库存 <span id="hdr-qty">0</span></div>
@@ -37,10 +43,10 @@
 
 <nav class="nav-tabs">
   <div class="nav-tab active" onclick="switchTab('inventory',this)">📦 库存</div>
-  <div class="nav-tab" onclick="switchTab('inout',this)">↕️ 入库出库</div>
-  <div class="nav-tab" onclick="switchTab('show',this)">🎪 展会</div>
   <div class="nav-tab" onclick="switchTab('scan',this)">📷 扫码</div>
+  <div class="nav-tab" onclick="switchTab('show',this)">🎪 展会</div>
   <div class="nav-tab" onclick="switchTab('stats',this)">📊 统计</div>
+  <div class="nav-tab" onclick="switchTab('logs',this)">↕️ 流水</div>
 </nav>
 
 <div class="main">
@@ -61,6 +67,7 @@
   </div>
   <div class="search-row" style="display:flex;align-items:center;gap:8px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
+    <button class="btn btn-jade btn-sm" onclick="openStockInModal(null)" title="给现有商品补库存">⬆ 入库</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:12px;">
@@ -94,87 +101,62 @@
   <div id="product-grid" class="product-grid"></div>
 </div>
 
-<!-- 入库出库 -->
-<div class="section" id="sec-inout">
-  <div class="mode-switcher">
-    <div class="mode-btn active" onclick="setIOMode('in',this)">⬆️ 入库</div>
-    <div class="mode-btn" onclick="setIOMode('out',this)">⬇️ 出库</div>
-  </div>
-  <div class="segment active" id="seg-in">
-    <div class="card">
-      <div class="card-title">⬆️ 入库</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-        <button class="btn btn-gold" onclick="openStockInModal(null)">在现有商品上入库</button>
-        <button class="btn btn-outline" onclick="openAddThenStockIn()">新建商品并入库</button>
-      </div>
-      <div class="divider"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:8px;">
-        <div class="card-title" style="margin:0;">📋 入库记录</div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-outline btn-sm" onclick="exportLogCSV('in')">📥 CSV</button>
-          <button class="btn btn-outline btn-sm" onclick="printLogs('in')">🖨️ 打印</button>
-        </div>
-      </div>
-      <div id="in-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <input class="search-input" style="font-size:12px;" id="in-log-search" placeholder="🔍 搜索商品名" oninput="renderInLogs()">
-        <select id="in-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderInLogs()">
-          <option value="">全部类别</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="in-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="in-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderInLogs()"></div>
-      </div>
-      <div id="in-log-pager-top" style="margin:0 0 10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
-        <tbody id="in-log-tbody"></tbody>
-      </table></div>
-      <div id="in-log-pager" style="margin-top:10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
+<!-- 流水 (screen-10 设计) -->
+<div class="section" id="sec-logs">
+
+  <!-- 工具栏:类型 chip + 日期范围 + 搜索 -->
+  <div class="logs-toolbar">
+    <div class="logs-chips" id="logs-chips">
+      <div class="logs-chip cur" data-type="all" onclick="setLogsTypeChip('all',this)">全部<span class="n" id="lc-all">0</span></div>
+      <div class="logs-chip" data-type="in" onclick="setLogsTypeChip('in',this)">⬆ 入库<span class="n" id="lc-in">0</span></div>
+      <div class="logs-chip" data-type="out" onclick="setLogsTypeChip('out',this)">⬇ 出库<span class="n" id="lc-out">0</span></div>
+      <div class="logs-chip" data-type="show" onclick="setLogsTypeChip('show',this)">🎪 展会<span class="n" id="lc-show">0</span></div>
+    </div>
+    <div class="logs-daterow">
+      <div class="date-cell">📅 <input type="text" id="logs-date-from" placeholder="开始日期" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderLogsPage()"></div>
+      <span>→</span>
+      <div class="date-cell"><input type="text" id="logs-date-to" placeholder="终了日期" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderLogsPage()"></div>
+      <input class="search-input" id="logs-search" placeholder="🔍 商品名" style="flex:1;font-size:12px;padding:6px 10px;height:32px;" oninput="renderLogsPage()">
     </div>
   </div>
-  <div class="segment" id="seg-out">
-    <div class="card">
-      <div class="card-title">⬇️ 出库</div>
-      <div class="form-grid">
-        <div class="form-group"><label>选择商品</label><select id="out-product"></select></div>
-        <div class="form-group"><label>出库数量</label><input type="number" id="out-qty" value="1" min="1"></div>
-        <div class="form-group"><label>本次售价（可选）</label>
-          <div style="display:flex;gap:6px;">
-            <input type="number" id="out-price" placeholder="实际成交价" step="0.01" style="flex:1;">
-            <select id="out-currency" onchange="onPriceCurrencyChange('out-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
-              <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group"><label>客户/出库商</label><input type="text" id="out-counterparty" placeholder="客户名称（可选）"></div>
-        <div class="form-group full"><label>备注</label><input type="text" id="out-note" placeholder="原因/渠道（可选）"></div>
-      </div>
-      <div style="margin-top:14px;"><button class="btn btn-rose" onclick="doOut()">确认出库</button></div>
-      <div class="divider"></div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;margin-bottom:8px;">
-        <div class="card-title" style="margin:0;">📋 出库记录</div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-outline btn-sm" onclick="exportLogCSV('out')">📥 CSV</button>
-          <button class="btn btn-outline btn-sm" onclick="printLogs('out')">🖨️ 打印</button>
-        </div>
-      </div>
-      <div id="out-log-summary" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;font-size:13px;"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <input class="search-input" style="font-size:12px;" id="out-log-search" placeholder="🔍 搜索商品名" oninput="renderOutLogs()">
-        <select id="out-log-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:12px;" onchange="renderOutLogs()">
-          <option value="">全部类别</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="out-log-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="out-log-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;" onchange="renderOutLogs()"></div>
-      </div>
-      <div id="out-log-pager-top" style="margin:0 0 10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>时间</th><th>商品</th><th>类别</th><th>数量</th><th>单价</th><th>小计</th><th>备注</th></tr></thead>
-        <tbody id="out-log-tbody"></tbody>
-      </table></div>
-      <div id="out-log-pager" style="margin-top:10px;display:flex;justify-content:center;gap:4px;flex-wrap:wrap;"></div>
-    </div>
+
+  <!-- 汇总卡 -->
+  <div class="logs-summary">
+    <div class="logs-sum-cell"><div class="logs-sum-l">入 库</div><div class="logs-sum-v in" id="logs-sum-in">—</div></div>
+    <div class="logs-sum-cell"><div class="logs-sum-l">出 库</div><div class="logs-sum-v out" id="logs-sum-out">—</div></div>
+    <div class="logs-sum-cell"><div class="logs-sum-l">净 流 水</div><div class="logs-sum-v" id="logs-sum-net">—</div></div>
   </div>
+
+  <!-- 按天分组的流水列表 -->
+  <div class="logs-list" id="logs-list"></div>
+
+  <!-- 分页 -->
+  <div class="logs-pager" id="logs-pager">
+    <div id="logs-pager-text">—</div>
+    <div class="logs-pager-btns" id="logs-pager-btns"></div>
+  </div>
+
+  <!-- 导出 / 打印 -->
+  <div class="logs-export">
+    <button class="btn btn-outline btn-sm" onclick="exportLogsAllCSV()">📥 导出 CSV</button>
+    <button class="btn btn-outline btn-sm" onclick="printAllLogs()">🖨️ 打印</button>
+  </div>
+
+  <!-- ==== 兼容旧版函数的隐藏占位(保留所有 ID,防止破坏 fetchLogsPage/renderLogsTable) ==== -->
+  <div style="display:none;" aria-hidden="true">
+    <input id="in-log-search"><select id="in-log-cat"></select>
+    <input id="in-log-date-from"><input id="in-log-date-to">
+    <div id="in-log-summary"></div><div id="in-log-pager-top"></div>
+    <table><tbody id="in-log-tbody"></tbody></table>
+    <div id="in-log-pager"></div>
+    <input id="out-log-search"><select id="out-log-cat"></select>
+    <input id="out-log-date-from"><input id="out-log-date-to">
+    <div id="out-log-summary"></div><div id="out-log-pager-top"></div>
+    <table><tbody id="out-log-tbody"></tbody></table>
+    <div id="out-log-pager"></div>
+  </div>
+
+  <div style="height:80px;"></div>
 </div>
 
 <!-- 展会 -->
@@ -448,29 +430,37 @@
   </div>
 </div>
 
-<!-- 入库 MODAL -->
+<!-- 入库 MODAL (screen-4 设计:in/out tab 顶部切换) -->
 <div class="modal-overlay" id="modal-stockin">
   <div class="modal" style="max-width:440px;">
-    <div class="modal-title">⬆️ 入库</div>
+    <div class="modal-title" id="modal-stockin-title">⬆️ 入库</div>
     <button class="modal-close" onclick="closeModal('modal-stockin')">✕</button>
+    <div class="sio-tabs">
+      <div class="sio-tab cur in" data-mode="in" onclick="switchStockioMode('in')"><span>⬆</span> 入库</div>
+      <div class="sio-tab" data-mode="out" onclick="switchStockioMode('out')"><span>⬇</span> 出库</div>
+    </div>
     <div class="form-grid">
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
-      <div class="form-group"><label>入库数量</label><input type="number" id="si-qty" value="1" min="1"></div>
-      <div class="form-group"><label>本次进价</label>
+      <div class="form-group"><label id="si-qty-label">入库数量</label><input type="number" id="si-qty" value="1" min="1" oninput="renderStockioPreview()"></div>
+      <div class="form-group"><label id="si-price-label">本次进价</label>
         <div style="display:flex;gap:6px;">
-          <input type="text" id="si-price" placeholder="进货成本" style="flex:1;">
+          <input type="text" id="si-price" placeholder="进货成本" style="flex:1;" oninput="renderStockioPreview()">
           <select id="si-currency" onchange="onPriceCurrencyChange('si-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;width:62px;">
             <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
           </select>
         </div>
       </div>
-      <div class="form-group"><label>进货商</label><input type="text" id="si-counterparty" placeholder="供应商名称（可选）"></div>
+      <div class="form-group"><label id="si-counterparty-label">进货商</label><input type="text" id="si-counterparty" placeholder="供应商名称（可选）"></div>
       <div class="form-group full"><label>备注</label><input type="text" id="si-note" placeholder="批次/产地（可选）"></div>
+    </div>
+    <div class="sio-preview" id="sio-preview">
+      <div class="sio-preview-label" id="sio-preview-label">本 次 入 库</div>
+      <div class="sio-preview-val" id="sio-preview-val"><span class="plus">+1 件</span></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-stockin')">取消</button>
-      <button class="btn btn-gold" onclick="doStockIn()">确认入库</button>
+      <button class="btn btn-jade" id="sio-confirm-btn" onclick="doStockIo()">✓ 确认入库</button>
     </div>
   </div>
 </div>
@@ -630,6 +620,9 @@
   </div>
 </div>
 
+<!-- 浮动 FAB:新建入库/出库(仅流水 tab 显示) -->
+<button class="logs-fab" id="logs-fab" onclick="openStockInModal(null)" title="新建入库/出库" style="display:none;">+</button>
+
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
@@ -639,6 +632,16 @@
 <script src="js/inventory-ai.js?v=20260528p"></script>
 <script src="js/inventory-labels.js?v=20260528p"></script>
 <script>
+// 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
+window.openStockOutModal=function(preId){
+  if(typeof stockioMode!=='undefined'){
+    stockioMode='out';
+    _renderStockioModal(preId);
+  }
+};
+window.setIOMode=function(mode){
+  if(typeof switchStockioMode==='function')switchStockioMode(mode);
+};
 // 展会 hero 卡数字更新(包装 renderShowList,不改 inventory-ui.js)
 (function(){
   if(typeof renderShowList!=='function')return;
