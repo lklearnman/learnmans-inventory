@@ -463,9 +463,17 @@ async function renderStats(){
   });
   const profit = salesAmt - salesCost;
 
-  // ===== 4. 周转率 = 期间销售件数 / 期末库存件数 =====
+  // ===== 4. 周转率 = 期间销售件数(排除展会 counterparty) / 期末库存件数 =====
+  // bug#3: 周转算 out 时排除 counterparty 包含「展会」的 log
+  const isShowCp = l => (l.counterparty || '').includes('展会');
+  let turnoverSalesQty = 0;
+  DB.logs.filter(l=>l.type==='out' && !isShowCp(l)).forEach(l=>{
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    turnoverSalesQty += l.qty;
+  });
   const totalStockQty = DB.products.reduce((a,p)=>a+p.qty,0);
-  const turnover = totalStockQty > 0 ? (salesQty / totalStockQty) : 0;
+  const turnover = totalStockQty > 0 ? (turnoverSalesQty / totalStockQty) : 0;
 
   // ===== 5. 上期数据(算趋势) =====
   let prevSalesAmt = 0, prevProfit = 0;
@@ -490,8 +498,11 @@ async function renderStats(){
   }
 
   // ===== 6. 渲染 4 张卡 =====
+  // bug#1: K 阈值按币种 — JPY/CNY 用 10000,USD/EUR 用 100
+  const _kThreshold = (cur === 'USD' || cur === 'EUR') ? 100 : 10000;
+  const _kDivisor = (cur === 'USD' || cur === 'EUR') ? 100 : 1000;
   const fmtMoney = v => {
-    if(v >= 10000) return sym + (v/1000).toFixed(1) + 'K';
+    if(v >= _kThreshold) return sym + (v/_kDivisor).toFixed(1) + 'K';
     return sym + Math.round(v).toLocaleString();
   };
   const fmtTrend = (cur_, prev_) => {
@@ -510,6 +521,20 @@ async function renderStats(){
   setText('stats-v-sales', fmtMoney(salesAmt));
   setText('stats-v-profit', fmtMoney(profit));
   setText('stats-v-turnover', turnover.toFixed(2));
+
+  // 任务C: 毛利率% (毛利/销售额)
+  if(salesAmt > 0){
+    setText('stats-v-profitrate', '毛利率 ' + (profit/salesAmt*100).toFixed(1) + '%');
+  } else {
+    setText('stats-v-profitrate', '毛利率 —');
+  }
+  // 任务C: 周转天数 = 期间天数 / 周转率
+  const periodDays = Math.max(1, Math.round((range.to - range.from) / 86400000));
+  if(turnover > 0){
+    setText('stats-v-turndays', '周转天数 ' + Math.round(periodDays / turnover) + ' 天');
+  } else {
+    setText('stats-v-turndays', '周转天数 —');
+  }
 
   const tStockEl = document.getElementById('stats-t-stockvalue');
   if(tStockEl){ tStockEl.textContent = ''; tStockEl.className = 's8-stat-trend'; }
@@ -555,10 +580,19 @@ async function renderStats(){
       dot.style.display = 'none';
     }
   }
-  const subTexts = {today:'今日', week:'本周', month:'近 30 天', quarter:'本季', year:'本年 12 月', all:'全部'};
+  // bug#2: 今日趋势图 24 桶 UI 说明
+  const subTexts = {today:'今日 · 0 时起 24 小时', week:'本周', month:'近 30 天', quarter:'本季', year:'本年 12 月', all:'全部'};
   const r = STATS_RANGES[statsRangeIdx];
   setText('stats-chart-sub', subTexts[r.key] || r.label);
   setText('stats-top-range', r.label);
+
+  // bug#5: 全部时段 logs 空时显示 "暂无数据"
+  if(r.key === 'all' && DB.logs.length === 0){
+    setAttr('stats-chart-line', 'd', '');
+    setAttr('stats-chart-fill', 'd', '');
+    if(dot) dot.style.display = 'none';
+    setText('stats-chart-sub', '全部 · 暂无数据');
+  }
 
   // ===== 8. 畅销榜 TOP 5 =====
   const prodSales = {};
@@ -571,32 +605,163 @@ async function renderStats(){
     prodSales[pid].amt += logAmt(l);
   });
   const top5 = Object.entries(prodSales)
-    .map(([pid, v]) => ({pid, ...v, name: (DB.products.find(p=>p.id===pid)||{}).name || '已删除'}))
+    .map(([pid, v]) => {
+      const prod = DB.products.find(p=>p.id===pid);
+      return {pid, ...v, name: prod ? prod.name : '已删除', exists: !!prod};
+    })
     .sort((a,b) => b.qty - a.qty || b.amt - a.amt)
     .slice(0, 5);
   if(top5.length === 0){
     setHTML('stats-top-list', '<div class="s8-top-item"><div class="s8-top-rank">—</div><div class="s8-top-name" style="color:var(--text-muted);">期间无销售</div></div>');
   } else {
-    setHTML('stats-top-list', top5.map((p, i) => `
+    // bug#6: 已删除商品禁用点击 + 灰显
+    setHTML('stats-top-list', top5.map((p, i) => {
+      const nameHtml = p.exists
+        ? `<div class="s8-top-name" onclick="openDetail('${p.pid}')" style="cursor:pointer;">${p.name}</div>`
+        : `<div class="s8-top-name" style="color:var(--text-muted);cursor:not-allowed;opacity:0.55;">${p.name}</div>`;
+      return `
       <div class="s8-top-item">
         <div class="s8-top-rank">${i+1}</div>
-        <div class="s8-top-name" onclick="openDetail('${p.pid}')" style="cursor:pointer;">${p.name}</div>
+        ${nameHtml}
         <div class="s8-top-val">${fmtMoney(p.amt)} · ${p.qty}件</div>
-      </div>`).join(''));
+      </div>`;
+    }).join(''));
   }
 
   // ===== 9. 预警 =====
   const lowCount = DB.products.filter(p => p.qty <= 2 && p.qty > 0).length;
   const SIXTY_DAYS = 60 * 24 * 3600 * 1000;
+  const ONE_MONTH = 30 * 24 * 3600 * 1000;
   const now = Date.now();
   const idleCount = DB.products.filter(p => {
     const recent = DB.logs.find(l => pidOf(l) === p.id && (now - new Date(l.ts).getTime()) <= SIXTY_DAYS);
+    return !recent;
+  }).length;
+  // bug#4: idle 加 vs 上月对比 — 用一个月前为基准日,看 60 天未动数量
+  const prevRef = now - ONE_MONTH;
+  const prevIdleCount = DB.products.filter(p => {
+    // 商品在一个月前必须存在,否则不算
+    const recent = DB.logs.find(l => pidOf(l) === p.id && (prevRef - new Date(l.ts).getTime()) <= SIXTY_DAYS && new Date(l.ts).getTime() <= prevRef);
     return !recent;
   }).length;
   const showCount = (DB.showItems||[]).reduce((a, s) => a + (s.qty || 0), 0);
   setText('stats-alert-low', lowCount + ' 项');
   setText('stats-alert-idle', idleCount + ' 项');
   setText('stats-alert-show', showCount + ' 项');
+  const idleDelta = idleCount - prevIdleCount;
+  const idleTrendEl = document.getElementById('stats-alert-idle-trend');
+  if(idleTrendEl){
+    if(prevIdleCount === 0 && idleCount === 0){
+      idleTrendEl.textContent = '';
+    } else if(idleDelta === 0){
+      idleTrendEl.textContent = '(持平)';
+    } else if(idleDelta > 0){
+      idleTrendEl.textContent = '(↑' + idleDelta + ' vs 上月)';
+      idleTrendEl.style.color = 'var(--rose)';
+    } else {
+      idleTrendEl.textContent = '(↓' + Math.abs(idleDelta) + ' vs 上月)';
+      idleTrendEl.style.color = 'var(--jade)';
+    }
+  }
+
+  // ===== 10. 各类别表现(任务A)=====
+  renderStatsCategory(range, cur, sym, fmtMoney, logAmt, _origPrice, _origCur, pidOf, inRange);
+
+  // ===== 11. 供应商 / 客户 TOP 5(任务B)=====
+  renderStatsCounterparty(range, cur, sym, fmtMoney, logAmt, inRange);
+}
+
+// 任务A: 各类别表现
+function renderStatsCategory(range, cur, sym, fmtMoney, logAmt, _origPrice, _origCur, pidOf, inRange){
+  const tbody = document.getElementById('stats-cat-tbody');
+  if(!tbody) return;
+  const byCat = {};
+  DB.products.forEach(p=>{
+    const cat = p.cat || '(未分类)';
+    if(!byCat[cat]) byCat[cat] = {kinds:0, stockQty:0, saleQty:0, saleAmt:0, cost:0};
+    byCat[cat].kinds += 1;
+    byCat[cat].stockQty += p.qty || 0;
+  });
+  // 期间销售按 cat 聚合
+  DB.logs.filter(l=>l.type==='out').forEach(l=>{
+    const ts = new Date(l.ts).getTime();
+    if(!inRange(ts, range.from, range.to)) return;
+    const pid = pidOf(l);
+    const prod = DB.products.find(p=>p.id===pid);
+    const cat = (prod && prod.cat) || '(未分类)';
+    if(!byCat[cat]) byCat[cat] = {kinds:0, stockQty:0, saleQty:0, saleAmt:0, cost:0};
+    byCat[cat].saleQty += l.qty;
+    byCat[cat].saleAmt += logAmt(l);
+    // 成本 = 最近一次 in 进价
+    const ins = DB.logs.filter(x=>x.type==='in' && pidOf(x)===pid && _origPrice(x)>0);
+    if(ins.length){
+      ins.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+      const lastIn = ins[0];
+      const unitCost = (lastIn.basePrice && !isNaN(lastIn.basePrice))
+        ? (convertCurrency(parseFloat(lastIn.basePrice),'JPY',cur)||0)
+        : (convertCurrency(_origPrice(lastIn), _origCur(lastIn), cur)||0);
+      byCat[cat].cost += unitCost * l.qty;
+    }
+  });
+  const periodDays = Math.max(1, Math.round((range.to - range.from) / 86400000));
+  const rows = Object.entries(byCat)
+    .map(([cat, v])=>{
+      // 周转天数 = 期间天数 / (期间销量 / 期末库存)
+      const turnDays = (v.saleQty > 0 && v.stockQty > 0)
+        ? Math.round(periodDays / (v.saleQty / v.stockQty))
+        : null;
+      const profitRate = v.saleAmt > 0 ? ((v.saleAmt - v.cost) / v.saleAmt * 100) : null;
+      return {cat, ...v, turnDays, profitRate};
+    })
+    .sort((a,b)=>b.saleAmt - a.saleAmt);
+  if(rows.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:14px;">暂无数据</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.cat}</td>
+      <td>${r.kinds}</td>
+      <td>${r.stockQty}</td>
+      <td>${r.saleQty}</td>
+      <td>${fmtMoney(r.saleAmt)}</td>
+      <td>${r.turnDays === null ? '—' : r.turnDays}</td>
+      <td>${r.profitRate === null ? '—' : r.profitRate.toFixed(1) + '%'}</td>
+    </tr>`).join('');
+}
+
+// 任务B: 供应商 / 客户 TOP 5
+function renderStatsCounterparty(range, cur, sym, fmtMoney, logAmt, inRange){
+  const aggregate = type => {
+    const map = {};
+    DB.logs.filter(l=>l.type===type).forEach(l=>{
+      const ts = new Date(l.ts).getTime();
+      if(!inRange(ts, range.from, range.to)) return;
+      const cp = (l.counterparty || '').trim() || '(无)';
+      if(!map[cp]) map[cp] = {qty:0, amt:0, count:0};
+      map[cp].qty += l.qty;
+      map[cp].amt += logAmt(l);
+      map[cp].count += 1; // 出现次数,用来判断复购
+    });
+    return Object.entries(map).map(([cp,v])=>({cp,...v})).sort((a,b)=>b.amt - a.amt).slice(0,5);
+  };
+  const renderList = (rows, isCustomer) => {
+    if(rows.length === 0){
+      return '<div class="s8-cp-empty">期间无数据</div>';
+    }
+    return rows.map((r,i)=>{
+      const repeat = isCustomer && r.count >= 2 ? ' <span class="s8-cp-repeat" title="复购客户">↻</span>' : '';
+      return `<div class="s8-cp-item">
+        <span class="s8-cp-rank">${i+1}</span>
+        <span class="s8-cp-name">${r.cp}${repeat}</span>
+        <span class="s8-cp-val">${r.qty}件 / ${fmtMoney(r.amt)}</span>
+      </div>`;
+    }).join('');
+  };
+  const suppEl = document.getElementById('stats-supplier-list');
+  const custEl = document.getElementById('stats-customer-list');
+  if(suppEl) suppEl.innerHTML = renderList(aggregate('in'), false);
+  if(custEl) custEl.innerHTML = renderList(aggregate('out'), true);
 }
 
 // ===================== 导入旧数据 =====================

@@ -12,7 +12,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260519q-label">
+<link rel="stylesheet" href="inventory.css?v=20260528p">
+
 </head>
 <body>
 
@@ -52,20 +53,44 @@
 
 <!-- 库存 -->
 <div class="section active" id="sec-inventory">
+  <div class="inv-overview" id="inv-overview">
+    <div>
+      <div class="inv-overview-main">
+        <span class="inv-overview-num" id="inv-ov-qty">0</span>
+        <span class="inv-overview-label">件 · <span id="inv-ov-kinds">0</span> 种</span>
+      </div>
+    </div>
+    <div>
+      <div class="inv-overview-total-label">总 价 值</div>
+      <div class="inv-overview-total" id="inv-ov-total">—</div>
+    </div>
+  </div>
   <div class="search-row" style="display:flex;align-items:center;gap:8px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
     <button class="btn btn-jade btn-sm" onclick="openStockInModal(null)" title="给现有商品补库存">⬆ 入库</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
   </div>
-  <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:center;margin-bottom:16px;">
-    <button class="btn btn-outline btn-sm" id="view-toggle" onclick="toggleInventoryView()" title="切换视图">⊞</button>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:12px;">
     <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
     <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;min-width:0;">
       <option value="all">全部</option>
     </select>
   </div>
-  <div id="inv-toolbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px;gap:8px;">
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
+  <div class="inv-toolbar-row">
+    <div class="inv-sort" id="inv-sort">
+      <div class="inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
+      <div class="inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
+      <div class="inv-sort-btn" data-sort="price" onclick="setInvSort('price',this)" title="按价格倒序">¥ 价格</div>
+      <div class="inv-sort-btn" data-sort="az" onclick="setInvSort('az',this)" title="按名称 A-Z">A-Z</div>
+    </div>
+    <div class="inv-view-toggle" id="inv-view-toggle">
+      <button class="cur" id="view-toggle-grid" data-view="grid" onclick="setInventoryView('grid')" title="网格视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
+      <button id="view-toggle-list" data-view="list" onclick="setInventoryView('list')" title="列表视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button id="view-toggle" data-view="legacy-toggle" onclick="toggleInventoryView()" style="display:none;" title="切换视图"></button>
+    </div>
+  </div>
+  <div id="inv-toolbar" class="inv-toolbar-row inv-toolbar-row-2">
+    <label class="inv-select-all" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
       <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
       <span id="select-all-label">全选</span>
     </label>
@@ -136,19 +161,34 @@
 
 <!-- 展会 -->
 <div class="section" id="sec-show">
+  <!-- Hero 概览卡:聚合展示当前展会带出统计(placeholder 静态结构,等后续 JS 接入数据) -->
+  <div class="show-hero">
+    <div class="show-hero-name" id="show-hero-name">🎪 展会带货</div>
+    <div class="show-hero-date" id="show-hero-date">展会期间累计带出 <span class="show-hero-live" id="show-hero-live">● 进行中</span></div>
+    <div class="show-hero-stats">
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-out">0</div><div class="show-hero-stat-l">带出件数</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-types">0</div><div class="show-hero-stat-l">商品种类</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-shows">0</div><div class="show-hero-stat-l">展会场数</div></div>
+    </div>
+  </div>
+
+  <!-- 带出表单 -->
   <div class="card">
-    <div class="card-title">🎪 展会带货</div>
+    <div class="card-title">＋ 新建带出</div>
     <div class="form-grid">
       <div class="form-group"><label>选择商品</label><select id="show-product"></select></div>
       <div class="form-group"><label>带出数量</label><input type="number" id="show-qty" value="1" min="1"></div>
       <div class="form-group full"><label>展会名称</label><input type="text" id="show-name-input" placeholder="例：2025东京矿物展"></div>
     </div>
-    <div style="margin-top:14px;"><button class="btn btn-gold" onclick="doShowOut()">带出</button></div>
+    <div class="show-form-actions"><button class="btn btn-gold" onclick="doShowOut()">带出</button></div>
   </div>
-  <div class="card">
-    <div class="card-title">📤 展会中（未归还）</div>
-    <div id="show-list"></div>
-  </div>
+
+  <!-- 展会中商品列表 -->
+  <div class="show-list-header">带出商品</div>
+  <div id="show-list" class="show-list-wrap"></div>
+
+  <!-- 结算入口:跳到流水查看成交 -->
+  <div class="show-finish"><button class="btn btn-gold show-finish-btn" onclick="switchTab('inout',document.querySelectorAll('.nav-tab')[1])">⚖ 展 会 结 算 · 查看成交</button></div>
 </div>
 
 <!-- 扫码 (screen-5 设计) -->
@@ -270,12 +310,14 @@
       <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <div class="s8-stat-l">期间毛利</div>
       <div class="s8-stat-v" id="stats-v-profit"></div>
+      <div class="s8-stat-sub" id="stats-v-profitrate"></div>
       <div class="s8-stat-trend up" id="stats-t-profit"></div>
     </div>
     <div class="s8-stat-card">
       <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#d4a574"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div class="s8-stat-l">周转率</div>
       <div class="s8-stat-v" id="stats-v-turnover"></div>
+      <div class="s8-stat-sub" id="stats-v-turndays"></div>
       <div class="s8-stat-trend down" id="stats-t-turnover"></div>
     </div>
   </div>
@@ -312,8 +354,35 @@
       关注预警
     </div>
     <div class="s8-alert-item"><span>低库存（≤2件）</span><span class="v" id="stats-alert-low">—</span></div>
-    <div class="s8-alert-item"><span>超60天未动</span><span class="v" id="stats-alert-idle">—</span></div>
+    <div class="s8-alert-item"><span>超60天未动</span><span class="v"><span id="stats-alert-idle">—</span> <span id="stats-alert-idle-trend" style="font-size:10px;color:var(--text-dim);"></span></span></div>
     <div class="s8-alert-item"><span>展会未归还</span><span class="v" id="stats-alert-show">—</span></div>
+  </div>
+
+  <!-- 各类别表现 -->
+  <div class="s8-cat">
+    <div class="s8-cat-head">📦 各类别表现</div>
+    <div class="s8-cat-tablewrap">
+      <table class="s8-cat-table" id="stats-cat-table">
+        <thead>
+          <tr>
+            <th>类别</th><th>种类</th><th>库存</th><th>期售</th><th>销售额</th><th>周转(天)</th><th>毛利率</th>
+          </tr>
+        </thead>
+        <tbody id="stats-cat-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 供应商 / 客户排行 -->
+  <div class="s8-cp-row">
+    <div class="s8-cp-card">
+      <div class="s8-cp-head">🏭 供应商 TOP 5</div>
+      <div id="stats-supplier-list"></div>
+    </div>
+    <div class="s8-cp-card">
+      <div class="s8-cp-head">👥 客户 TOP 5</div>
+      <div id="stats-customer-list"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -398,16 +467,16 @@
 
 <!-- 商品详情 MODAL -->
 <div class="modal-overlay" id="modal-detail">
-  <div class="modal" style="max-width:640px;">
-    <div class="modal-title" id="detail-title"></div>
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-title" id="detail-title">商 品 详 情</div>
     <button class="modal-close" onclick="closeModal('modal-detail');if(detailOpenedFromAI){detailOpenedFromAI=false;document.getElementById('ai-result').style.display='block';}">✕</button>
-    <div id="detail-body"></div>
+    <div class="modal-body" id="detail-body"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="editFromDetail()">✏️ 编辑</button>
+      <button class="btn btn-outline btn-sm" onclick="editFromDetail()" title="编辑">✏️</button>
       <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
       <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
-      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()">🏷️ 标签打印</button>
-      <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);">🗑️</button>
+      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()" title="标签打印">🏷️</button>
+      <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);" title="删除">🗑️</button>
     </div>
   </div>
 </div>
@@ -557,24 +626,42 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260519q-label"></script>
-<script src="js/inventory-ui.js?v=20260519q-label"></script>
-<script src="js/inventory-logs.js?v=20260519q-label"></script>
-<script src="js/inventory-ai.js?v=20260519q-label"></script>
-<script src="js/inventory-labels.js?v=20260519q-label"></script>
+<script src="js/inventory-core.js?v=20260528p"></script>
+<script src="js/inventory-ui.js?v=20260528p"></script>
+<script src="js/inventory-logs.js?v=20260528p"></script>
+<script src="js/inventory-ai.js?v=20260528p"></script>
+<script src="js/inventory-labels.js?v=20260528p"></script>
 <script>
-// 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除)
-// ai.js 加载在 ui.js 之后会覆盖掉新版,这里在末尾再覆盖回新版本。
+// 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
   if(typeof stockioMode!=='undefined'){
     stockioMode='out';
     _renderStockioModal(preId);
   }
 };
-// 同理覆盖 setIOMode → 转入新版
 window.setIOMode=function(mode){
   if(typeof switchStockioMode==='function')switchStockioMode(mode);
 };
+// 展会 hero 卡数字更新(包装 renderShowList,不改 inventory-ui.js)
+(function(){
+  if(typeof renderShowList!=='function')return;
+  const _orig=renderShowList;
+  window.renderShowList=function(){
+    _orig.apply(this,arguments);
+    try{
+      const items=(window.DB&&DB.showItems)||[];
+      const totalOut=items.reduce((a,s)=>a+(s.qty||0),0);
+      const types=new Set(items.map(s=>s.productId)).size;
+      const shows=new Set(items.map(s=>(s.showName||'').trim()).filter(Boolean)).size;
+      const setTx=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+      setTx('show-hero-stat-out',totalOut);
+      setTx('show-hero-stat-types',types);
+      setTx('show-hero-stat-shows',shows);
+      const live=document.getElementById('show-hero-live');
+      if(live)live.style.display=totalOut>0?'inline-block':'none';
+    }catch(e){console.warn('hero stat update failed',e);}
+  };
+})();
 loadAll();
 </script>
 </body>
