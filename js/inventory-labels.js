@@ -290,10 +290,9 @@ async function exportLabelsPDF(){
     const pad=2;
     let cy=y+pad+cfg.nameSize*0.4;
 
-    // 价格位置: 有 QR 时放右上(避让 QR);否则贴条形码上方右对齐
+    // 价格文本 + 宽度先算出来,后面布局决策要用
     let priceTxt='';
     let priceW=0;
-    let priceAtTop=cfg.showQR;
     if(cfg.showPrice&&p.price){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
@@ -303,6 +302,16 @@ async function exportLabelsPDF(){
         : fmtPriceRaw(p.price,pCur);
       priceW=pdf.getTextWidth(priceTxt);
     }
+
+    // 商品名行数预探(用 full width - priceW 试):>1 行的话价格挪到右上角,
+    // 避免老布局「价格贴 barcode 上方」时被 2 行中文压字。短名仍贴 barcode 上方(美观)
+    let isMultiLineName=false;
+    if(cfg.showName&&p.name){
+      pdf.setFontSize(cfg.nameSize);
+      const probeW=cfg.w-pad*2-(priceTxt?(priceW+1):0);
+      isMultiLineName=pdf.splitTextToSize(p.name,probeW).length>1;
+    }
+    const priceAtTop=cfg.showQR||isMultiLineName;
 
     // 商品名: 价格在顶部时让出右侧宽度,否则用全宽
     if(cfg.showName){
