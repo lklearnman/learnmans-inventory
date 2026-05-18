@@ -53,12 +53,14 @@ function renderLabelList(){
   el.innerHTML=prods.map(p=>{
     const tn=p.thumbnail||(p.photos&&p.photos[0]);
     const thumb=tn
-      ?`<img src="${tn}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
-      :`<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface2);border-radius:4px;flex-shrink:0;">${typeof catEmoji==='function'?catEmoji(p.cat):'💎'}</div>`;
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);">
+      ?`<div class="label-prod-thumb"><img src="${tn}"></div>`
+      :`<div class="label-prod-thumb">${typeof catEmoji==='function'?catEmoji(p.cat):'💎'}</div>`;
+    const priceTxt=(typeof fmtPriceRaw==='function')?fmtPriceRaw(p.price,p.currency||'JPY'):'';
+    return`<div class="label-prod-row">
       ${thumb}
-      <span style="flex:1;min-width:0;font-size:13px;line-height:1.4;">${p.name}</span>
-      <button class="btn btn-outline btn-sm" onclick="removeFromLabelSelection('${p.id}')" style="padding:2px 9px;font-size:13px;line-height:1;flex-shrink:0;" title="从打印列表移除">×</button>
+      <span class="label-prod-name">${p.name||'未命名'}</span>
+      <span class="label-prod-price">${priceTxt}</span>
+      <button class="label-prod-remove" onclick="removeFromLabelSelection('${p.id}')" title="从打印列表移除">×</button>
     </div>`;
   }).join('');
   updateLabelCount();
@@ -75,8 +77,51 @@ function removeFromLabelSelection(pid){
 }
 
 function updateLabelCount(){
+  const n=selectedLabelIds.size;
   const el=document.getElementById('label-selected-count');
-  if(el)el.textContent=selectedLabelIds.size?`(${selectedLabelIds.size} 件)`:'';
+  if(el)el.textContent=n?(n+' 件'):'0';
+  // summary 行的尺寸/模式描述
+  const meta=document.getElementById('label-summary-meta');
+  if(meta){
+    const sizeSel=document.getElementById('label-size');
+    const modeSel=document.getElementById('label-pdf-mode');
+    if(sizeSel&&modeSel){
+      const card=document.querySelector('.label-size-card[data-size="'+sizeSel.value+'"]');
+      const sizeName=card?(card.querySelector('.label-size-name')||{}).textContent:sizeSel.value;
+      const sizeDim=card?(card.querySelector('.label-size-dim')||{}).textContent:'';
+      const modeTxt=modeSel.value==='grid'?'A4 网格':'精臣单页';
+      meta.textContent=`${sizeName||''} ${sizeDim||''} · ${modeTxt}`;
+    }
+  }
+}
+
+// screen-7 风格 chip/卡片同步 — 把点击同步到隐藏 select / checkbox
+function pickLabelSize(size){
+  const sel=document.getElementById('label-size');
+  if(!sel)return;
+  sel.value=size;
+  document.querySelectorAll('.label-size-card').forEach(c=>{
+    c.classList.toggle('cur',c.dataset.size===size);
+  });
+  if(typeof onLabelSizeChange==='function')onLabelSizeChange(size);
+  updateLabelCount();
+}
+function pickLabelPdfMode(mode){
+  const sel=document.getElementById('label-pdf-mode');
+  if(!sel)return;
+  sel.value=mode;
+  document.querySelectorAll('#label-pdfmode-chips .label-chip').forEach(c=>{
+    c.classList.toggle('cur',c.dataset.mode===mode);
+  });
+  updateLabelCount();
+}
+function toggleLabelField(field){
+  const map={name:'lbl-name',price:'lbl-price',origin:'lbl-origin',sku:'lbl-sku',qr:'lbl-qr'};
+  const id=map[field];if(!id)return;
+  const cb=document.getElementById(id);if(!cb)return;
+  cb.checked=!cb.checked;
+  const chip=document.querySelector(`#label-show-chips .label-chip[data-field="${field}"]`);
+  if(chip)chip.classList.toggle('cur',cb.checked);
 }
 
 // label-size 切换钩子。早期版本会自动 sku→qr,后来用户指出根因是

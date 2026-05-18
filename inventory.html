@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260529-stats">
+<link rel="stylesheet" href="inventory.css?v=20260519q-label">
 </head>
 <body>
 
@@ -381,59 +381,125 @@
   </div>
 </div>
 
-<!-- 标签打印 MODAL -->
+<!-- 标签打印 MODAL (screen-7 风格 2026-05-19) -->
 <div class="modal-overlay" id="modal-label">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal" style="max-width:580px;">
     <div class="modal-title">🏷️ 打印标签</div>
     <button class="modal-close" onclick="closeModal('modal-label')">✕</button>
 
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>标签尺寸</label>
-      <select id="label-size" onchange="onLabelSizeChange(this.value)">
-        <option value="tiny">超迷你 25×15mm（戒指/耳钉吊牌，建议勾 QR）</option>
-        <option value="mini">迷你 30×20mm（小吊坠/小标本，建议勾 QR）</option>
-        <option value="fold-ring">F型珠宝标签 25×30+45mm 对折（精臣 M3/B32/Z401，上半 barcode/下半 名+价）</option>
-        <option value="small">小标签 40×30mm（一般首饰商品贴）</option>
-        <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
-        <option value="large">价格牌 90×60mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
-        <option value="big">大价格牌 120×80mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
-      </select>
-    </div>
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>PDF 模式</label>
-      <select id="label-pdf-mode">
-        <option value="single" selected>精臣单页（每页=标签尺寸，连续打印）</option>
-        <option value="grid">A4 网格（家用打印机+不干胶贴纸）</option>
-      </select>
+    <!-- 隐藏的原生 select / checkbox,保留 ID 与绑定,供 JS 读取 -->
+    <select id="label-size" class="label-hidden" onchange="onLabelSizeChange(this.value)" aria-hidden="true" tabindex="-1">
+      <option value="tiny">超迷你 25×15mm（戒指/耳钉吊牌，建议勾 QR）</option>
+      <option value="mini">迷你 30×20mm（小吊坠/小标本，建议勾 QR）</option>
+      <option value="fold-ring">F型珠宝标签 25×30+45mm 对折（精臣 M3/B32/Z401，上半 barcode/下半 名+价）</option>
+      <option value="small">小标签 40×30mm（一般首饰商品贴）</option>
+      <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
+      <option value="large">价格牌 90×60mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
+      <option value="big">大价格牌 120×80mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
+    </select>
+    <select id="label-pdf-mode" class="label-hidden" aria-hidden="true" tabindex="-1">
+      <option value="single" selected>精臣单页（每页=标签尺寸，连续打印）</option>
+      <option value="grid">A4 网格（家用打印机+不干胶贴纸）</option>
+    </select>
+    <input type="checkbox" id="lbl-name" class="label-hidden" checked aria-hidden="true" tabindex="-1">
+    <input type="checkbox" id="lbl-price" class="label-hidden" checked aria-hidden="true" tabindex="-1">
+    <input type="checkbox" id="lbl-origin" class="label-hidden" checked aria-hidden="true" tabindex="-1">
+    <input type="checkbox" id="lbl-sku" class="label-hidden" checked aria-hidden="true" tabindex="-1">
+    <input type="checkbox" id="lbl-qr" class="label-hidden" aria-hidden="true" tabindex="-1">
+
+    <!-- 已选汇总 -->
+    <div class="label-summary">
+      <span>已选商品 <b id="label-selected-count">0</b></span>
+      <span id="label-summary-meta" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);"></span>
     </div>
 
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>显示内容</label>
-      <div style="font-size:13px;line-height:2.1;">
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-name" checked style="margin-right:5px;">商品名称</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-price" checked style="margin-right:5px;">价格</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-origin" checked style="margin-right:5px;">产地</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-sku" checked style="margin-right:5px;">SKU条形码</label>
-        <label style="cursor:pointer;white-space:nowrap;margin-right:16px;display:inline-block;"><input type="checkbox" id="lbl-qr" style="margin-right:5px;">QR码（扫码查）</label>
+    <!-- 标签尺寸卡片 -->
+    <div class="label-section">
+      <div class="label-section-label">标 签 尺 寸</div>
+      <div class="label-size-grid" id="label-size-grid">
+        <div class="label-size-card" data-size="tiny" onclick="pickLabelSize('tiny')">
+          <div class="label-size-preview" style="min-height:30px;"><div class="pname" style="font-size:7px;">商品名</div><div class="pprice" style="font-size:8px;">¥888</div></div>
+          <div class="label-size-name">超迷你</div>
+          <div class="label-size-dim">25 × 15 mm</div>
+          <div class="label-size-tag">建议勾 QR</div>
+        </div>
+        <div class="label-size-card" data-size="mini" onclick="pickLabelSize('mini')">
+          <div class="label-size-preview" style="min-height:36px;"><div class="pname" style="font-size:8px;">商品名</div><div class="pprice" style="font-size:9px;">¥888</div></div>
+          <div class="label-size-name">迷你</div>
+          <div class="label-size-dim">30 × 20 mm</div>
+          <div class="label-size-tag">建议勾 QR</div>
+        </div>
+        <div class="label-size-card" data-size="fold-ring" onclick="pickLabelSize('fold-ring')">
+          <div class="label-size-preview" style="min-height:48px;flex-direction:column;"><div class="pcode" style="font-size:6px;">‖‖‖‖‖‖</div><div style="height:1px;background:#1a1410;width:80%;margin:2px 0;"></div><div class="pname" style="font-size:8px;">商品名</div><div class="pprice" style="font-size:9px;">¥888</div></div>
+          <div class="label-size-name">F型对折</div>
+          <div class="label-size-dim">25 × 30+45 mm</div>
+          <div class="label-size-tag">精臣 M3</div>
+        </div>
+        <div class="label-size-card" data-size="small" onclick="pickLabelSize('small')">
+          <div class="label-size-preview"><div class="pname">商品名</div><div class="pprice">¥888</div></div>
+          <div class="label-size-name">小标签</div>
+          <div class="label-size-dim">40 × 30 mm</div>
+        </div>
+        <div class="label-size-card cur" data-size="medium" onclick="pickLabelSize('medium')">
+          <div class="label-size-preview"><div class="pname">商品名</div><div class="pprice">¥ 888</div><div class="pcode">MZ-001</div></div>
+          <div class="label-size-name">中标签</div>
+          <div class="label-size-dim">60 × 40 mm</div>
+          <div class="label-size-tag">推荐</div>
+        </div>
+        <div class="label-size-card" data-size="large" onclick="pickLabelSize('large')">
+          <div class="label-size-preview"><div class="pname">商品名</div><div class="pprice" style="font-size:13px;">¥ 888</div><div class="pcode">MZ-001</div></div>
+          <div class="label-size-name">价格牌</div>
+          <div class="label-size-dim">90 × 60 mm</div>
+          <div class="label-size-warn">⚠️ 超 M3 印宽</div>
+        </div>
+        <div class="label-size-card" data-size="big" onclick="pickLabelSize('big')">
+          <div class="label-size-preview"><div class="pname">商品名</div><div class="pprice" style="font-size:14px;">¥ 888</div><div class="pcode">MZ-001</div></div>
+          <div class="label-size-name">大价格牌</div>
+          <div class="label-size-dim">120 × 80 mm</div>
+          <div class="label-size-warn">⚠️ 超 M3 印宽</div>
+        </div>
       </div>
-      <p style="font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.4;">💡 小标签扫不到时再勾 QR 码 — 现在 barcode 渲染到 ~2400px 源分辨率(600 DPI 打印机的 2-3× 超采样),小尺寸 1D 应该也能扫</p>
     </div>
 
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>价格币种</label>
-      <select id="label-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;width:100%;">
+    <!-- PDF 模式 -->
+    <div class="label-section">
+      <div class="label-section-label">P D F 模 式</div>
+      <div class="label-chips" id="label-pdfmode-chips">
+        <div class="label-chip cur" data-mode="single" onclick="pickLabelPdfMode('single')">🖨 精臣单页</div>
+        <div class="label-chip" data-mode="grid" onclick="pickLabelPdfMode('grid')">📄 A4 网格</div>
+      </div>
+    </div>
+
+    <!-- 显示内容 -->
+    <div class="label-section">
+      <div class="label-section-label">显 示 内 容</div>
+      <div class="label-chips" id="label-show-chips">
+        <div class="label-chip cur" data-field="name" onclick="toggleLabelField('name')">商品名称</div>
+        <div class="label-chip cur" data-field="price" onclick="toggleLabelField('price')">价格</div>
+        <div class="label-chip cur" data-field="origin" onclick="toggleLabelField('origin')">产地</div>
+        <div class="label-chip cur" data-field="sku" onclick="toggleLabelField('sku')">SKU 条形码</div>
+        <div class="label-chip" data-field="qr" onclick="toggleLabelField('qr')">QR 码（扫码查）</div>
+      </div>
+      <p class="label-hint">💡 小标签扫不到时再勾 QR 码 — 现在 barcode 渲染到 ~2400px 源分辨率(600 DPI 打印机的 2-3× 超采样),小尺寸 1D 应该也能扫</p>
+    </div>
+
+    <!-- 价格币种 -->
+    <div class="label-section">
+      <div class="label-section-label">价 格 币 种</div>
+      <select id="label-currency" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;color:var(--text);font-size:13px;width:100%;">
         <option value="">原币种（按商品自身）</option>
         <option value="JPY">JPY 円</option>
         <option value="CNY">CNY 元</option>
         <option value="USD">USD $</option>
         <option value="EUR">EUR €</option>
       </select>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">「原币种」每张按商品自己的币种;选具体币种则按汇率统一换算后打印</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.4;">「原币种」每张按商品自己的币种;选具体币种则按汇率统一换算后打印</div>
     </div>
 
-    <div class="form-group" style="margin-bottom:12px;">
-      <label>将打印的商品 <span id="label-selected-count" style="color:var(--text-muted);font-weight:normal;font-size:12px;"></span></label>
-      <div id="label-product-list" style="max-height:240px;overflow-y:auto;background:var(--surface2);border-radius:var(--radius);padding:4px;"></div>
+    <!-- 商品列表 -->
+    <div class="label-section">
+      <div class="label-section-label">将 打 印 的 商 品</div>
+      <div id="label-product-list" class="label-prod-list"></div>
     </div>
 
     <div class="modal-actions">
@@ -457,11 +523,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260529-stats"></script>
-<script src="js/inventory-ui.js?v=20260529-stats"></script>
-<script src="js/inventory-logs.js?v=20260529-stats"></script>
-<script src="js/inventory-ai.js?v=20260529-stats"></script>
-<script src="js/inventory-labels.js?v=20260529-stats"></script>
+<script src="js/inventory-core.js?v=20260519q-label"></script>
+<script src="js/inventory-ui.js?v=20260519q-label"></script>
+<script src="js/inventory-logs.js?v=20260519q-label"></script>
+<script src="js/inventory-ai.js?v=20260519q-label"></script>
+<script src="js/inventory-labels.js?v=20260519q-label"></script>
 <script>loadAll();</script>
 </body>
 </html>

@@ -293,3 +293,173 @@ tr.clickable{cursor:pointer;}
   color:var(--text-muted);
 }
 .s8-alert-item .v{font-family:'DM Mono',monospace;color:var(--amber);}
+
+/* ==================================================== */
+/* 标签打印 MODAL — screen-7 风格 (2026-05-19) =========== */
+/* ==================================================== */
+.label-section{margin-bottom:14px;}
+.label-section-label{
+  font-size:10px;color:var(--gold-dim);
+  letter-spacing:2px;
+  margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.label-section-label::before{
+  content:'';width:12px;height:1px;background:var(--gold-dim);
+}
+
+/* 标签尺寸卡片网格 */
+.label-size-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:8px;
+}
+.label-size-card{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 10px 9px;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  position:relative;
+}
+.label-size-card:hover{border-color:var(--gold-dim);}
+.label-size-card.cur{
+  border-color:var(--gold);
+  background:rgba(201,168,76,0.10);
+  box-shadow:0 0 0 1px var(--gold-dim) inset;
+}
+.label-size-preview{
+  background:#f5e6c8;color:#1a1410;
+  border-radius:5px;
+  padding:6px 6px;
+  margin-bottom:8px;
+  font-family:'DM Mono',monospace;
+  text-align:center;
+  min-height:44px;
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  line-height:1.15;
+}
+.label-size-preview .pname{font-size:9px;margin-bottom:2px;font-weight:500;}
+.label-size-preview .pprice{font-size:11px;font-weight:700;}
+.label-size-preview .pcode{font-size:7px;opacity:0.7;letter-spacing:1px;margin-top:2px;}
+.label-size-name{
+  font-size:12px;color:var(--text);font-weight:500;margin-bottom:2px;
+}
+.label-size-dim{
+  font-family:'DM Mono',monospace;
+  font-size:10px;color:var(--text-dim);
+}
+.label-size-warn{
+  display:inline-block;
+  font-size:9px;padding:1px 6px;border-radius:8px;
+  background:rgba(212,165,116,0.15);color:var(--amber);
+  margin-top:5px;letter-spacing:0.5px;
+}
+.label-size-tag{
+  display:inline-block;
+  font-size:9px;padding:1px 6px;border-radius:8px;
+  background:rgba(201,168,76,0.15);color:var(--gold);
+  margin-top:5px;letter-spacing:0.5px;
+}
+
+/* chip 行(PDF mode / 显示内容) */
+.label-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.label-chip{
+  padding:7px 12px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:14px;
+  font-size:12px;color:var(--text-dim);
+  cursor:pointer;
+  user-select:none;
+  transition:all 0.15s ease;
+}
+.label-chip:hover{border-color:var(--gold-dim);color:var(--text);}
+.label-chip.cur{
+  background:rgba(201,168,76,0.15);
+  border-color:var(--gold-dim);
+  color:var(--gold);
+}
+
+/* 商品列表(卡片化) */
+.label-prod-list{
+  max-height:240px;
+  overflow-y:auto;
+  background:var(--surface2);
+  border-radius:8px;
+  padding:6px;
+}
+.label-prod-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:8px 8px;
+  margin-bottom:4px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+.label-prod-row:last-child{margin-bottom:0;}
+.label-prod-thumb{
+  width:36px;height:36px;
+  border-radius:6px;
+  background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  flex-shrink:0;
+  overflow:hidden;
+}
+.label-prod-thumb img{width:100%;height:100%;object-fit:cover;}
+.label-prod-name{flex:1;min-width:0;font-size:13px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;}
+.label-prod-price{
+  font-family:'DM Mono',monospace;
+  font-size:12px;
+  color:var(--gold);
+  flex-shrink:0;
+  white-space:nowrap;
+}
+.label-prod-remove{
+  width:26px;height:26px;border-radius:50%;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text-dim);
+  font-size:14px;line-height:1;
+  cursor:pointer;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.label-prod-remove:hover{border-color:var(--rose);color:var(--rose);}
+
+/* 隐藏被 chip 替代的原生 checkbox/select */
+.label-hidden{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;}
+
+/* 提示文案 */
+.label-hint{
+  font-size:11px;color:var(--text-muted);
+  margin-top:6px;
+  line-height:1.5;
+  padding:6px 8px;
+  background:var(--surface2);
+  border-left:2px solid var(--gold-dim);
+  border-radius:0 4px 4px 0;
+}
+
+/* 已选汇总 */
+.label-summary{
+  background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.02));
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:12px;
+  color:var(--text-muted);
+}
+.label-summary b{color:var(--gold);font-family:'DM Mono',monospace;font-weight:500;}
+
+@media (max-width:480px){
+  .label-size-grid{grid-template-columns:1fr 1fr;}
+}
