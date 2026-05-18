@@ -328,12 +328,14 @@
       <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       <div class="s8-stat-l">期间毛利</div>
       <div class="s8-stat-v" id="stats-v-profit"></div>
+      <div class="s8-stat-sub" id="stats-v-profitrate"></div>
       <div class="s8-stat-trend up" id="stats-t-profit"></div>
     </div>
     <div class="s8-stat-card">
       <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#d4a574"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div class="s8-stat-l">周转率</div>
       <div class="s8-stat-v" id="stats-v-turnover"></div>
+      <div class="s8-stat-sub" id="stats-v-turndays"></div>
       <div class="s8-stat-trend down" id="stats-t-turnover"></div>
     </div>
   </div>
@@ -370,8 +372,35 @@
       关注预警
     </div>
     <div class="s8-alert-item"><span>低库存（≤2件）</span><span class="v" id="stats-alert-low">—</span></div>
-    <div class="s8-alert-item"><span>超60天未动</span><span class="v" id="stats-alert-idle">—</span></div>
+    <div class="s8-alert-item"><span>超60天未动</span><span class="v"><span id="stats-alert-idle">—</span> <span id="stats-alert-idle-trend" style="font-size:10px;color:var(--text-dim);"></span></span></div>
     <div class="s8-alert-item"><span>展会未归还</span><span class="v" id="stats-alert-show">—</span></div>
+  </div>
+
+  <!-- 各类别表现 -->
+  <div class="s8-cat">
+    <div class="s8-cat-head">📦 各类别表现</div>
+    <div class="s8-cat-tablewrap">
+      <table class="s8-cat-table" id="stats-cat-table">
+        <thead>
+          <tr>
+            <th>类别</th><th>种类</th><th>库存</th><th>期售</th><th>销售额</th><th>周转(天)</th><th>毛利率</th>
+          </tr>
+        </thead>
+        <tbody id="stats-cat-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 供应商 / 客户排行 -->
+  <div class="s8-cp-row">
+    <div class="s8-cp-card">
+      <div class="s8-cp-head">🏭 供应商 TOP 5</div>
+      <div id="stats-supplier-list"></div>
+    </div>
+    <div class="s8-cp-card">
+      <div class="s8-cp-head">👥 客户 TOP 5</div>
+      <div id="stats-customer-list"></div>
+    </div>
   </div>
 
   <div class="card">
