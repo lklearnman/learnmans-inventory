@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260528o">
+<link rel="stylesheet" href="inventory.css?v=20260529-stats">
 </head>
 <body>
 
@@ -225,22 +225,74 @@
 
 <!-- 统计 -->
 <div class="section" id="sec-stats">
-  <div class="card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-    <select id="stats-cat" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;"><option value="">全部类别</option></select>
-    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">开始日期</span><input type="text" id="stats-date-from" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;"></div>
-    <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><span style="white-space:nowrap;opacity:0.6;">终了日期</span><input type="text" id="stats-date-to" placeholder="点击选择" onfocus="this.type='date';this.showPicker&&this.showPicker()" onblur="if(!this.value)this.type='text'" onchange="renderStats()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:11px;"></div>
-    <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">货币跟随库存页:<b id="stats-cur-label" style="color:var(--gold);">JPY</b></span>
+  <div class="s8-range">
+    <div class="s8-range-title">本月概况</div>
+    <div class="s8-range-sel" onclick="cycleStatsRange(this)" title="切换时段">本月 ▼</div>
   </div>
-  <div class="stats-row" id="stats-row"></div>
-  <div class="stats-row" id="stats-money-row"></div>
-  <div class="card">
-    <div class="card-title">📊 各类别库存</div>
-    <div class="table-wrap"><table><thead><tr><th>类别</th><th>种类数</th><th>总件数</th></tr></thead><tbody id="cat-stats-tbody"></tbody></table></div>
+
+  <div class="s8-stats">
+    <div class="s8-stat-card gold">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <div class="s8-stat-l">库存价值</div>
+      <div class="s8-stat-v" id="stats-v-stockvalue"></div>
+      <div class="s8-stat-trend up" id="stats-t-stockvalue"></div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#7ab38a"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="s8-stat-l">期间销售额</div>
+      <div class="s8-stat-v" id="stats-v-sales"></div>
+      <div class="s8-stat-trend up" id="stats-t-sales"></div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <div class="s8-stat-l">期间毛利</div>
+      <div class="s8-stat-v" id="stats-v-profit"></div>
+      <div class="s8-stat-trend up" id="stats-t-profit"></div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#d4a574"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="s8-stat-l">周转率</div>
+      <div class="s8-stat-v" id="stats-v-turnover"></div>
+      <div class="s8-stat-trend down" id="stats-t-turnover"></div>
+    </div>
   </div>
-  <div class="card">
-    <div class="card-title">⚠️ 库存不足（&lt;3件）</div>
-    <div id="low-stock-list"></div>
+
+  <div class="s8-chart">
+    <div class="s8-chart-title">
+      <span class="s8-chart-name">销售趋势</span>
+      <span class="s8-chart-sub" id="stats-chart-sub">近 30 天</span>
+    </div>
+    <svg class="s8-chart-svg" viewBox="0 0 300 140" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--gold-light)" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="var(--gold-light)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path id="stats-chart-fill" d="" fill="url(#chartGrad)"/>
+      <path id="stats-chart-line" d="" fill="none" stroke="var(--gold)" stroke-width="1.5"/>
+      <circle id="stats-chart-dot" cx="0" cy="0" r="3" fill="var(--gold-light)"/>
+    </svg>
   </div>
+
+  <div class="s8-top">
+    <div class="s8-top-head">
+      <span>畅 销 榜 · TOP 5</span>
+      <span id="stats-top-range" style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;">本月</span>
+    </div>
+    <div id="stats-top-list"></div>
+  </div>
+
+  <div class="s8-alert">
+    <div class="s8-alert-head">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      关注预警
+    </div>
+    <div class="s8-alert-item"><span>低库存（≤2件）</span><span class="v" id="stats-alert-low">—</span></div>
+    <div class="s8-alert-item"><span>超60天未动</span><span class="v" id="stats-alert-idle">—</span></div>
+    <div class="s8-alert-item"><span>展会未归还</span><span class="v" id="stats-alert-show">—</span></div>
+  </div>
+
   <div class="card">
     <div class="card-title">💾 数据管理</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -405,11 +457,11 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260528o"></script>
-<script src="js/inventory-ui.js?v=20260528o"></script>
-<script src="js/inventory-logs.js?v=20260528o"></script>
-<script src="js/inventory-ai.js?v=20260528o"></script>
-<script src="js/inventory-labels.js?v=20260528o"></script>
+<script src="js/inventory-core.js?v=20260529-stats"></script>
+<script src="js/inventory-ui.js?v=20260529-stats"></script>
+<script src="js/inventory-logs.js?v=20260529-stats"></script>
+<script src="js/inventory-ai.js?v=20260529-stats"></script>
+<script src="js/inventory-labels.js?v=20260529-stats"></script>
 <script>loadAll();</script>
 </body>
 </html>
