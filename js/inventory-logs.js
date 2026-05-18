@@ -979,12 +979,26 @@ async function renderLogsPage(){
   const btnsEl=document.getElementById('logs-pager-btns');
   if(btnsEl){
     const dis=(c)=>c?'disabled':'';
+    const tp=st.totalPages;
+    // 滑动窗口式数字按钮:当前页居中,共最多 5 个
+    const winSize=5;
+    let winStart=Math.max(1, st.page-Math.floor(winSize/2));
+    let winEnd=Math.min(tp, winStart+winSize-1);
+    winStart=Math.max(1, winEnd-winSize+1);
+    let numsHtml='';
+    for(let i=winStart;i<=winEnd;i++){
+      if(i===st.page){
+        numsHtml+=`<div class="logs-pager-btn cur">${i}</div>`;
+      }else{
+        numsHtml+=`<div class="logs-pager-btn" onclick="goLogsPage(${i})">${i}</div>`;
+      }
+    }
     btnsEl.innerHTML=`
       <div class="logs-pager-btn ${dis(st.page<=1)}" onclick="goLogsPage(1)">«</div>
       <div class="logs-pager-btn ${dis(st.page<=1)}" onclick="goLogsPage(${st.page-1})">‹</div>
-      <div class="logs-pager-btn cur">${st.page}</div>
-      <div class="logs-pager-btn ${dis(st.page>=st.totalPages)}" onclick="goLogsPage(${st.page+1})">›</div>
-      <div class="logs-pager-btn ${dis(st.page>=st.totalPages)}" onclick="goLogsPage(${st.totalPages})">»</div>
+      ${numsHtml}
+      <div class="logs-pager-btn ${dis(st.page>=tp)}" onclick="goLogsPage(${st.page+1})">›</div>
+      <div class="logs-pager-btn ${dis(st.page>=tp)}" onclick="goLogsPage(${tp})">»</div>
     `;
   }
 }
