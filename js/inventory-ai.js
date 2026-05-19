@@ -312,6 +312,15 @@ async function quickOutScan(pid,targetId){
 const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
 let aiProvider='claude'; // 默认Claude（更稳定），可切换为Gemini
 
+// 高级选项折叠区里的 AI 引擎 chip 切换同步
+function _syncAiChip(){
+  const claude=document.getElementById('ai-chip-claude');
+  const gemini=document.getElementById('ai-chip-gemini');
+  if(!claude||!gemini)return;
+  claude.classList.toggle('cur',aiProvider==='claude');
+  gemini.classList.toggle('cur',aiProvider==='gemini');
+}
+
 // 📏 图片压缩：iPhone 原图常 5-10MB，base64 后超 Vercel 4.5MB 限制 + Safari "Load failed"
 // 压到最长边 1600px、JPEG 85% → 大约 200-500KB，又快又稳
 async function compressImageForAI(file, maxSize=1600, quality=0.85){

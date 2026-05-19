@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-aitrim">
+<link rel="stylesheet" href="inventory.css?v=20260520-scanmock">
 
 </head>
 <body>
@@ -250,16 +250,15 @@
     <div class="camera-result-bar" id="camera-result-bar">将条形码或QR码对准框内…</div>
   </div>
 
-  <!-- 主操作:1 张大卡「摄像头扫码」+ 副链接 2 项(拍照让 AI 读条码 / AI 识图建品)。下方 AI 设置 panel 保留作配置 -->
-  <div class="scan-actions scan-actions-single">
-    <div class="scan-action primary scan-action-wide" onclick="startCamera()">
+  <!-- 主操作:2 张并排卡 (mock screen-5 风格) -->
+  <div class="scan-actions">
+    <div class="scan-action primary" onclick="document.getElementById('ai-camera-input').click()">
       <div class="scan-action-icon">📷</div>
-      <div class="scan-action-text">摄像头扫码</div>
-      <div class="scan-action-sub">
-        <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('scan-photo-input').click();">📸 摄像头扫不到? 拍照让 AI 读条码</a>
-        <span class="scan-action-sub-sep">·</span>
-        <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('ai-library-input').click();">🖼 AI 识图建品(新商品)</a>
-      </div>
+      <div class="scan-action-text">拍照识别</div>
+    </div>
+    <div class="scan-action" onclick="document.getElementById('ai-library-input').click()">
+      <div class="scan-action-icon">🖼️</div>
+      <div class="scan-action-text">从相册选</div>
     </div>
   </div>
   <input type="file" id="scan-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="scanFromPhoto(this)">
@@ -267,39 +266,41 @@
   <!-- 扫码结果 (匹配到商品 / 没匹配到) -->
   <div id="camera-scan-result" style="display:none;margin:0 14px 14px;"></div>
 
-  <!-- 手动输入条码 (扫码枪 / 键盘 fallback) -->
-  <div class="scan-manual">
-    <div class="scan-manual-head">⌨️ 手动输入 SKU / 条码</div>
-    <div class="scan-manual-row">
-      <input type="text" id="scan-input" placeholder="输入或粘贴条码,回车搜索" onkeydown="if(event.key==='Enter')doScan()">
-      <button class="btn btn-outline btn-sm" onclick="doScan()">搜索</button>
+  <!-- 高级选项 (mock screen-5: 折叠式 AI 引擎 chip + 测试后端 + 手动输入兜底) -->
+  <div class="scan-advanced">
+    <div class="scan-adv-head" onclick="this.parentElement.classList.toggle('open');this.querySelector('.scan-adv-arrow').classList.toggle('open');">
+      <span>⚙️ 高级选项</span>
+      <span class="scan-adv-arrow">▼</span>
     </div>
-    <div id="scan-result" style="display:none;margin-top:12px;"></div>
-  </div>
-
-  <!-- AI 引擎设置(识别入口在摄像头扫码大卡的副链接里) -->
-  <div class="scan-ai-card">
-    <div class="scan-ai-head">
-      <span>🤖 AI 引擎设置</span>
-      <button class="btn btn-outline btn-sm scan-ai-test" onclick="testAIBackend()" title="测试 AI 后端是否通">🔍 测试后端</button>
+    <div class="scan-adv-body">
+      <div class="scan-adv-row">
+        <span class="scan-adv-label">AI 引擎</span>
+        <div class="scan-adv-chips">
+          <label class="scan-adv-chip cur" id="ai-chip-claude">
+            <input type="radio" name="ai-provider" value="claude" checked onchange="aiProvider=this.value;_syncAiChip()">
+            Claude <em class="scan-ai-tag gold">更准</em>
+          </label>
+          <label class="scan-adv-chip" id="ai-chip-gemini">
+            <input type="radio" name="ai-provider" value="gemini" onchange="aiProvider=this.value;_syncAiChip()">
+            Gemini <em class="scan-ai-tag jade">省钱</em>
+          </label>
+        </div>
+      </div>
+      <div class="scan-adv-row">
+        <span class="scan-adv-label">手动输入</span>
+        <div class="scan-adv-manual">
+          <input type="text" id="scan-input" placeholder="SKU 或条码,回车搜索" onkeydown="if(event.key==='Enter')doScan()">
+          <button class="btn btn-outline btn-sm" onclick="doScan()">搜索</button>
+        </div>
+      </div>
+      <div class="scan-adv-row">
+        <button class="btn btn-outline btn-sm scan-ai-test" onclick="testAIBackend()" title="测试 AI 后端是否通">🔍 测试后端</button>
+      </div>
     </div>
-
-    <div class="scan-ai-provider">
-      <span class="scan-ai-provider-label">AI 引擎</span>
-      <label class="scan-ai-provider-opt">
-        <input type="radio" name="ai-provider" value="gemini" onchange="aiProvider=this.value">
-        <span>Gemini <em class="scan-ai-tag jade">省钱</em></span>
-      </label>
-      <label class="scan-ai-provider-opt">
-        <input type="radio" name="ai-provider" value="claude" checked onchange="aiProvider=this.value">
-        <span>Claude <em class="scan-ai-tag gold">更准</em></span>
-      </label>
-    </div>
-
-    <!-- 隐藏 input(摄像头扫码大卡副链接调用,这里保留 input 不破 JS 引用) -->
+    <!-- 隐藏 input(主卡触发) -->
     <input type="file" id="ai-camera-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
     <input type="file" id="ai-library-input" accept="image/*" style="display:none" onchange="doAIRecognize(event)">
-
+    <div id="scan-result" style="display:none;margin-top:12px;"></div>
     <div id="ai-status" style="display:none;margin-top:12px;" class="ai-status"><div class="ai-dot"></div><span id="ai-status-text">AI识别中…</span></div>
     <div id="ai-result" style="display:none;margin-top:14px;"></div>
   </div>
@@ -690,12 +691,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-aitrim"></script>
-<script src="js/inventory-ui.js?v=20260520-aitrim"></script>
-<script src="js/inventory-logs.js?v=20260520-aitrim"></script>
-<script src="js/inventory-ai.js?v=20260520-aitrim"></script>
-<script src="js/inventory-labels.js?v=20260520-aitrim"></script>
-<script src="js/inventory-search.js?v=20260520-aitrim"></script>
+<script src="js/inventory-core.js?v=20260520-scanmock"></script>
+<script src="js/inventory-ui.js?v=20260520-scanmock"></script>
+<script src="js/inventory-logs.js?v=20260520-scanmock"></script>
+<script src="js/inventory-ai.js?v=20260520-scanmock"></script>
+<script src="js/inventory-labels.js?v=20260520-scanmock"></script>
+<script src="js/inventory-search.js?v=20260520-scanmock"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
