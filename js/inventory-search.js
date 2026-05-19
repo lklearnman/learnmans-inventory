@@ -75,7 +75,8 @@
   }
 
   function filterProducts(kw){
-    const products=(window.DB&&Array.isArray(DB.products))?DB.products:[];
+    // 注意:inventory-core.js 用 let DB,不挂 window — 直接读 DB 通过闭包/全局作用域查找
+    const products=(typeof DB!=='undefined'&&Array.isArray(DB.products))?DB.products:[];
     if(!kw) return products.slice(0,20); // 最近 / 全部前 20
     const k=kw.toLowerCase();
     return products.filter(p=>{
