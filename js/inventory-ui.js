@@ -744,12 +744,22 @@ function quickOutFromDetail(){
   setTimeout(()=>openStockOutModal(detailId),150);
 }
 async function deleteFromDetail(){
-  if(!confirm('确认删除此商品及其所有记录？'))return;
-  DB.products=DB.products.filter(p=>p.id!==detailId);
-  DB.logs=DB.logs.filter(l=>l.productId!==detailId);
-  DB.showItems=DB.showItems.filter(s=>s.productId!==detailId);
-  await deleteProduct(detailId);
-  closeModal('modal-detail');renderInventory();toast('已删除');
+  const p=getProduct(detailId);
+  const name=p?p.name:'此商品';
+  mzConfirm({
+    title:'删除商品?',
+    message:`将永久删除「${name}」及其所有入出库/展会记录,此操作不可撤销。`,
+    okText:'确认删除',
+    okClass:'btn-rose',
+    icon:'🗑',
+    onOk:async()=>{
+      DB.products=DB.products.filter(p=>p.id!==detailId);
+      DB.logs=DB.logs.filter(l=>l.productId!==detailId);
+      DB.showItems=DB.showItems.filter(s=>s.productId!==detailId);
+      await deleteProduct(detailId);
+      closeModal('modal-detail');renderInventory();toast('已删除');
+    }
+  });
 }
 function viewPhoto(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;">`);}
 // 详情卡 → 流水 tab 并按商品名筛选

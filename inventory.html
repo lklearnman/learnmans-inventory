@@ -35,8 +35,8 @@
     <div><span class="sync-dot" id="sync-dot"></span><span id="hdr-total">0</span> 种</div>
     <div>库存 <span id="hdr-qty">0</span></div>
     <div>展会 <span id="hdr-show">0</span></div>
-    <select class="global-currency-select" onchange="setInventoryCurrency(this.value)" title="切换显示币种" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:3px 6px;color:var(--text);font-size:11px;width:62px;margin-left:6px;">
-      <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
+    <select class="global-currency-select cur-chip" onchange="setInventoryCurrency(this.value)" title="切换显示币种">
+      <option value="JPY">¥ JPY</option><option value="CNY">¥ CNY</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option>
     </select>
   </div>
   <!-- 顶部圆形 icon 按钮组 (A 组改造 2026-05-19): 全屏搜索 / 入库 / 出库 / 同步 / 账号 -->
@@ -52,7 +52,7 @@
 </header>
 
 <nav class="nav-tabs">
-  <div class="nav-tab active" onclick="switchTab('inventory',this)">📦 库存</div>
+  <div class="nav-tab active" onclick="switchTab('inventory',this)">📦 商品</div>
   <div class="nav-tab" onclick="switchTab('scan',this)">📷 扫码</div>
   <div class="nav-tab" onclick="switchTab('show',this)">🎪 展会</div>
   <div class="nav-tab" onclick="switchTab('stats',this)">📊 统计</div>
@@ -75,14 +75,13 @@
       <div class="inv-overview-total" id="inv-ov-total">—</div>
     </div>
   </div>
-  <div class="search-row" style="display:flex;align-items:center;gap:8px;">
+  <div class="search-row inv-actions-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
     <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
-    <button class="btn btn-jade btn-sm" onclick="openStockInModal(null)" title="给现有商品补库存">⬆ 入库</button>
     <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:12px;">
-    <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
-    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;min-width:0;">
+  <div class="inv-search-cat-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin-bottom:8px;">
+    <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;padding:7px 12px;font-size:13px;">
+    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;color:var(--text);font-size:13px;min-width:0;">
       <option value="all">全部</option>
     </select>
   </div>
