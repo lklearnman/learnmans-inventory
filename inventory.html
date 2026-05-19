@@ -186,9 +186,9 @@
     <div class="show-hero-name" id="show-hero-name">🎪 展会带货</div>
     <div class="show-hero-date" id="show-hero-date">展会期间累计带出 <span class="show-hero-live" id="show-hero-live">● 进行中</span></div>
     <div class="show-hero-stats">
-      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-out">0</div><div class="show-hero-stat-l">带出件数</div></div>
-      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-types">0</div><div class="show-hero-stat-l">商品种类</div></div>
-      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-shows">0</div><div class="show-hero-stat-l">展会场数</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-out">0</div><div class="show-hero-stat-l">带出</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-sold">0</div><div class="show-hero-stat-l">已售</div></div>
+      <div class="show-hero-stat"><div class="show-hero-stat-v" id="show-hero-stat-sales">¥0</div><div class="show-hero-stat-l">销售额</div></div>
     </div>
   </div>
 
@@ -650,8 +650,10 @@
   </div>
 </div>
 
-<!-- 浮动 FAB:新建入库/出库(仅流水 tab 显示) -->
-<button class="logs-fab" id="logs-fab" onclick="openStockInModal(null)" title="新建入库/出库" style="display:none;">+</button>
+<!-- 浮动 FAB:新建入库/出库(仅流水 tab 显示) — mock screen-10 对齐 (SVG plus 替代文字 + ) -->
+<button class="logs-fab" id="logs-fab" onclick="openStockInModal(null)" title="新建入库/出库" style="display:none;" aria-label="新建入库/出库">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+</button>
 
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
