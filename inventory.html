@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-fix">
+<link rel="stylesheet" href="inventory.css?v=20260520-scancard">
 
 </head>
 <body>
@@ -250,19 +250,14 @@
     <div class="camera-result-bar" id="camera-result-bar">将条形码或QR码对准框内…</div>
   </div>
 
-  <!-- 主操作:三卡片 (摄像头 / AI 读条码 / AI 识图建品) -->
-  <div class="scan-actions">
-    <div class="scan-action primary" onclick="startCamera()">
+  <!-- 主操作:1 张大卡「摄像头扫码」+ 副链接「拍照让 AI 读条码」(兜底)。AI 识图建品 见下方独立卡 -->
+  <div class="scan-actions scan-actions-single">
+    <div class="scan-action primary scan-action-wide" onclick="startCamera()">
       <div class="scan-action-icon">📷</div>
       <div class="scan-action-text">摄像头扫码</div>
-    </div>
-    <div class="scan-action" onclick="document.getElementById('scan-photo-input').click()">
-      <div class="scan-action-icon">🤖</div>
-      <div class="scan-action-text">拍照让 AI 读条码</div>
-    </div>
-    <div class="scan-action" onclick="document.getElementById('ai-camera-input').click()">
-      <div class="scan-action-icon">🖼️</div>
-      <div class="scan-action-text">AI 识图建品</div>
+      <div class="scan-action-sub">
+        <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('scan-photo-input').click();">📸 摄像头扫不到? 拍照让 AI 读条码 →</a>
+      </div>
     </div>
   </div>
   <input type="file" id="scan-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="scanFromPhoto(this)">
@@ -697,12 +692,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-fix"></script>
-<script src="js/inventory-ui.js?v=20260520-fix"></script>
-<script src="js/inventory-logs.js?v=20260520-fix"></script>
-<script src="js/inventory-ai.js?v=20260520-fix"></script>
-<script src="js/inventory-labels.js?v=20260520-fix"></script>
-<script src="js/inventory-search.js?v=20260520-fix"></script>
+<script src="js/inventory-core.js?v=20260520-scancard"></script>
+<script src="js/inventory-ui.js?v=20260520-scancard"></script>
+<script src="js/inventory-logs.js?v=20260520-scancard"></script>
+<script src="js/inventory-ai.js?v=20260520-scancard"></script>
+<script src="js/inventory-labels.js?v=20260520-scancard"></script>
+<script src="js/inventory-search.js?v=20260520-scancard"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
