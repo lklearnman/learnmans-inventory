@@ -535,7 +535,7 @@ function _applyStockioMode(){
     document.getElementById('sio-preview-label').textContent='本 次 入 库';
     const btn=document.getElementById('sio-confirm-btn');
     btn.textContent='✓ 确认入库';
-    btn.className='btn btn-jade';
+    btn.className='btn btn-jade sio-confirm-big';
   }else{
     const t=document.querySelector('#modal-stockin .sio-tab[data-mode="out"]');if(t)t.classList.add('cur','out');
     document.getElementById('modal-stockin-title').textContent='⬇️ 出库';
@@ -547,7 +547,7 @@ function _applyStockioMode(){
     document.getElementById('sio-preview-label').textContent='本 次 出 库';
     const btn=document.getElementById('sio-confirm-btn');
     btn.textContent='✓ 确认出库';
-    btn.className='btn btn-rose';
+    btn.className='btn btn-rose sio-confirm-big';
   }
   renderStockioPreview();
 }

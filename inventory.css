@@ -1625,7 +1625,7 @@ tr.clickable{cursor:pointer;}
 .sio-preview-label{font-size:10px;color:var(--gold-dim);letter-spacing:2px;margin-bottom:4px;}
 .sio-preview-val{
   font-family:'DM Mono',monospace;
-  font-size:18px;
+  font-size:20px;
   color:var(--gold-light);
   font-weight:500;
 }
@@ -2036,16 +2036,17 @@ tr.clickable{cursor:pointer;}
 
 .sio-confirm-row{
   display:flex;gap:8px;align-items:stretch;
+  justify-content:stretch;
+  margin-top:14px;
 }
-.sio-cancel-btn{
-  flex:0 0 auto;
-  min-width:78px;
-}
+.sio-confirm-row .btn{flex:1 1 auto;width:100%;height:50px;font-size:15px;letter-spacing:2px;justify-content:center;}
 .sio-confirm-big{
-  flex:1;
+  flex:1 1 auto;
+  width:100%;
   height:50px;
   font-size:15px;
   letter-spacing:2px;
+  justify-content:center;
 }
 
 /* 类别筛选 select (2026-05-19 恢复, toolbar row-2) */
