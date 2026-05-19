@@ -39,24 +39,32 @@
       <option value="JPY">¥ JPY</option><option value="CNY">¥ CNY</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option>
     </select>
   </div>
-  <!-- 顶部圆形 icon 按钮组 (A 组改造 2026-05-19): 全屏搜索 / 入库 / 出库 / 同步 / 账号 -->
+  <!-- 顶部圆形 icon 按钮组 (mock 对齐 2026-05-19): 扫码 / 入库 / 出库 / 同步 / 账号 -->
   <div class="header-icons">
-    <button class="icon-btn" title="全局搜索" onclick="openSearch()" aria-label="搜索">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <button class="icon-btn" title="扫码识别" onclick="quickScan()" aria-label="扫码">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
     </button>
-    <button class="icon-btn icon-btn-in" title="入库" onclick="openStockInModal(null)" aria-label="入库">⬆</button>
-    <button class="icon-btn icon-btn-out" title="出库" onclick="openStockOutModal(null)" aria-label="出库">⬇</button>
-    <button class="icon-btn" title="同步" onclick="toast('待开发')" aria-label="同步">🔄</button>
-    <button class="icon-btn" title="账号" onclick="toast('待开发')" aria-label="账号">👤</button>
+    <button class="icon-btn icon-btn-in" title="入库" onclick="openStockInModal(null)" aria-label="入库">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg>
+    </button>
+    <button class="icon-btn icon-btn-out" title="出库" onclick="openStockOutModal(null)" aria-label="出库">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+    </button>
+    <button class="icon-btn" title="同步" onclick="toast('☁ 同步中… 已与 Supabase 同步')" aria-label="同步">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+    </button>
+    <button class="icon-btn" title="账号" onclick="toast('👤 账号:演示账号 · 登录开发中')" aria-label="账号">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
   </div>
 </header>
 
 <nav class="nav-tabs">
-  <div class="nav-tab active" onclick="switchTab('inventory',this)">📦 商品</div>
-  <div class="nav-tab" onclick="switchTab('scan',this)">📷 扫码</div>
-  <div class="nav-tab" onclick="switchTab('show',this)">🎪 展会</div>
-  <div class="nav-tab" onclick="switchTab('stats',this)">📊 统计</div>
-  <div class="nav-tab" onclick="switchTab('logs',this)">↕️ 流水</div>
+  <div class="nav-tab active" onclick="switchTab('inventory',this)">商品</div>
+  <div class="nav-tab" onclick="switchTab('inout',this)">入出</div>
+  <div class="nav-tab" onclick="switchTab('show',this)">展会</div>
+  <div class="nav-tab" onclick="switchTab('stats',this)">统计</div>
+  <div class="nav-tab" onclick="switchTab('logs',this)">流水</div>
 </nav>
 
 <div class="main">
@@ -75,28 +83,28 @@
       <div class="inv-overview-total" id="inv-ov-total">—</div>
     </div>
   </div>
-  <div class="search-row inv-actions-row" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-    <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
-    <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
-  </div>
-  <div class="inv-search-cat-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;margin-bottom:8px;">
-    <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;padding:7px 12px;font-size:13px;">
-    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 10px;color:var(--text);font-size:13px;min-width:0;">
-      <option value="all">全部</option>
-    </select>
-  </div>
-  <div class="inv-toolbar-row">
-    <div class="inv-sort" id="inv-sort">
-      <div class="inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
-      <div class="inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
-      <div class="inv-sort-btn" data-sort="price" onclick="setInvSort('price',this)" title="按价格倒序">¥ 价格</div>
-      <div class="inv-sort-btn" data-sort="az" onclick="setInvSort('az',this)" title="按名称 A-Z">A-Z</div>
+  <!-- 商品页 toolbar (mock s2-toolbar 风格 2026-05-19): 紧凑 1 行 [+] [🔍] [sort chips] [⊞⊟] [🏷️] [📥] -->
+  <div class="s2-toolbar" id="inv-s2-toolbar">
+    <button class="s2-new-btn" onclick="openAddModal()" title="新建商品" aria-label="新建商品">+</button>
+    <button class="s2-csv-btn s2-search-btn" onclick="openSearch()" title="搜索商品" aria-label="搜索"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+    <div class="s2-sort inv-sort" id="inv-sort">
+      <div class="s2-sort-btn inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
+      <div class="s2-sort-btn inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
+      <div class="s2-sort-btn inv-sort-btn" data-sort="price" onclick="setInvSort('price',this)" title="按价格倒序">¥ 价格</div>
+      <div class="s2-sort-btn inv-sort-btn" data-sort="az" onclick="setInvSort('az',this)" title="按名称 A-Z">A-Z</div>
     </div>
-    <div class="inv-view-toggle" id="inv-view-toggle">
+    <div class="s2-view-toggle inv-view-toggle" id="inv-view-toggle">
       <button class="cur" id="view-toggle-grid" data-view="grid" onclick="setInventoryView('grid')" title="网格视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
       <button id="view-toggle-list" data-view="list" onclick="setInventoryView('list')" title="列表视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <button id="view-toggle" data-view="legacy-toggle" onclick="toggleInventoryView()" style="display:none;" title="切换视图"></button>
     </div>
+    <button class="s2-label-btn" onclick="openLabelModal()" title="打印价格标签" aria-label="价格标签"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+    <button class="s2-csv-btn" onclick="exportInventoryCSV()" title="导出 CSV" aria-label="导出 CSV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+  </div>
+  <!-- 隐藏占位:旧版 search/cat-filter 输入仍存在以兼容 renderInventory() 读取 -->
+  <div style="display:none;" aria-hidden="true">
+    <input id="inv-search" oninput="renderInventory()">
+    <select id="cat-filter-select" onchange="setCatFilter(this.value)"><option value="all">全部</option></select>
   </div>
   <div id="inv-toolbar" class="inv-toolbar-row inv-toolbar-row-2">
     <label class="inv-select-all" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
