@@ -212,22 +212,129 @@ function updateHeader(){
 }
 
 // ===================== 建品 =====================
-function openAddModal(prefill){
-  editingId=null;pendingPhotos=[];
-  document.getElementById('modal-add-title').textContent='新建商品档案';
-  ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
+// 新建/编辑 modal 状态:类别选中 + 初始库存
+let initStockQty=0;
+function _resetAddModal(){
+  ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
-  if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
+  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>c.classList.remove('cur'));
+  const catInput=document.getElementById('f-cat');if(catInput)catInput.style.display='none';
+  initStockQty=0;
+  const qtyEl=document.getElementById('f-initqty');if(qtyEl)qtyEl.textContent='0';
+  updateAddSummary();
+  // 重置标题、主按钮、删除链接(默认建品模式)
+  document.getElementById('modal-add-title').textContent='新 建 商 品';
+  const hint=document.getElementById('modal-add-hint');if(hint){hint.style.display='block';hint.textContent='💡 填好基础信息 + 初始库存,一键建档入库。';}
+  const mainBtn=document.getElementById('btn-save-main');if(mainBtn)mainBtn.textContent='✓ 创建并入库';
+  const delRow=document.getElementById('f-delete-row');if(delRow)delRow.style.display='none';
+  const qtyLabel=document.getElementById('f-initqty-label');if(qtyLabel)qtyLabel.innerHTML='初始库存 <span style="color:var(--text-dim);font-weight:400;">本次入库件数</span>';
+  const sumLabel=document.getElementById('f-summary-label');if(sumLabel)sumLabel.textContent='本 次 录 入';
+}
+function pickCat(el){
+  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+  const v=el.dataset.cat;
+  const catInput=document.getElementById('f-cat');
+  if(v==='__other__'){
+    catInput.style.display='block';
+    if(!catInput.value)catInput.value='';
+    catInput.focus();
+  }else{
+    catInput.style.display='none';
+    catInput.value=v;
+  }
+  updateAddSummary();
+}
+function adjustInitQty(d){
+  initStockQty=Math.max(0,initStockQty+d);
+  const el=document.getElementById('f-initqty');if(el)el.textContent=initStockQty;
+  updateAddSummary();
+}
+function updateAddSummary(){
+  const qtyEl=document.getElementById('f-summary-qty');if(qtyEl)qtyEl.textContent=initStockQty;
+  const sumVal=document.getElementById('f-summary-val');if(!sumVal)return;
+  if(editingId){
+    const p=getProduct(editingId);
+    sumVal.innerHTML=`修改后保存到 <span class="total">${p?p.name:'—'}</span>${initStockQty!==(p?(p.qty||0):0)?',将生成调整流水':''}`;
+  }else if(initStockQty>0){
+    sumVal.innerHTML=`新商品 · 初始库存 <span class="total">${initStockQty}</span> 件,将自动生成入库流水`;
+  }else{
+    sumVal.innerHTML=`新商品 · 仅建档(库存 0),建后可单独入库`;
+  }
+}
+function autoGenSku(){
+  const curEl=document.querySelector('#f-cat-grid .s11-cat.cur');
+  const cat=curEl?curEl.dataset.cat:'';
+  const map={'陨石':'MET','首饰':'JEW','矿物':'MIN','葫芦':'HLO','化石':'FOS'};
+  const code=map[cat]||'OTH';
+  // 找当前类别已有最大序号 + 1
+  const re=new RegExp('^MZ-'+code+'-(\\d+)$');
+  let maxN=0;
+  DB.products.forEach(p=>{const m=(p.sku||'').match(re);if(m){const n=parseInt(m[1]);if(n>maxN)maxN=n;}});
+  const num=String(maxN+1).padStart(3,'0');
+  document.getElementById('f-sku').value=`MZ-${code}-${num}`;
+  toast('⚡ 已生成 SKU');
+}
+function openAddModal(prefill){
+  editingId=null;pendingPhotos=[];
+  _resetAddModal();
+  if(prefill){
+    if(prefill.name)document.getElementById('f-name').value=prefill.name;
+    if(prefill.note)document.getElementById('f-note').value=prefill.note;
+    if(prefill.origin)document.getElementById('f-origin').value=prefill.origin;
+    if(prefill.country)document.getElementById('f-country').value=prefill.country;
+    if(prefill.cat){
+      // 尝试在 grid 内匹配
+      const cells=document.querySelectorAll('#f-cat-grid .s11-cat');
+      let matched=false;
+      cells.forEach(c=>{if(c.dataset.cat===prefill.cat){c.classList.add('cur');matched=true;}});
+      if(!matched){
+        // 匹配「其他」并填自定义
+        const other=document.querySelector('#f-cat-grid .s11-cat[data-cat="__other__"]');
+        if(other)other.classList.add('cur');
+        const ci=document.getElementById('f-cat');ci.style.display='block';ci.value=prefill.cat;
+      }
+    }
+  }
+  updateAddSummary();
   document.getElementById('modal-add').classList.add('open');
 }
 function openEditModal(id){
   const p=getProduct(id);if(!p)return;
   editingId=id;pendingPhotos=[...(p.photos||[])];
-  document.getElementById('modal-add-title').textContent='编辑商品';
+  _resetAddModal();
+  editingId=id; // _resetAddModal 不动 editingId,但保险
+  document.getElementById('modal-add-title').textContent='编 辑 商 品';
+  const hint=document.getElementById('modal-add-hint');if(hint)hint.style.display='none';
+  document.getElementById('btn-save-main').textContent='✓ 保存修改';
+  document.getElementById('f-delete-row').style.display='block';
+  // 初始库存改名为「当前库存」
+  document.getElementById('f-initqty-label').innerHTML='当前库存 <span style="color:var(--text-dim);font-weight:400;">直接修改将生成调整流水</span>';
+  document.getElementById('f-summary-label').textContent='编 辑 中';
+  // 预填字段
   document.getElementById('f-name').value=p.name||'';
   document.getElementById('f-sku').value=p.sku||'';
-  document.getElementById('f-cat').value=p.cat||'';
+  // 类别 grid
+  if(p.cat){
+    const cells=document.querySelectorAll('#f-cat-grid .s11-cat');
+    let matched=false;
+    cells.forEach(c=>{if(c.dataset.cat===p.cat){c.classList.add('cur');matched=true;}});
+    if(!matched){
+      const other=document.querySelector('#f-cat-grid .s11-cat[data-cat="__other__"]');
+      if(other)other.classList.add('cur');
+      const ci=document.getElementById('f-cat');ci.style.display='block';ci.value=p.cat;
+    }else{
+      document.getElementById('f-cat').value=p.cat;
+    }
+  }
+  // 兼容老 openEditModal 调用:继续生成推荐价 hint
+  // 旧路径见下方原代码,保留
+  // dummy hook so 旧 var p 在闭包内,继续往下走旧逻辑
+  _editPrefillRest(p);
+}
+function _editPrefillRest(p){
+  const id=p.id;
   // 推荐价(JPY):平均(进价换算JPY)×3
   const _jpy=DB.logs.filter(l=>l.productId===id&&l.type==='in'&&parseFloat(l.price)>0)
     .map(l=>convertCurrency(l.price,l.currency||'CNY','JPY')).filter(v=>!isNaN(v));
@@ -247,10 +354,62 @@ function openEditModal(id){
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
+  // 编辑模式下,初始库存 stepper 映射「当前库存」
+  initStockQty=parseInt(p.qty)||0;
+  const qe=document.getElementById('f-initqty');if(qe)qe.textContent=initStockQty;
+  updateAddSummary();
   renderPhotoPreviews();closeModal('modal-detail');
   document.getElementById('modal-add').classList.add('open');
 }
 function openAddThenStockIn(){openAddModal();document.getElementById('modal-add').dataset.stockin='1';}
+// 统一主按钮:新建模式自动建档+入库(qty>0)或仅建档(qty=0);编辑模式保存修改(qty 变化生成调整流水)
+async function saveProductMain(){
+  if(editingId){
+    return saveEditedProduct();
+  }
+  if(initStockQty>0){
+    return saveProductAndStockIn();
+  }
+  return saveProductOnly();
+}
+async function saveEditedProduct(){
+  const btn=document.getElementById('btn-save-main');
+  if(btn)btn.disabled=true;
+  try{
+    const before=getProduct(editingId);if(!before){toast('商品不存在');return;}
+    const data=buildProduct();
+    if(!data){return;}
+    // qty 调整 → 生成 logs(in 或 out)
+    const oldQty=parseInt(before.qty)||0;
+    const newQty=initStockQty;
+    const diff=newQty-oldQty;
+    data.qty=newQty;
+    const idx=DB.products.findIndex(p=>p.id===editingId);
+    if(idx>=0)DB.products[idx]=data;
+    if(diff!==0){
+      const log={id:uid(),productId:editingId,type:diff>0?'in':'out',qty:Math.abs(diff),note:'编辑调整',ts:Date.now()};
+      DB.logs.unshift(log);
+      await insertLog(log);
+    }
+    await upsertProduct(data);
+    toast('✅ 已更新');
+    closeModal('modal-add');
+    renderInventory();
+  }finally{if(btn)btn.disabled=false;}
+}
+async function deleteFromEdit(){
+  if(!editingId)return;
+  const p=getProduct(editingId);if(!p)return;
+  const ok=window.mzConfirm
+    ? await window.mzConfirm({title:'删除此商品?',message:`此操作无法恢复。商品「${p.name}」将从库存移除,流水会保留。`,okText:'🗑 确认删除',okClass:'btn-rose'})
+    : confirm(`删除商品「${p.name}」?此操作无法恢复(流水保留)。`);
+  if(!ok)return;
+  const did=editingId;
+  DB.products=DB.products.filter(x=>x.id!==did);
+  DB.showItems=DB.showItems.filter(s=>s.productId!==did);
+  await deleteProduct(did);
+  closeModal('modal-add');renderInventory();toast('已删除');
+}
 async function handlePhotos(e){
   const files=[...e.target.files],rem=5-pendingPhotos.length;
   if(rem<=0){toast('最多5张');return;}
@@ -297,23 +456,34 @@ async function saveProductOnly(){
 }
 async function saveProductAndStockIn(){
   if(editingId){saveProductOnly();return;}
-  const btn=document.getElementById('btn-save-stockin');
+  const btn=document.getElementById('btn-save-main')||document.getElementById('btn-save-stockin');
   if(btn)btn.disabled=true;
-  const data=buildProduct();
-  if(!data){if(btn)btn.disabled=false;return;}
-  // 重复名称检查
-  const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
-  if(dup){
-    toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
-    if(btn)btn.disabled=false;
-    closeModal('modal-add');
-    setTimeout(()=>openDetail(dup.id),600);
-    return;
-  }
-  DB.products.unshift(data);
-  await upsertProduct(data);
-  closeModal('modal-add');renderInventory();
-  setTimeout(()=>openStockInModal(data.id),200);
+  try{
+    const data=buildProduct();
+    if(!data){return;}
+    // 重复名称检查
+    const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
+    if(dup){
+      toast(`⚠️ "${dup.name}" 已存在!正在打开已有商品,如需新建请修改名称`,5000);
+      closeModal('modal-add');
+      setTimeout(()=>openDetail(dup.id),600);
+      return;
+    }
+    // 直接合并初始库存:写入 qty + 生成 in log
+    const qty=Math.max(0,parseInt(initStockQty)||0);
+    data.qty=qty;
+    DB.products.unshift(data);
+    if(qty>0){
+      const log={id:uid(),productId:data.id,type:'in',qty,note:'建档入库',ts:Date.now()};
+      DB.logs.unshift(log);
+      await Promise.all([upsertProduct(data),insertLog(log)]);
+      toast(`✅ 已建档并入库 ${qty} 件`);
+    }else{
+      await upsertProduct(data);
+      toast('✅ 建档完成(库存 0)');
+    }
+    closeModal('modal-add');renderInventory();
+  }finally{if(btn)btn.disabled=false;}
 }
 
 // ===================== 入库 / 出库(合并 modal) =====================

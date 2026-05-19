@@ -65,18 +65,10 @@
       <div class="inv-overview-total" id="inv-ov-total">—</div>
     </div>
   </div>
-  <div class="search-row" style="display:flex;align-items:center;gap:8px;">
-    <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 建品</button>
-    <button class="btn btn-jade btn-sm" onclick="openStockInModal(null)" title="给现有商品补库存">⬆ 入库</button>
-    <button class="btn btn-outline btn-sm" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦ 扫码</button>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;margin-bottom:12px;">
-    <input class="search-input" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()" style="min-width:0;">
-    <select id="cat-filter-select" onchange="setCatFilter(this.value)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;color:var(--text);font-size:13px;min-width:0;">
-      <option value="all">全部</option>
-    </select>
-  </div>
-  <div class="inv-toolbar-row">
+  <!-- 工具栏:1 行紧凑布局(mock screen-2 风格) -->
+  <div class="inv-toolbar-merged">
+    <button class="inv-tb-add" onclick="openAddModal()" title="新建商品">＋</button>
+    <input class="inv-tb-search" id="inv-search" placeholder="🔍 搜索名称、SKU、类别…" oninput="renderInventory()">
     <div class="inv-sort" id="inv-sort">
       <div class="inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
       <div class="inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
@@ -88,15 +80,19 @@
       <button id="view-toggle-list" data-view="list" onclick="setInventoryView('list')" title="列表视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <button id="view-toggle" data-view="legacy-toggle" onclick="toggleInventoryView()" style="display:none;" title="切换视图"></button>
     </div>
+    <button class="inv-tb-icon" onclick="openStockInModal(null)" title="给现有商品补库存">⬆</button>
+    <button class="inv-tb-icon" id="quick-scan-btn" onclick="quickScan()" title="启动摄像头扫码">▦</button>
+    <button class="inv-tb-icon" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️</button>
   </div>
-  <div id="inv-toolbar" class="inv-toolbar-row inv-toolbar-row-2">
-    <label class="inv-select-all" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
+  <!-- 第二行:类别筛选 + 全选 (手机折行) -->
+  <div id="inv-toolbar" class="inv-toolbar-row2-merged">
+    <select id="cat-filter-select" onchange="setCatFilter(this.value)" class="inv-tb-cat" title="类别筛选">
+      <option value="all">全部分类</option>
+    </select>
+    <label class="inv-select-all">
       <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
       <span id="select-all-label">全选</span>
     </label>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
-    </div>
   </div>
   <div id="product-grid" class="product-grid"></div>
 </div>
@@ -398,34 +394,74 @@
 
 </div>
 
-<!-- 建品 MODAL -->
+<!-- 建品 / 编辑 MODAL (画面 11 mock 落地 2026-05-19) -->
 <div class="modal-overlay" id="modal-add">
-  <div class="modal">
-    <div class="modal-title" id="modal-add-title">新建商品档案</div>
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-title" id="modal-add-title">新 建 商 品</div>
     <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
-    <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存。</div>
+    <div class="info-box" id="modal-add-hint">💡 填好基础信息 + 初始库存,一键建档入库。</div>
     <div class="form-grid">
-      <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
-      <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
-      <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
-      <div class="form-group"><label>价格（售价）<span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
-        <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)">
-        <div style="font-size:11px;color:var(--text-muted);padding:8px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
+      <div class="form-group full"><label>商品名称 <span style="color:var(--rose);">*</span></label><input type="text" id="f-name" placeholder="例：阿勒泰陨石原石"></div>
+
+      <div class="form-group full">
+        <label>类别 <span style="color:var(--rose);">*</span></label>
+        <div class="s11-cat-grid" id="f-cat-grid">
+          <div class="s11-cat" data-cat="陨石" onclick="pickCat(this)"><span class="s11-cat-icon">🪨</span><span class="s11-cat-name">陨石</span></div>
+          <div class="s11-cat" data-cat="首饰" onclick="pickCat(this)"><span class="s11-cat-icon">💍</span><span class="s11-cat-name">首饰</span></div>
+          <div class="s11-cat" data-cat="矿物" onclick="pickCat(this)"><span class="s11-cat-icon">💎</span><span class="s11-cat-name">矿物</span></div>
+          <div class="s11-cat" data-cat="葫芦" onclick="pickCat(this)"><span class="s11-cat-icon">🥒</span><span class="s11-cat-name">葫芦</span></div>
+          <div class="s11-cat" data-cat="化石" onclick="pickCat(this)"><span class="s11-cat-icon">🦴</span><span class="s11-cat-name">化石</span></div>
+          <div class="s11-cat" data-cat="__other__" onclick="pickCat(this)"><span class="s11-cat-icon">➕</span><span class="s11-cat-name">其他</span></div>
+        </div>
+        <input type="text" id="f-cat" class="s11-cat-other-input" placeholder="自定义类别(选「其他」时填)" list="cat-list" style="display:none;"><datalist id="cat-list"></datalist>
       </div>
+
+      <div class="form-group full">
+        <label>SKU <span style="color:var(--text-dim);font-weight:400;">输入或自动生成</span></label>
+        <div class="s11-sku-row">
+          <input type="text" id="f-sku" placeholder="留空自动生成 / 例 MZ-MET-001">
+          <div class="s11-sku-gen" onclick="autoGenSku()">⚡ 自动</div>
+        </div>
+      </div>
+
+      <div class="form-group full"><label>价格(售价) <span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
+        <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)">
+        <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
+      </div>
+
       <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
-      <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
+      <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例:巴西、中国"></div>
+
+      <div class="form-group full" id="f-initqty-row">
+        <label id="f-initqty-label">初始库存 <span style="color:var(--text-dim);font-weight:400;">本次入库件数</span></label>
+        <div class="s11-qty">
+          <div class="s11-qty-btn" onclick="adjustInitQty(-1)">−</div>
+          <div class="s11-qty-val" id="f-initqty">0</div>
+          <div class="s11-qty-btn" onclick="adjustInitQty(1)">+</div>
+        </div>
+      </div>
+
       <div class="form-group full"><label>备注描述</label><textarea id="f-note" placeholder="成色、特征等…"></textarea></div>
       <div class="form-group full">
-        <label>商品照片（最多5张）</label>
+        <label>商品照片(最多 5 张)</label>
         <div class="photo-upload-area" onclick="document.getElementById('f-photos').click()">📷 拍照或选择图片</div>
         <input type="file" id="f-photos" accept="image/*" multiple style="display:none" onchange="handlePhotos(event)">
         <div class="photo-preview-grid" id="photo-previews"></div>
       </div>
+
+      <div class="form-group full">
+        <div class="s11-summary" id="f-summary">
+          <div class="s11-summary-label" id="f-summary-label">本 次 录 入</div>
+          <div class="s11-summary-val" id="f-summary-val">新商品 · 初始库存 <span class="total" id="f-summary-qty">0</span> 件,将自动生成入库流水</div>
+        </div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-add')">取消</button>
-      <button class="btn btn-gold" id="btn-save-only" onclick="saveProductOnly()">仅建档</button>
-      <button class="btn btn-outline" id="btn-save-stockin" onclick="saveProductAndStockIn()">建档并入库 →</button>
+      <button class="btn btn-gold" id="btn-save-main" onclick="saveProductMain()" style="flex:1;">✓ 创建并入库</button>
+    </div>
+    <div class="s11-delete-row" id="f-delete-row" style="display:none;">
+      <a class="s11-delete-link" onclick="deleteFromEdit()">🗑 删 除 此 商 品</a>
     </div>
   </div>
 </div>
@@ -471,18 +507,24 @@
   </div>
 </div>
 
-<!-- 商品详情 MODAL -->
+<!-- 商品详情 MODAL (画面 3 mock 落地) -->
 <div class="modal-overlay" id="modal-detail">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal" style="max-width:720px;">
     <div class="modal-title" id="detail-title">商 品 详 情</div>
     <button class="modal-close" onclick="closeModal('modal-detail');if(detailOpenedFromAI){detailOpenedFromAI=false;document.getElementById('ai-result').style.display='block';}">✕</button>
     <div class="modal-body" id="detail-body"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline btn-sm" onclick="editFromDetail()" title="编辑">✏️</button>
-      <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
-      <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
-      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()" title="标签打印">🏷️</button>
-      <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);" title="删除">🗑️</button>
+    <div class="modal-actions d3-actions">
+      <button class="btn btn-outline d3-act-sq" onclick="editFromDetail()" title="编辑">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="btn btn-outline d3-act-sq" onclick="printLabelFromDetail()" title="标签打印">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      </button>
+      <button class="btn btn-jade d3-act-main" onclick="stockInFromDetail()">⬆ 入库</button>
+      <button class="btn btn-rose d3-act-main" onclick="quickOutFromDetail()">⬇ 出库</button>
+      <button class="btn btn-outline d3-act-sq d3-act-del" onclick="deleteFromDetail()" title="删除">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      </button>
     </div>
   </div>
 </div>
