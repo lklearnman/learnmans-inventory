@@ -2157,6 +2157,28 @@ tr.clickable{cursor:pointer;}
   justify-content:stretch !important;
   width:100%;
 }
+
+/* 建品/编辑 modal 底部双按钮(建档 + 建档并入库) */
+.modal-add-actions{
+  display:flex !important;
+  gap:10px;
+  justify-content:stretch !important;
+  width:100%;
+}
+.modal-add-btn{
+  flex:1 1 50% !important;
+  width:auto !important;
+  height:46px;
+  font-size:14px;
+  letter-spacing:1.5px;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-add-btn-only{
+  flex:0 0 90px !important;
+}
+.modal-add-btn-stockin{
+  flex:1 1 auto !important;
+}
 .sio-cancel-btn{
   flex:0 0 auto;
   min-width:78px;
