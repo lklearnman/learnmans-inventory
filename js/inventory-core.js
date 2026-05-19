@@ -299,6 +299,22 @@ function fmtPrice(value,toCur,fromCur){
   const num=(toCur==='JPY'||toCur==='CNY')?Math.round(conv).toLocaleString():conv.toFixed(2);
   return sym+num+(unit?' '+unit:'');
 }
+// 紧凑形式价格(K/M)— 详情销售概况大数字防溢出
+function fmtPriceK(value,toCur,fromCur){
+  toCur=toCur||currentCurrency;
+  fromCur=fromCur||'CNY';
+  if(value===null||value===undefined||value==='')return '—';
+  const conv=convertCurrency(value,fromCur,toCur);
+  if(isNaN(conv))return '—';
+  const sym=CURRENCY_SYMBOL[toCur]||'';
+  const abs=Math.abs(conv);
+  let num;
+  if(abs>=1e6)num=(conv/1e6).toFixed(abs>=1e7?0:1).replace(/\.0$/,'')+'M';
+  else if(abs>=1e4)num=(conv/1e3).toFixed(abs>=1e5?0:1).replace(/\.0$/,'')+'K';
+  else if(abs>=1e3&&(toCur==='JPY'||toCur==='CNY'))num=(conv/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  else num=(toCur==='JPY'||toCur==='CNY')?Math.round(conv).toLocaleString():conv.toFixed(2);
+  return sym+num;
+}
 // 显示原币种价格(不换算),用于流水
 function fmtPriceRaw(value,cur){
   if(value===null||value===undefined||value==='')return '—';
