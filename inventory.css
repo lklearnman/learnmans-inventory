@@ -2136,14 +2136,19 @@ tr.clickable{cursor:pointer;}
 }
 
 .sio-confirm-row{
-  display:flex;gap:8px;align-items:stretch;
+  display:flex !important;
+  gap:8px;
+  align-items:stretch;
+  justify-content:stretch !important;
+  width:100%;
 }
 .sio-cancel-btn{
   flex:0 0 auto;
   min-width:78px;
 }
 .sio-confirm-big{
-  flex:1;
+  flex:1 1 100% !important;
+  width:100% !important;
   height:50px;
   font-size:15px;
   letter-spacing:2px;
