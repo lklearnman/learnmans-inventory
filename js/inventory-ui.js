@@ -288,24 +288,42 @@ function openAddModal(prefill){
   document.getElementById('modal-add').classList.add('open');
 }
 function _resetCatGrid(){
-  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>c.classList.remove('cur'));
+  const sel=document.getElementById('f-cat-sel');
+  if(sel)sel.value='';
+  const txt=document.getElementById('f-cat');
+  if(txt)txt.value='';
 }
 function _syncCatGrid(catText){
-  _resetCatGrid();
-  if(!catText)return;
-  const t=String(catText);
-  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>{
-    if(t.indexOf(c.dataset.cat)>=0)c.classList.add('cur');
-  });
+  const sel=document.getElementById('f-cat-sel');
+  const txt=document.getElementById('f-cat');
+  if(!catText){if(sel)sel.value='';if(txt)txt.value='';return;}
+  const t=String(catText).trim();
+  // 内置选项命中 → select 选中,否则 「其他(自定义)」+ 填入 text
+  const builtin=['陨石','首饰','矿物','葫芦','化石'];
+  const hit=builtin.find(k=>t.indexOf(k)>=0);
+  if(sel){sel.value=hit?hit:'__other__';}
+  if(txt){txt.value=t;}
 }
+// select 选择类别 → 同步到 f-cat text(给 saveProductMain 读)
+function onAddCatSel(val){
+  const txt=document.getElementById('f-cat');
+  if(!txt)return;
+  if(val==='__other__'){txt.value='';txt.focus();}
+  else if(val){txt.value=val;}
+  else{txt.value='';}
+}
+// 兼容旧调用(如果有外部代码调 setAddCat)
 function setAddCat(cat){
-  _resetCatGrid();
-  const el=document.querySelector(`#f-cat-grid .s11-cat[data-cat="${cat}"]`);
-  if(el)el.classList.add('cur');
-  document.getElementById('f-cat').value=cat;
+  const sel=document.getElementById('f-cat-sel');
+  const txt=document.getElementById('f-cat');
+  const builtin=['陨石','首饰','矿物','葫芦','化石'];
+  if(sel)sel.value=builtin.indexOf(cat)>=0?cat:'__other__';
+  if(txt)txt.value=cat;
 }
 function autoGenSku(){
-  const cur=document.querySelector('#f-cat-grid .s11-cat.cur')?.dataset.cat||document.getElementById('f-cat').value.trim()||'其他';
+  const selV=document.getElementById('f-cat-sel')?.value||'';
+  const txtV=document.getElementById('f-cat')?.value.trim()||'';
+  const cur=(selV&&selV!=='__other__')?selV:(txtV||'其他');
   const map={陨石:'MET',首饰:'JEW',矿物:'MIN',葫芦:'HLO',化石:'FOS',其他:'OTH'};
   let code='OTH';
   Object.keys(map).forEach(k=>{if(cur.indexOf(k)>=0)code=map[k];});
