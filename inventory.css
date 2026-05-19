@@ -388,9 +388,10 @@ tr.clickable{cursor:pointer;}
 .scan-action-wide{flex:1;padding:22px 16px;}
 .scan-action-wide .scan-action-icon{font-size:30px;margin-bottom:10px;}
 .scan-action-wide .scan-action-text{font-size:14px;font-weight:600;letter-spacing:2px;}
-.scan-action-sub{margin-top:10px;font-size:11px;line-height:1.4;}
-.scan-action-sub a{color:#3a2a08;text-decoration:underline;text-underline-offset:2px;opacity:0.75;}
+.scan-action-sub{margin-top:10px;font-size:11px;line-height:1.6;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;align-items:center;}
+.scan-action-sub a{color:#3a2a08;text-decoration:underline;text-underline-offset:2px;opacity:0.75;display:inline-block;}
 .scan-action-sub a:hover{opacity:1;}
+.scan-action-sub-sep{color:#3a2a08;opacity:0.4;}
 
 /* 手动输入条 */
 .scan-manual{
