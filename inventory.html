@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>矿珍库 · 云端库存管理</title>
+<!-- PWA: 主屏图标 + 安装提示 -->
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="/icons/app-icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0e0d0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="矿珍库">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
@@ -12,7 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-scanmock">
+<link rel="stylesheet" href="inventory.css?v=20260520-pwa">
 
 </head>
 <body>
@@ -691,12 +700,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-scanmock"></script>
-<script src="js/inventory-ui.js?v=20260520-scanmock"></script>
-<script src="js/inventory-logs.js?v=20260520-scanmock"></script>
-<script src="js/inventory-ai.js?v=20260520-scanmock"></script>
-<script src="js/inventory-labels.js?v=20260520-scanmock"></script>
-<script src="js/inventory-search.js?v=20260520-scanmock"></script>
+<script src="js/inventory-core.js?v=20260520-pwa"></script>
+<script src="js/inventory-ui.js?v=20260520-pwa"></script>
+<script src="js/inventory-logs.js?v=20260520-pwa"></script>
+<script src="js/inventory-ai.js?v=20260520-pwa"></script>
+<script src="js/inventory-labels.js?v=20260520-pwa"></script>
+<script src="js/inventory-search.js?v=20260520-pwa"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
