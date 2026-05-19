@@ -1748,3 +1748,57 @@ tr.clickable{cursor:pointer;}
   text-align:center;padding:30px 20px;
   color:var(--text-dim);font-size:12px;
 }
+
+/* ============================================ */
+/* mock 全画面同步 2026-05-19 ================== */
+/* 顶部币种 chip 样式(基于 select,视觉跟 icon-btn 统一) */
+.global-currency-select.cur-chip{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background:var(--surface2);
+  background-image:linear-gradient(45deg,transparent 50%,var(--gold-dim) 50%),linear-gradient(135deg,var(--gold-dim) 50%,transparent 50%);
+  background-position:calc(100% - 11px) 50%,calc(100% - 7px) 50%;
+  background-size:4px 4px,4px 4px;
+  background-repeat:no-repeat;
+  border:1px solid var(--gold-dim);
+  border-radius:16px;
+  padding:5px 22px 5px 12px;
+  color:var(--gold-light);
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  font-weight:500;
+  letter-spacing:0.5px;
+  width:auto;min-width:72px;
+  margin-left:8px;
+  cursor:pointer;
+  transition:all 0.18s ease;
+  height:30px;
+}
+.global-currency-select.cur-chip:hover{
+  border-color:var(--gold);
+  background-color:rgba(201,168,76,0.08);
+  color:var(--gold-light);
+}
+.global-currency-select.cur-chip:focus{
+  outline:none;border-color:var(--gold);
+  box-shadow:0 0 0 2px var(--gold-glow);
+}
+@media(max-width:520px){
+  .global-currency-select.cur-chip{
+    font-size:10px;min-width:64px;padding:4px 20px 4px 10px;height:28px;margin-left:6px;
+  }
+}
+
+/* 商品卡更紧凑的 info padding 跟 mock 一致 */
+.product-card .product-info{padding:8px 9px 9px;}
+.product-card .product-name{font-size:12.5px;margin-bottom:3px;line-height:1.25;}
+.product-card .product-price{font-size:13px;margin-bottom:1px;}
+.product-card .product-sku{font-size:10px;letter-spacing:0.3px;}
+
+/* 商品 toolbar 紧凑:把 sort + view-toggle 行的上下间距压一档 */
+.sec-products .inv-toolbar-row,
+#sec-inventory .inv-toolbar-row{margin-bottom:8px;}
+#sec-inventory .inv-toolbar-row-2{margin-bottom:10px;}
+
+/* icon-btn jade/rose hover 加强,跟 mock 更醒目的发光对齐 */
+.icon-btn-in:focus-visible,.icon-btn-out:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+

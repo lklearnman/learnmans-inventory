@@ -776,27 +776,35 @@ async function importData(e){
     try{
       const d=JSON.parse(ev.target.result);
       if(!d.products)throw 0;
-      if(!confirm(`导入 ${d.products.length} 个商品到云端？`))return;
-      toast('正在上传到云端…');
-      for(const p of d.products){
-        if(!getProduct(p.id)){
-          DB.products.push(p);
-          await upsertProduct(p);
+      mzConfirm({
+        title:'导入到云端?',
+        message:`将上传 ${d.products.length} 个商品、${(d.logs||[]).length} 条流水、${(d.showItems||[]).length} 条展会记录到 Supabase。已存在的 ID 会跳过。`,
+        okText:'开始导入',
+        okClass:'btn-gold',
+        icon:'☁',
+        onOk:async()=>{
+          toast('正在上传到云端…');
+          for(const p of d.products){
+            if(!getProduct(p.id)){
+              DB.products.push(p);
+              await upsertProduct(p);
+            }
+          }
+          for(const l of (d.logs||[])){
+            if(!DB.logs.find(x=>x.id===l.id)){
+              DB.logs.push(l);
+              await insertLog(l);
+            }
+          }
+          for(const s of (d.showItems||[])){
+            if(!DB.showItems.find(x=>x.id===s.id)){
+              DB.showItems.push(s);
+              await upsertShow(s);
+            }
+          }
+          renderInventory();toast(`✅ 已导入 ${d.products.length} 个商品到云端！`);
         }
-      }
-      for(const l of (d.logs||[])){
-        if(!DB.logs.find(x=>x.id===l.id)){
-          DB.logs.push(l);
-          await insertLog(l);
-        }
-      }
-      for(const s of (d.showItems||[])){
-        if(!DB.showItems.find(x=>x.id===s.id)){
-          DB.showItems.push(s);
-          await upsertShow(s);
-        }
-      }
-      renderInventory();toast(`✅ 已导入 ${d.products.length} 个商品到云端！`);
+      });
     }catch{toast('❌ 文件格式错误');}
   };
   r.readAsText(f);
