@@ -426,12 +426,37 @@
     <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
     <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存。</div>
     <div class="form-grid">
-      <div class="form-group"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
-      <div class="form-group"><label>SKU（留空自动生成）</label><input type="text" id="f-sku" placeholder="自动生成"></div>
-      <div class="form-group"><label>类别</label><input type="text" id="f-cat" placeholder="矿物标本 / 首饰 / 元石" list="cat-list"><datalist id="cat-list"></datalist></div>
-      <div class="form-group"><label>价格（售价）<span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
-        <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)">
-        <div style="font-size:11px;color:var(--text-muted);padding:8px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
+      <div class="form-group full"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
+      <div class="form-group full">
+        <label>类别</label>
+        <div class="s11-cat-grid" id="f-cat-grid">
+          <div class="s11-cat" data-cat="陨石" onclick="setAddCat('陨石')"><span class="s11-cat-icon">🪨</span><span class="s11-cat-name">陨石</span></div>
+          <div class="s11-cat" data-cat="首饰" onclick="setAddCat('首饰')"><span class="s11-cat-icon">💍</span><span class="s11-cat-name">首饰</span></div>
+          <div class="s11-cat" data-cat="矿物" onclick="setAddCat('矿物')"><span class="s11-cat-icon">💎</span><span class="s11-cat-name">矿物</span></div>
+          <div class="s11-cat" data-cat="葫芦" onclick="setAddCat('葫芦')"><span class="s11-cat-icon">🥒</span><span class="s11-cat-name">葫芦</span></div>
+          <div class="s11-cat" data-cat="化石" onclick="setAddCat('化石')"><span class="s11-cat-icon">🦴</span><span class="s11-cat-name">化石</span></div>
+          <div class="s11-cat" data-cat="其他" onclick="setAddCat('其他')"><span class="s11-cat-icon">➕</span><span class="s11-cat-name">其他</span></div>
+        </div>
+        <input type="text" id="f-cat" placeholder="或手动输入类别" list="cat-list" style="margin-top:6px;font-size:12px;"><datalist id="cat-list"></datalist>
+      </div>
+      <div class="form-group full">
+        <label>SKU<span style="font-size:10px;color:var(--text-muted);margin-left:6px;">输入或自动生成</span></label>
+        <div class="s11-sku-row">
+          <input type="text" id="f-sku" placeholder="MZ-XXX-001" style="flex:1;">
+          <button type="button" class="s11-sku-gen" onclick="autoGenSku()">⚡ 自动</button>
+        </div>
+      </div>
+      <div class="form-group full"><label>价格（售价）<span id="f-rec-hint" style="font-size:10px;color:var(--text-muted);margin-left:6px;"></span></label>
+        <div class="s11-price-row">
+          <input type="text" id="f-price" placeholder="留空 = 推荐价(平均进价×3)" style="flex:1;">
+          <select class="s11-cur-sel" id="f-currency-sel" onchange="onAddCurrencyChange(this.value)">
+            <option value="JPY">¥ JPY</option>
+            <option value="CNY">¥ CNY</option>
+            <option value="USD">$ USD</option>
+            <option value="EUR">€ EUR</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
       </div>
       <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
       <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
@@ -466,9 +491,20 @@
     </div>
     <div class="form-grid">
       <div class="form-group full"><label>选择商品</label><select id="si-product" onchange="updateStockInInfo()"></select></div>
+      <div class="sio-product-card" id="sio-product-card" style="display:none;">
+        <div class="sio-product-thumb" id="sio-product-thumb">💎</div>
+        <div class="sio-product-info">
+          <div class="sio-product-name" id="sio-product-name">—</div>
+          <div class="sio-product-meta" id="sio-product-meta">—</div>
+        </div>
+        <div class="sio-product-stock-wrap">
+          <div class="sio-product-stock" id="sio-product-stock">—</div>
+          <div class="sio-product-stock-l">可用</div>
+        </div>
+      </div>
       <div id="si-current-info" style="grid-column:1/-1;font-size:12px;color:var(--text-muted);padding:8px;background:var(--surface2);border-radius:6px;display:none;"></div>
-      <div class="form-group"><label id="si-qty-label">入库数量</label>
-        <div class="sio-qty">
+      <div class="form-group full"><label id="si-qty-label">入库数量</label>
+        <div class="sio-qty sio-qty-big">
           <button type="button" class="sio-qty-btn" onclick="adjustStockioQty(-1)">−</button>
           <input type="number" id="si-qty" value="1" min="1" oninput="renderStockioPreview()">
           <button type="button" class="sio-qty-btn" onclick="adjustStockioQty(1)">+</button>
@@ -489,9 +525,9 @@
       <div class="sio-preview-label" id="sio-preview-label">本 次 入 库</div>
       <div class="sio-preview-val" id="sio-preview-val"><span class="plus">+1 件</span></div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('modal-stockin')">取消</button>
-      <button class="btn btn-jade" id="sio-confirm-btn" onclick="doStockIo()">✓ 确认入库</button>
+    <div class="modal-actions sio-confirm-row">
+      <button class="btn btn-outline sio-cancel-btn" onclick="closeModal('modal-stockin')">取消</button>
+      <button class="btn btn-jade sio-confirm-big" id="sio-confirm-btn" onclick="doStockIo()">✓ 确认入库</button>
     </div>
   </div>
 </div>

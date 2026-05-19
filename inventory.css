@@ -1858,6 +1858,129 @@ tr.clickable{cursor:pointer;}
 }
 .edit-delete-link:hover{background:rgba(255,122,122,0.08);}
 
+/* ============================================ */
+/* 建品 modal (screen-11) 类别 6 宫格 / SKU 自动 / 币种 select */
+/* ============================================ */
+.s11-cat-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+}
+.s11-cat{
+  padding:10px 6px;text-align:center;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;transition:all 0.18s ease;
+  user-select:none;
+}
+.s11-cat:hover{border-color:var(--gold-dim);}
+.s11-cat.cur{
+  background:var(--gold-glow);border-color:var(--gold);
+  color:var(--gold-light);
+  box-shadow:0 0 14px var(--gold-glow);
+}
+.s11-cat-icon{font-size:18px;display:block;margin-bottom:2px;}
+.s11-cat-name{font-size:11px;letter-spacing:1px;}
+
+.s11-sku-row{display:flex;gap:6px;align-items:stretch;}
+.s11-sku-row input{flex:1;}
+.s11-sku-gen{
+  flex-shrink:0;padding:0 14px;height:36px;
+  background:var(--surface2);border:1px solid var(--gold-dim);
+  border-radius:6px;color:var(--gold);cursor:pointer;
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;
+  letter-spacing:1px;white-space:nowrap;
+  transition:all 0.15s ease;
+}
+.s11-sku-gen:hover{background:var(--gold-glow);}
+.s11-sku-gen:active{transform:scale(0.96);}
+
+.s11-price-row{display:flex;gap:6px;align-items:stretch;}
+.s11-price-row input{flex:1;}
+.s11-cur-sel{
+  flex-shrink:0;width:88px;height:36px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:13px;
+  padding:0 8px;cursor:pointer;
+}
+
+/* ============================================ */
+/* 入出库 modal screen-4: 商品卡 + 大 stepper + 满宽确认 */
+/* ============================================ */
+.sio-product-card{
+  grid-column:1/-1;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:-6px;
+}
+.sio-product-thumb{
+  width:48px;height:48px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#1a1410,#0a0a0a);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  font-size:24px;
+  overflow:hidden;
+}
+.sio-product-thumb img{width:100%;height:100%;object-fit:cover;}
+.sio-product-info{flex:1;min-width:0;}
+.sio-product-name{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sio-product-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sio-product-stock-wrap{text-align:right;flex-shrink:0;}
+.sio-product-stock{
+  font-family:'DM Mono',monospace;
+  font-size:18px;
+  color:var(--gold);
+  font-weight:500;
+  line-height:1.1;
+}
+.sio-product-stock-l{font-size:9px;color:var(--text-dim);letter-spacing:1px;}
+
+.sio-qty-big{
+  justify-content:center;
+  gap:18px;
+  padding:6px 0;
+}
+.sio-qty-big .sio-qty-btn{
+  width:44px;height:44px;
+}
+.sio-qty-big input{
+  flex:0 0 auto;
+  width:90px;
+  min-width:60px;
+  font-size:36px;
+  font-family:'DM Mono',monospace;
+  font-weight:500;
+  color:var(--gold-light);
+  text-shadow:0 0 16px var(--gold-glow);
+  background:transparent;
+  border:none;
+  text-align:center;
+  padding:0;
+  -moz-appearance:textfield;
+}
+.sio-qty-big input::-webkit-outer-spin-button,
+.sio-qty-big input::-webkit-inner-spin-button{
+  -webkit-appearance:none;margin:0;
+}
+
+.sio-confirm-row{
+  display:flex;gap:8px;align-items:stretch;
+}
+.sio-cancel-btn{
+  flex:0 0 auto;
+  min-width:78px;
+}
+.sio-confirm-big{
+  flex:1;
+  height:50px;
+  font-size:15px;
+  letter-spacing:2px;
+}
+
 /* 类别筛选 select (2026-05-19 恢复, toolbar row-2) */
 .inv-cat-filter{
   height:28px;
