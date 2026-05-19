@@ -4,7 +4,7 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // ===================== LOCAL CACHE =====================
-let DB={products:[],logs:[],showItems:[]};
+let DB={products:[],logs:[],showItems:[],shows:[]};
 let editingId=null,detailId=null,pendingPhotos=[];
 let catFilter='all',zxingReader=null;
 
@@ -104,6 +104,12 @@ async function loadAll(){
     DB.products=(pResp.data||[]).map(dbToProduct);
     DB.showItems=(s.data||[]).map(dbToShow);
     DB.logs=[];
+    // shows 主表(2026-05-19 加,旧库可能没有此表,失败兜底空数组)
+    try{
+      const sh=await sb.from('shows').select('*').order('start_date',{ascending:false,nullsFirst:false}).limit(200);
+      if(!sh.error)DB.shows=(sh.data||[]).map(dbToShowEntity);
+      else{console.warn('[shows] 表不存在,跳过',sh.error.message);DB.shows=[];}
+    }catch(e){DB.shows=[];}
     setSyncStatus('ok');
   }catch(e){
     setSyncStatus('error');
@@ -156,8 +162,39 @@ function dbToLog(r){return{
   counterparty:r.counterparty||null,
   ts:new Date(r.ts).getTime()
 };}
-function showToDb(s){return{id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};}
-function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,ts:new Date(r.ts).getTime()};}
+function showToDb(s){
+  const o={id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};
+  if(s.showId)o.show_id=s.showId;
+  return o;
+}
+function dbToShow(r){return{id:r.id,productId:r.product_id,qty:r.qty,showName:r.show_name,showId:r.show_id||null,ts:new Date(r.ts).getTime()};}
+// shows 主表(2026-05-19 加)
+function showEntityToDb(s){return{
+  id:s.id,
+  name:s.name,
+  start_date:s.startDate||null,
+  end_date:s.endDate||null,
+  status:s.status||'active',
+  live:s.live===undefined?true:!!s.live,
+  ts:new Date(s.ts||Date.now()).toISOString()
+};}
+function dbToShowEntity(r){return{
+  id:r.id,
+  name:r.name,
+  startDate:r.start_date||null,
+  endDate:r.end_date||null,
+  status:r.status||'active',
+  live:!!r.live,
+  ts:r.ts?new Date(r.ts).getTime():Date.now()
+};}
+async function upsertShowEntity(s){
+  const{error}=await sb.from('shows').upsert(showEntityToDb(s));
+  if(error){console.warn('[shows] upsert 失败',error.message);toast('⚠️ 展会保存失败,请先跑 migrations/add_shows_table.sql');}
+}
+async function deleteShowEntity(id){
+  const{error}=await sb.from('shows').delete().eq('id',id);
+  if(error)console.warn('[shows] delete 失败',error.message);
+}
 
 async function upsertProduct(p){
   // 自动生成缩略图（如果有照片且没缩略图）

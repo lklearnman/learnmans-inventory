@@ -686,7 +686,7 @@ async function openDetail(id){
       <div class="d3-sec-title">操作历史</div>
       <div class="d3-hist">
         ${histHtml||'<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:12px;">暂无记录</div>'}
-        ${totalLogs>3?`<div class="d3-hist-more" onclick="closeModal('modal-detail');switchTab('logs');">查看全部 ${totalLogs} 条记录 ▶</div>`:''}
+        ${totalLogs>3?`<div class="d3-hist-more" onclick="jumpToLogsForProduct('${(p.name||'').replace(/'/g,"\\'")}')">查看全部 ${totalLogs} 条记录 ▶</div>`:''}
       </div>
     </div>
 
@@ -752,6 +752,23 @@ async function deleteFromDetail(){
   closeModal('modal-detail');renderInventory();toast('已删除');
 }
 function viewPhoto(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;">`);}
+// 详情卡 → 流水 tab 并按商品名筛选
+function jumpToLogsForProduct(name){
+  closeModal('modal-detail');
+  // 先切 tab(可能有 URL 路由会更新 hash,留给 A 组兼容)
+  try{
+    const tabs=document.querySelectorAll('.nav-tab');
+    let logsTab=null;
+    tabs.forEach(t=>{if((t.getAttribute('onclick')||'').includes("'logs'"))logsTab=t;});
+    switchTab('logs',logsTab);
+  }catch(e){switchTab('logs');}
+  // 填入搜索 + 触发渲染
+  setTimeout(()=>{
+    const inp=document.getElementById('logs-search');
+    if(inp){inp.value=name||'';}
+    if(typeof renderLogsPage==='function')renderLogsPage();
+  },50);
+}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ===================== 展会 =====================
@@ -766,7 +783,14 @@ async function doShowOut(){
   const p=getProduct(pid);
   if(p.qty<qty){toast(`库存不足（当前${p.qty}件）`);return;}
   p.qty-=qty;
-  const si={id:uid(),productId:pid,qty,showName,ts:Date.now()};
+  // 查找/复用现有 show 实体(按 name 匹配 live 优先)
+  let showId=null;
+  if(DB.shows&&DB.shows.length){
+    const match=DB.shows.find(s=>s.live&&s.name===showName)
+      ||DB.shows.find(s=>s.name===showName);
+    if(match)showId=match.id;
+  }
+  const si={id:uid(),productId:pid,qty,showName,showId,ts:Date.now()};
   const log={id:uid(),productId:pid,type:'show',qty,note:showName,ts:Date.now()};
   DB.showItems.push(si);DB.logs.unshift(log);
   await Promise.all([upsertProduct(p),upsertShow(si),insertLog(log)]);
@@ -786,12 +810,92 @@ async function doReturn(sid){
   await Promise.all(ops);
   renderShowList();renderInventory();updateHeader();toast(`✅ 归还 ${n} 件`);
 }
+// 计算某展会期间该商品在 logs 中的"已售"数(在 startDate~endDate 范围内的 out logs)
+function _showSoldQty(productId,startTs,endTs){
+  if(!DB.logs||!DB.logs.length)return 0;
+  return DB.logs.filter(l=>l.productId===productId&&l.type==='out'
+    &&(!startTs||l.ts>=startTs)&&(!endTs||l.ts<=endTs))
+    .reduce((a,l)=>a+(parseInt(l.qty)||0),0);
+}
+// 展会 hero 概览卡聚合
+function _renderShowHero(){
+  const totalOut=DB.showItems.reduce((a,si)=>a+(parseInt(si.qty)||0),0);
+  const types=new Set(DB.showItems.map(si=>si.productId)).size;
+  const liveShows=(DB.shows||[]).filter(s=>s.live).length;
+  const shows=Math.max(liveShows,new Set(DB.showItems.map(si=>si.showName||'').filter(Boolean)).size);
+  const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setT('show-hero-stat-out',totalOut);
+  setT('show-hero-stat-types',types);
+  setT('show-hero-stat-shows',shows);
+  // hero 名称/日期:有 live show 时显示第一个的名字+日期段
+  const liveOne=(DB.shows||[]).find(s=>s.live);
+  if(liveOne){
+    setT('show-hero-name','🎪 '+liveOne.name);
+    const fmtD=d=>d?d:'';
+    const dateTxt=liveOne.startDate||liveOne.endDate
+      ? `${fmtD(liveOne.startDate)}${liveOne.endDate?' ~ '+fmtD(liveOne.endDate):''}`
+      : '展会期间累计带出';
+    const liveEl=document.getElementById('show-hero-live');
+    setT('show-hero-date',dateTxt+' ');
+    if(liveEl){liveEl.textContent='● 进行中';document.getElementById('show-hero-date').appendChild(liveEl);}
+  }
+}
 function renderShowList(){
+  _renderShowHero();
   const el=document.getElementById('show-list');
   if(!DB.showItems.length){el.innerHTML=`<div class="empty-state"><div style="font-size:36px;margin-bottom:10px;">🎉</div><div>目前没有展会带出的商品</div></div>`;return;}
-  el.innerHTML=DB.showItems.map(si=>{
-    const p=getProduct(si.productId);
-    const thumb=p&&p.photos&&p.photos[0]?`<div class="show-thumb"><img src="${p.photos[0]}"></div>`:`<div class="show-thumb">${catEmoji(p&&p.cat)}</div>`;
-    return`<div class="show-item">${thumb}<div class="show-details"><div style="font-size:14px;color:var(--text);margin-bottom:4px;">${p?p.name:'已删除'}</div><div style="font-size:12px;color:var(--text-muted);">📍 ${si.showName} · 带出 <strong style="color:var(--gold);">${si.qty}</strong> 件 · ${fmt(si.ts)}</div></div><button class="btn btn-jade btn-sm" onclick="doReturn('${si.id}')">↩️ 归还</button></div>`;
+  // 按展会分组:优先 showId,fallback showName
+  const groups=new Map();
+  DB.showItems.forEach(si=>{
+    const key=si.showId||('name:'+(si.showName||'未命名'));
+    if(!groups.has(key))groups.set(key,{key,items:[],show:null,showName:si.showName||'未命名'});
+    groups.get(key).items.push(si);
+  });
+  // 解析每组的 show 实体
+  groups.forEach(g=>{
+    if(g.key.startsWith('name:'))return;
+    g.show=(DB.shows||[]).find(s=>s.id===g.key)||null;
+    if(g.show)g.showName=g.show.name;
+  });
+  // 渲染
+  const html=Array.from(groups.values()).map(g=>{
+    const sh=g.show;
+    const live=sh?sh.live:false;
+    const dateTxt=sh&&(sh.startDate||sh.endDate)
+      ? ` · 📅 ${sh.startDate||''}${sh.endDate?' ~ '+sh.endDate:''}`
+      : '';
+    const startTs=sh&&sh.startDate?new Date(sh.startDate).getTime():null;
+    const endTs=sh&&sh.endDate?new Date(sh.endDate+'T23:59:59').getTime():null;
+    // 该组商品行
+    const rows=g.items.map(si=>{
+      const p=getProduct(si.productId);
+      const thumb=p&&p.photos&&p.photos[0]
+        ? `<div class="show-thumb"><img src="${p.photos[0]}"></div>`
+        : `<div class="show-thumb">${catEmoji(p&&p.cat)}</div>`;
+      const sold=p?_showSoldQty(si.productId,startTs,endTs):0;
+      const soldHtml=sold>0?` · 已售 <strong style="color:var(--rose-light);">${sold}</strong>`:'';
+      const sellBtn=p?`<button class="btn btn-rose btn-sm" onclick="quickSellFromShow('${si.productId}')" title="开出库 modal" style="margin-right:6px;">💰 售出</button>`:'';
+      return `<div class="show-item">${thumb}
+        <div class="show-details">
+          <div style="font-size:14px;color:var(--text);margin-bottom:4px;">${p?p.name:'已删除'}</div>
+          <div style="font-size:12px;color:var(--text-muted);">带出 <strong style="color:var(--gold);">${si.qty}</strong> 件${soldHtml} · ${fmt(si.ts)}</div>
+        </div>
+        ${sellBtn}<button class="btn btn-jade btn-sm" onclick="doReturn('${si.id}')">↩️ 归还</button>
+      </div>`;
+    }).join('');
+    const liveDot=live?`<span class="show-grp-live" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e74c3c;box-shadow:0 0 8px rgba(231,76,60,.6);animation:pulse 1.5s infinite;margin-right:6px;vertical-align:middle;"></span>`:'';
+    const groupHead=`<div class="show-group-head" style="padding:10px 12px;margin:8px 0 6px;background:var(--surface2,#1f1a16);border-radius:8px;font-size:13px;color:var(--text);">
+      ${liveDot}<strong>📍 ${g.showName}</strong><span style="color:var(--text-muted);font-size:11px;">${dateTxt} · ${g.items.length} 件商品</span>
+    </div>`;
+    return groupHead+rows;
   }).join('');
+  el.innerHTML=html;
+}
+// 从展会行 → 出库 modal 预填
+function quickSellFromShow(productId){
+  if(typeof openStockOutModal==='function'){
+    openStockOutModal(productId);
+  }else{
+    toast('出库功能未加载');
+  }
 }
