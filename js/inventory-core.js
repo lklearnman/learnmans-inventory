@@ -128,7 +128,13 @@ function logToDb(l){
   const basePrice=(l.basePrice!==undefined?l.basePrice:null);
   const baseCurrency=l.baseCurrency||'JPY';
   const fxRate=(l.fxRate!==undefined?l.fxRate:null);
-  return{
+  // inout_date 从 ts 派生 YYYY-MM-DD(用户筛选/聚合用)
+  const tsDate=new Date(l.ts);
+  const yyyy=tsDate.getFullYear();
+  const mm=String(tsDate.getMonth()+1).padStart(2,'0');
+  const dd=String(tsDate.getDate()).padStart(2,'0');
+  const inoutDate=l.inoutDate||`${yyyy}-${mm}-${dd}`;
+  const out={
     id:l.id,
     product_id:l.productId,
     type:l.type,
@@ -140,28 +146,45 @@ function logToDb(l){
     base_price:basePrice,
     base_currency:baseCurrency,
     fx_rate:fxRate,
-    ts:new Date(l.ts).toISOString()
+    inout_date:inoutDate,
+    ts:tsDate.toISOString()
+  };
+  // seq 是 bigint 自增由 DB 生成,不传;no 是 text 单据号(可由用户/客户端生成,如有就传)
+  if(l.no!==undefined&&l.no!==null)out.no=l.no;
+  if(l.seq!==undefined&&l.seq!==null)out.seq=l.seq;
+  return out;
+}
+function dbToLog(r){
+  // inout_date 优先用 DB 字段,fallback 从 ts 派生
+  let inoutDate=r.inout_date||null;
+  if(!inoutDate&&r.ts){
+    const d=new Date(r.ts);
+    inoutDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  return{
+    id:r.id,
+    productId:r.product_id,
+    type:r.type,
+    qty:r.qty,
+    note:r.note,
+    // 原始
+    originalPrice:r.original_price,
+    originalCurrency:r.original_currency||'CNY',
+    // 本位
+    basePrice:r.base_price,
+    baseCurrency:r.base_currency||'JPY',
+    fxRate:r.fx_rate,
+    // 老兼容(price/currency 指向"原始")
+    price:r.original_price,
+    currency:r.original_currency||'CNY',
+    counterparty:r.counterparty||null,
+    // 新字段
+    seq:r.seq||null,         // bigint 自增序号(DB 排序稳定)
+    no:r.no||null,           // text 单据号(人类可读)
+    inoutDate:inoutDate,     // YYYY-MM-DD 日期字段
+    ts:new Date(r.ts).getTime()
   };
 }
-function dbToLog(r){return{
-  id:r.id,
-  productId:r.product_id,
-  type:r.type,
-  qty:r.qty,
-  note:r.note,
-  // 原始(新字段)
-  originalPrice:r.original_price,
-  originalCurrency:r.original_currency||'CNY',
-  // 本位(新字段)
-  basePrice:r.base_price,
-  baseCurrency:r.base_currency||'JPY',
-  fxRate:r.fx_rate,
-  // 兼容老 JS 代码(price/currency 沿用旧名义指向"原始")
-  price:r.original_price,
-  currency:r.original_currency||'CNY',
-  counterparty:r.counterparty||null,
-  ts:new Date(r.ts).getTime()
-};}
 function showToDb(s){
   const o={id:s.id,product_id:s.productId,qty:s.qty,show_name:s.showName,ts:new Date(s.ts).toISOString()};
   if(s.showId)o.show_id=s.showId;

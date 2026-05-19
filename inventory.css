@@ -1722,6 +1722,7 @@ tr.clickable{cursor:pointer;}
   margin-right:4px;
 }
 .logs-item-qty{font-family:'DM Mono',monospace;color:var(--text-dim);}
+.logs-item-no{font-family:'DM Mono',monospace;color:var(--gold-dim);font-size:10px;opacity:0.7;}
 .logs-item-note{
   font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.4;
   padding-top:6px;border-top:1px dashed var(--border);
