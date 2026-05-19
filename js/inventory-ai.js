@@ -251,27 +251,48 @@ function showScanResult(code,targetId){
   el.style.display='block';
   if(p){
     const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
+    const avail=p.qty-showOut;
+    const priceStr=(typeof p.price==='number'&&p.price>0)?` · ${(p.currency||'JPY')==='JPY'?'¥':(p.currency==='CNY'?'¥':(p.currency==='USD'?'$':(p.currency==='EUR'?'€':'')))}${p.price.toLocaleString()}`:'';
+    const thumbHTML=p.photos&&p.photos[0]
+      ? `<img src="${p.photos[0]}" alt="">`
+      : `<span>${catEmoji(p.cat)||'◈'}</span>`;
     el.innerHTML=`
-      <div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
-          ${p.photos&&p.photos[0]?`<img src="${p.photos[0]}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`:`<div style="width:60px;height:60px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;">${catEmoji(p.cat)}</div>`}
-          <div>
-            <div style="font-size:15px;font-weight:500;margin-bottom:4px;">${p.name}</div>
-            <div style="font-size:12px;color:var(--text-muted);">SKU: ${p.sku||'—'} · ${p.cat||'未分类'}</div>
-            <div style="font-size:13px;color:var(--jade-light);margin-top:3px;">库存 ${p.qty-showOut} 件${showOut>0?`（展会带出${showOut}件）`:''}</div>
-          </div>
+      <div class="scan-result-banner">
+        <div class="scan-result-icon">✓</div>
+        <div class="scan-result-text">
+          <div class="scan-result-title">识别成功 · 命中商品</div>
+          <div class="scan-result-sub">SKU ${(p.sku||p.id||'').toString().slice(0,16)} · 库存 ${avail}${showOut>0?` · 展会带出 ${showOut}`:''}</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-outline btn-sm" onclick="openDetail('${p.id}')">详情</button>
-          <button class="btn btn-jade btn-sm" onclick="openStockInModal('${p.id}')">⬆️ 入库</button>
-          <button class="btn btn-rose btn-sm" onclick="quickOutScan('${p.id}','${targetId}')">⬇️ 出库</button>
+      </div>
+      <div class="scan-cand">
+        <div class="scan-cand-thumb">
+          <span class="scan-cand-match">100%</span>
+          ${thumbHTML}
+        </div>
+        <div class="scan-cand-info">
+          <div class="scan-cand-name">${p.name||'(未命名)'}</div>
+          <div class="scan-cand-meta">${p.cat||'未分类'} · 库存 ${avail}${priceStr}</div>
+        </div>
+        <div class="scan-cand-actions">
+          <a class="scan-cand-btn in"  href="javascript:void(0)" onclick="openStockInModal('${p.id}')" title="入库">⬆</a>
+          <a class="scan-cand-btn out" href="javascript:void(0)" onclick="quickOutScan('${p.id}','${targetId}')" title="出库">⬇</a>
+          <a class="scan-cand-btn det" href="javascript:void(0)" onclick="openDetail('${p.id}')" title="详情">›</a>
         </div>
       </div>`;
   }else{
-    el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;">
-      <div style="color:var(--rose);margin-bottom:10px;">❌ 未找到商品「${code}」</div>
-      <button class="btn btn-gold btn-sm" onclick="openAddModal()">新建此商品</button>
-    </div>`;
+    el.innerHTML=`
+      <div class="scan-result-banner miss">
+        <div class="scan-result-icon">!</div>
+        <div class="scan-result-text">
+          <div class="scan-result-title">未匹配到商品</div>
+          <div class="scan-result-sub">扫到的码:${(code||'').toString().slice(0,32)}</div>
+        </div>
+      </div>
+      <div class="scan-cand-miss">
+        <div>没有这件商品,或它的 SKU 还没绑这个码</div>
+        <div class="scan-cand-miss-code">${code}</div>
+        <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 新建此商品</button>
+      </div>`;
   }
 }
 async function quickOutScan(pid,targetId){
