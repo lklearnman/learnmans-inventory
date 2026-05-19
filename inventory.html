@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260519-s5detalign">
+<link rel="stylesheet" href="inventory.css?v=20260520-addbtn">
 
 </head>
 <body>
@@ -475,9 +475,9 @@
         <div class="photo-preview-grid" id="photo-previews"></div>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-gold" id="btn-save-only" onclick="saveProductOnly()">仅建档</button>
-      <button class="btn btn-outline" id="btn-save-stockin" onclick="saveProductAndStockIn()">建档并入库 →</button>
+    <div class="modal-actions modal-add-actions">
+      <button class="btn btn-outline modal-add-btn modal-add-btn-only" id="btn-save-only" onclick="saveProductOnly()">建档</button>
+      <button class="btn btn-jade modal-add-btn modal-add-btn-stockin" id="btn-save-stockin" onclick="saveProductAndStockIn()">✓ 建档并入库</button>
     </div>
     <!-- 编辑模式专用:删除商品 (2026-05-19, 移自详情底部) -->
     <div class="modal-edit-danger" id="modal-edit-danger" style="display:none;">
