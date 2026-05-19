@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1410"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8c96a"/>
+      <stop offset="100%" stop-color="#c9a84c"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <rect x="16" y="16" width="224" height="224" rx="44" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.4"/>
+  <text x="128" y="172" font-family="'Noto Serif SC',serif" font-size="148" font-weight="700" fill="url(#gold)" text-anchor="middle" letter-spacing="-4">矿</text>
+  <text x="128" y="216" font-family="-apple-system,sans-serif" font-size="14" font-weight="500" fill="#c9a84c" text-anchor="middle" letter-spacing="6" opacity="0.75">MINERAL VAULT</text>
+</svg>
