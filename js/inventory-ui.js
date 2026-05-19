@@ -796,10 +796,10 @@ async function openDetail(id){
       ${metaHtml?`<div class="d3-meta">${metaHtml}</div>`:''}
     </div>
 
-    <div class="d3-fx-row">
+    ${(p.currency&&p.currency!==inventoryCurrency)?`<div class="d3-fx-row">
       <span>显示币种 <span class="ccy">${inventoryCurrency}</span></span>
       <span style="margin-left:auto;">${fxUpdatedAt?'汇率 '+new Date(fxUpdatedAt).toLocaleDateString():'离线汇率'}</span>
-    </div>
+    </div>`:''}
 
     <div class="d3-price">
       <div class="d3-price-label">售 价</div>
@@ -841,8 +841,8 @@ async function openDetail(id){
       <div class="d3-card">
         <div class="d3-sales-stats">
           <div class="d3-sales-stat"><div class="d3-sales-v">${totalOut}</div><div class="d3-sales-l">累计售出</div></div>
-          <div class="d3-sales-stat"><div class="d3-sales-v">${salesTotal>0?fmtPrice(salesTotal,inventoryCurrency,inventoryCurrency):'—'}</div><div class="d3-sales-l">销售额</div></div>
-          <div class="d3-sales-stat"><div class="d3-sales-v">${grossProfit?fmtPrice(grossProfit,inventoryCurrency,inventoryCurrency):'—'}</div><div class="d3-sales-l">毛利</div></div>
+          <div class="d3-sales-stat"><div class="d3-sales-v">${salesTotal>0?fmtPriceK(salesTotal,inventoryCurrency,inventoryCurrency):'—'}</div><div class="d3-sales-l">销售额</div></div>
+          <div class="d3-sales-stat"><div class="d3-sales-v">${grossProfit?fmtPriceK(grossProfit,inventoryCurrency,inventoryCurrency):'—'}</div><div class="d3-sales-l">毛利</div></div>
         </div>
         <div class="d3-spark-label">近 30 天售出件数</div>
         <div class="d3-spark">
