@@ -959,6 +959,8 @@ async function renderLogsPage(){
         const time=new Date(l.ts).toTimeString().slice(0,5);
         const cp=l.counterparty?(l.type==='in'?'进:':'客:')+l.counterparty:'';
         const noteHtml=(cp||l.note)?`<div class="logs-item-note">${[cp,l.note].filter(Boolean).join(' · ')}</div>`:'';
+        // 单据号 no(若有,DM Mono 小字置时间前)
+        const noHtml=l.no?`<span class="logs-item-no" title="单据号">${l.no}</span> · `:'';
         html+=`<div class="logs-item" onclick="openLogDetail('${l.id}')">
           <div class="logs-item-icon ${icon.cls}">${icon.ch}</div>
           <div class="logs-item-body">
@@ -971,7 +973,7 @@ async function renderLogsPage(){
                 <span class="logs-item-tag">${tagLabel}</span>
                 <span class="logs-item-qty">×${l.qty}${op>0?` · 单价 ${osym}${op.toLocaleString()} · ${oc}`:''}</span>
               </div>
-              <div>${time}</div>
+              <div>${noHtml}${time}</div>
             </div>
             ${noteHtml}
           </div>
@@ -1023,7 +1025,7 @@ function goLogsPage(n){
 async function exportLogsAllCSV(){
   await _ensureLogsForTab();
   const all=_filterLogsForTab();
-  const rows=[['日期','时间','类型','商品','SKU','类别','数量','原始单价','原始币种','汇率','本位单价(JPY)','小计(JPY)','对手方','备注']];
+  const rows=[['单据号','序号','日期','时间','类型','商品','SKU','类别','数量','原始单价','原始币种','汇率','本位单价(JPY)','小计(JPY)','对手方','备注']];
   all.forEach(l=>{
     const p=getProduct(l.productId);
     const op=l.originalPrice||l.price||'';
@@ -1032,9 +1034,9 @@ async function exportLogsAllCSV(){
     const bp=l.basePrice||'';
     const subBase=(bp&&l.qty)?parseFloat(bp)*l.qty:'';
     const d=new Date(l.ts);
-    const ymd=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const ymd=l.inoutDate||`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const hms=d.toTimeString().slice(0,8);
-    rows.push([ymd,hms,_logTypeLabel(l.type),p?p.name:'已删除',p?p.sku||'':'',p?p.cat||'':'',l.qty,op,oc,fx,bp,subBase,l.counterparty||'',l.note||'']);
+    rows.push([l.no||'',l.seq||'',ymd,hms,_logTypeLabel(l.type),p?p.name:'已删除',p?p.sku||'':'',p?p.cat||'':'',l.qty,op,oc,fx,bp,subBase,l.counterparty||'',l.note||'']);
   });
   const bom='﻿';
   const csv=bom+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
@@ -1057,6 +1059,7 @@ async function printAllLogs(){
     const bp=l.basePrice?parseFloat(l.basePrice):null;
     const subBase=bp&&l.qty?bp*l.qty:null;
     return`<tr>
+      <td style="font-family:monospace;font-size:10px;">${l.no||'—'}</td>
       <td>${fmtFull(l.ts)}</td>
       <td>${_logTypeLabel(l.type)}</td>
       <td>${p?p.name:'已删除'}</td>
@@ -1084,7 +1087,7 @@ async function printAllLogs(){
     <h2>矿珍库 · 流水记录</h2>
     <div class="sub">导出时间：${fmtFull(Date.now())} · 共${all.length}条</div>
     <table>
-      <thead><tr><th>日期</th><th>类型</th><th>商品</th><th>SKU</th><th>数量</th><th>原始单价</th><th>币种</th><th>小计(JPY)</th><th>对手方</th><th>备注</th></tr></thead>
+      <thead><tr><th>单据号</th><th>日期</th><th>类型</th><th>商品</th><th>SKU</th><th>数量</th><th>原始单价</th><th>币种</th><th>小计(JPY)</th><th>对手方</th><th>备注</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <br><button onclick="window.print()">🖨️ 打印</button>
