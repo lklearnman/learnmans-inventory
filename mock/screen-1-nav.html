@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 画面 1 - 顶部导航</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+
+<style>
+/* ============================================ */
+/* 画面 1：顶部导航 ============================== */
+/* ============================================ */
+.s1-demo{
+  flex:1;
+  padding:24px 16px;
+  background:var(--bg-main);
+}
+.s1-nav{
+  background:linear-gradient(180deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.92) 100%);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:24px;
+}
+.s1-row1{
+  display:flex;
+  align-items:center;
+  padding:12px 14px;
+  gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.s1-logo{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1;
+}
+.s1-logo-mark{
+  width:32px;height:32px;
+  border-radius:8px;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif SC',serif;
+  font-weight:700;
+  color:#1a1410;
+  font-size:16px;
+  box-shadow:0 0 16px var(--gold-glow);
+}
+.s1-logo-text{
+  display:flex;
+  flex-direction:column;
+  line-height:1.1;
+}
+.s1-logo-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:15px;
+  color:var(--text);
+  letter-spacing:2px;
+  font-weight:500;
+}
+.s1-logo-sub{
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  color:var(--text-dim);
+  letter-spacing:1px;
+  margin-top:1px;
+}
+.s1-icons{display:flex;gap:6px;}
+.s1-row2{
+  display:flex;
+  padding:0 14px;
+  gap:4px;
+  position:relative;
+}
+.s1-tab{
+  padding:12px 4px;
+  font-size:13px;
+  color:var(--text-muted);
+  cursor:pointer;
+  position:relative;
+  margin-right:18px;
+  transition:color 0.2s ease;
+}
+.s1-tab.cur{
+  color:var(--gold);
+}
+.s1-tab.cur::after{
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:2px;
+  background:linear-gradient(90deg,var(--gold) 0%,var(--gold-dim) 100%);
+  border-radius:2px 2px 0 0;
+}
+.s1-stats-trigger{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:12px 0;
+  font-size:11px;
+  color:var(--text-muted);
+  font-family:'DM Mono',monospace;
+  cursor:pointer;
+}
+.s1-stats-trigger:hover{color:var(--gold);}
+.s1-stats-dropdown{
+  position:absolute;
+  top:calc(100% + 4px);
+  right:0;
+  background:var(--bg-overlay);
+  border:1px solid var(--gold-dim);
+  border-radius:8px;
+  padding:12px;
+  min-width:140px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+  z-index:10;
+}
+.s1-stats-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:6px 0;
+  font-size:11px;
+}
+.s1-stats-row:not(:last-child){border-bottom:1px dashed var(--border);}
+.s1-stats-label{color:var(--text-muted);}
+.s1-stats-val{
+  font-family:'DM Mono',monospace;
+  color:var(--gold);
+  font-weight:500;
+}
+
+.s1-anno{
+  margin-top:16px;
+  padding:12px;
+  border:1px dashed var(--gold-dim);
+  border-radius:8px;
+  font-size:11px;
+  color:var(--text-muted);
+  line-height:1.7;
+}
+.s1-anno b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">← 全部画面</a>
+  <span>画面 1 · 顶部导航</span>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="1">
+  <div class="s1-demo">
+
+    <div class="s1-nav">
+      <div class="s1-row1">
+        <div class="s1-logo">
+          <div class="s1-logo-mark">矿</div>
+          <div class="s1-logo-text">
+            <div class="s1-logo-name">矿珍库</div>
+            <div class="s1-logo-sub">MINERAL VAULT</div>
+          </div>
+        </div>
+        <div class="s1-icons">
+          <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+          <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+          <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        </div>
+      </div>
+      <div class="s1-row2">
+        <div class="s1-tab cur">库存</div>
+        <div class="s1-tab">扫码</div>
+        <div class="s1-tab">入出</div>
+        <div class="s1-tab">展会</div>
+        <div class="s1-tab">统计</div>
+        <div class="s1-stats-trigger" onclick="document.getElementById('s1Dropdown').style.display=document.getElementById('s1Dropdown').style.display==='block'?'none':'block'">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+          概览
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="s1-stats-dropdown" id="s1Dropdown" style="display:none;">
+          <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+          <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+          <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+          <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s1-anno">
+      <b>变化要点：</b><br>
+      · 加上 <b>logo + 品牌名</b>，专业感更强<br>
+      · 顶部4个图标：搜索 / 新建 / 同步 / 账号<br>
+      · "30种 库存79"改成右侧 <b>概览 ▼ dropdown</b>，省顶栏空间<br>
+      · 当前tab 金色下划线 + 文字变金（不再整块金底）<br>
+      · 玻璃模糊背景，滚动时半透明
+    </div>
+
+    <div class="s1-anno">
+      <b>💡 点上面"概览 ▼"试试展开</b>
+    </div>
+
+  </div>
+</div>
+</div></div></div>
+
+</body>
+</html>

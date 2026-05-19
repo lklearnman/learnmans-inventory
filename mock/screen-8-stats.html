@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 统计</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* ============================================ */
+/* 画面 8：统计 ================================ */
+/* ============================================ */
+.s8-range{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px 14px 4px;
+}
+.s8-range-title{font-family:'Noto Serif SC',serif;font-size:16px;color:var(--gold);letter-spacing:1px;}
+.s8-range-sel{
+  padding:6px 12px;
+  background:var(--bg-card);
+  border:1px solid var(--gold-dim);
+  border-radius:14px;
+  font-size:11px;
+  color:var(--gold);
+  font-family:'DM Mono',monospace;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.s8-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:14px;
+}
+.s8-stat-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+  position:relative;
+  overflow:hidden;
+}
+.s8-stat-card.gold{border-color:var(--gold-dim);background:linear-gradient(135deg,#1a1410,var(--bg-card));}
+.s8-stat-icon{
+  position:absolute;
+  top:10px;right:10px;
+  opacity:0.2;
+}
+.s8-stat-l{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;}
+.s8-stat-v{font-family:'DM Mono',monospace;font-size:20px;color:var(--text);font-weight:500;line-height:1.1;}
+.s8-stat-card.gold .s8-stat-v{color:var(--gold-light);}
+.s8-stat-trend{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  margin-top:6px;
+}
+.s8-stat-trend.up{color:var(--jade);}
+.s8-stat-trend.down{color:var(--rose);}
+
+.s8-chart{
+  margin:0 14px 14px;
+  padding:14px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.s8-chart-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+.s8-chart-name{font-size:12px;color:var(--text);}
+.s8-chart-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);}
+.s8-chart-svg{width:100%;height:140px;}
+
+.s8-top{
+  margin:0 14px 14px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+.s8-top-head{
+  padding:12px 14px;
+  font-size:12px;
+  color:var(--gold);
+  border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.s8-top-item{
+  padding:10px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.s8-top-item:last-child{border-bottom:none;}
+.s8-top-rank{
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--bg-overlay);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  color:var(--text-dim);
+  flex-shrink:0;
+}
+.s8-top-item:nth-child(2) .s8-top-rank{background:var(--gold);color:#1a1410;font-weight:700;}
+.s8-top-item:nth-child(3) .s8-top-rank{background:var(--gold-dim);color:#1a1410;font-weight:700;}
+.s8-top-item:nth-child(4) .s8-top-rank{background:var(--text-dim);color:#1a1410;font-weight:700;}
+.s8-top-name{flex:1;font-size:13px;color:var(--text);}
+.s8-top-val{font-family:'DM Mono',monospace;font-size:12px;color:var(--gold);}
+
+.s8-alert{
+  margin:0 14px 14px;
+  background:rgba(212,165,116,0.06);
+  border:1px solid var(--amber);
+  border-radius:10px;
+  padding:12px 14px;
+}
+.s8-alert-head{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  color:var(--amber);
+  margin-bottom:8px;
+}
+.s8-alert-item{
+  display:flex;
+  justify-content:space-between;
+  font-size:12px;
+  padding:4px 0;
+  color:var(--text-muted);
+}
+.s8-alert-item .v{font-family:'DM Mono',monospace;color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab cur" href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="8">
+  <div class="app-bar">
+    <a class="icon-btn" href="index.html" title="返回概览"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">数 据 中 心</div>
+    <a class="icon-btn" href="screen-10-logs.html" title="导出流水"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+  </div>
+
+  <div class="s8-range">
+    <div class="s8-range-title">本月概况</div>
+    <div class="s8-range-sel" onclick="s8CycleRange(this)" title="切换时段">本月 ▼</div>
+  </div>
+
+  <div class="s8-stats">
+    <div class="s8-stat-card gold">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <div class="s8-stat-l">库存价值</div>
+      <div class="s8-stat-v">¥ 45.8K</div>
+      <div class="s8-stat-trend up">↑ 12.4%</div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#7ab38a"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="s8-stat-l">月销售额</div>
+      <div class="s8-stat-v">¥ 18.6K</div>
+      <div class="s8-stat-trend up">↑ 24.1%</div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#c9a85a"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <div class="s8-stat-l">月毛利</div>
+      <div class="s8-stat-v">¥ 11.2K</div>
+      <div class="s8-stat-trend up">↑ 18.7%</div>
+    </div>
+    <div class="s8-stat-card">
+      <svg class="s8-stat-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="#d4a574"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <div class="s8-stat-l">周转率</div>
+      <div class="s8-stat-v">0.41</div>
+      <div class="s8-stat-trend down">↓ 3.2%</div>
+    </div>
+  </div>
+
+  <div class="s8-chart">
+    <div class="s8-chart-title">
+      <span class="s8-chart-name">销售趋势</span>
+      <span class="s8-chart-sub">近 30 天</span>
+    </div>
+    <svg class="s8-chart-svg" viewBox="0 0 300 140" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c9a85a" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#c9a85a" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M 0,100 L 10,95 L 20,105 L 30,80 L 40,90 L 50,60 L 60,70 L 70,55 L 80,75 L 90,40 L 100,60 L 110,50 L 120,65 L 130,30 L 140,45 L 150,55 L 160,35 L 170,50 L 180,25 L 190,40 L 200,20 L 210,35 L 220,28 L 230,15 L 240,30 L 250,22 L 260,40 L 270,25 L 280,35 L 290,18 L 300,28 L 300,140 L 0,140 Z" fill="url(#chartGrad)"/>
+      <path d="M 0,100 L 10,95 L 20,105 L 30,80 L 40,90 L 50,60 L 60,70 L 70,55 L 80,75 L 90,40 L 100,60 L 110,50 L 120,65 L 130,30 L 140,45 L 150,55 L 160,35 L 170,50 L 180,25 L 190,40 L 200,20 L 210,35 L 220,28 L 230,15 L 240,30 L 250,22 L 260,40 L 270,25 L 280,35 L 290,18 L 300,28" fill="none" stroke="#c9a85a" stroke-width="1.5"/>
+      <circle cx="300" cy="28" r="3" fill="#e6c478"/>
+    </svg>
+  </div>
+
+  <div class="s8-top">
+    <div class="s8-top-head">
+      <span>畅 销 榜 · TOP 5</span>
+      <span style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;">本月</span>
+    </div>
+    <div class="s8-top-item">
+      <div class="s8-top-rank">1</div>
+      <div class="s8-top-name">黄金葫芦吊坠</div>
+      <div class="s8-top-val">¥9,160 · 2件</div>
+    </div>
+    <div class="s8-top-item">
+      <div class="s8-top-rank">2</div>
+      <div class="s8-top-name">阿勒泰陨石原石</div>
+      <div class="s8-top-val">¥5,600 · 2件</div>
+    </div>
+    <div class="s8-top-item">
+      <div class="s8-top-rank">3</div>
+      <div class="s8-top-name">玫瑰金镶嵌戒指</div>
+      <div class="s8-top-val">¥2,200 · 1件</div>
+    </div>
+    <div class="s8-top-item">
+      <div class="s8-top-rank">4</div>
+      <div class="s8-top-name">老葫芦把件</div>
+      <div class="s8-top-val">¥880 · 1件</div>
+    </div>
+    <div class="s8-top-item">
+      <div class="s8-top-rank">5</div>
+      <div class="s8-top-name">天然绿萤石</div>
+      <div class="s8-top-val">¥720 · 2件</div>
+    </div>
+  </div>
+
+  <div class="s8-alert">
+    <div class="s8-alert-head">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      关注预警
+    </div>
+    <div class="s8-alert-item"><span>低库存（≤2件）</span><span class="v">3 项</span></div>
+    <div class="s8-alert-item"><span>超60天未动</span><span class="v">5 项</span></div>
+    <div class="s8-alert-item"><span>展会未归还</span><span class="v">2 项</span></div>
+  </div>
+
+  <div style="height:20px;"></div>
+</div>
+
+</div></div></div>
+<script>
+const S8_RANGES=['今日 ▼','本周 ▼','本月 ▼','本季 ▼','本年 ▼','全部 ▼'];
+let s8Idx=2;
+function s8CycleRange(el){
+  s8Idx=(s8Idx+1)%S8_RANGES.length;
+  el.textContent=S8_RANGES[s8Idx];
+  const title=document.querySelector('.s8-range-title');
+  if(title) title.textContent=S8_RANGES[s8Idx].replace(' ▼','概况');
+}
+</script>
+</body></html>

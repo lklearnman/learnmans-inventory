@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 新建商品</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+.s11-photo{
+  margin:14px;height:160px;
+  background:linear-gradient(135deg,#1a1410,#0a0a0a);
+  border:1px dashed var(--gold-dim);
+  border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:var(--text-muted);cursor:pointer;
+  transition:all 0.2s ease;
+}
+.s11-photo:hover{border-color:var(--gold);color:var(--gold);}
+.s11-photo-icon{font-size:36px;margin-bottom:8px;opacity:0.7;}
+.s11-photo-hint{font-size:11px;letter-spacing:1px;}
+.s11-photo-sub{font-size:9px;color:var(--text-dim);margin-top:4px;}
+
+.s11-field{margin:0 14px 14px;}
+.s11-label{
+  font-size:11px;color:var(--gold-dim);letter-spacing:1.5px;
+  margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;
+}
+.s11-label .opt{color:var(--text-dim);font-size:10px;letter-spacing:0;}
+.s11-label .req{color:var(--rose);margin-left:2px;}
+
+.s11-cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.s11-cat{
+  padding:10px 6px;text-align:center;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:8px;cursor:pointer;transition:all 0.2s ease;
+}
+.s11-cat:hover{border-color:var(--gold-dim);}
+.s11-cat.cur{
+  background:var(--gold-glow);border-color:var(--gold);
+  color:var(--gold);
+}
+.s11-cat-icon{font-size:18px;display:block;margin-bottom:2px;}
+.s11-cat-name{font-size:11px;}
+
+.s11-sku-row{display:flex;gap:6px;}
+.s11-sku-row input{flex:1;}
+.s11-sku-gen{
+  flex-shrink:0;padding:0 14px;height:44px;
+  background:var(--bg-card);border:1px solid var(--gold-dim);
+  border-radius:6px;color:var(--gold);cursor:pointer;
+  display:flex;align-items:center;gap:4px;font-size:11px;
+  letter-spacing:1px;
+}
+.s11-sku-gen:hover{background:var(--gold-glow);}
+
+.s11-price-row{display:flex;gap:6px;}
+.s11-price-row input{flex:1;}
+.s11-cur-sel{
+  flex-shrink:0;width:88px;height:44px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:13px;
+  padding:0 10px;cursor:pointer;
+}
+
+.s11-qty{
+  display:flex;align-items:center;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:8px;overflow:hidden;
+}
+.s11-qty-btn{
+  width:44px;height:44px;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-muted);
+  user-select:none;
+}
+.s11-qty-btn:hover{background:var(--gold-glow);color:var(--gold);}
+.s11-qty-val{
+  flex:1;text-align:center;
+  font-family:'DM Mono',monospace;font-size:20px;color:var(--gold);
+  font-weight:500;
+}
+
+.s11-summary{
+  margin:14px;padding:14px;
+  background:linear-gradient(135deg,rgba(201,168,90,0.08),rgba(201,168,90,0.02));
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+}
+.s11-summary-label{font-size:10px;color:var(--gold-dim);letter-spacing:2px;margin-bottom:4px;}
+.s11-summary-val{
+  font-family:'DM Mono',monospace;color:var(--gold-light);font-size:13px;
+}
+.s11-summary-val .total{color:var(--gold);font-weight:500;}
+
+.s11-confirm{margin:14px;}
+.s11-confirm .btn{width:100%;display:inline-flex;height:48px;font-size:14px;letter-spacing:2px;}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="11">
+
+  <div class="app-bar">
+    <a class="icon-btn" href="screen-2-inventory.html" title="返回商品列表"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">新 建 商 品</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <!-- 图片占位 -->
+  <div class="s11-photo" onclick="mockTip('📷 拍照 / 从相册选 / 扫码识别')">
+    <div class="s11-photo-icon">📷</div>
+    <div class="s11-photo-hint">添 加 商 品 照 片</div>
+    <div class="s11-photo-sub">点击拍照 · 上传 · 或扫码识别</div>
+  </div>
+
+  <!-- 商品名 -->
+  <div class="s11-field">
+    <div class="s11-label">商品名称<span class="req">*</span></div>
+    <input id="s11Name" type="text" placeholder="例:阿勒泰陨石原石">
+  </div>
+
+  <!-- 类别 -->
+  <div class="s11-field">
+    <div class="s11-label">类别<span class="req">*</span></div>
+    <div class="s11-cat-grid">
+      <div class="s11-cat cur" onclick="s11SetCat(this,'🪨 陨石')"><span class="s11-cat-icon">🪨</span><span class="s11-cat-name">陨石</span></div>
+      <div class="s11-cat" onclick="s11SetCat(this,'💍 首饰')"><span class="s11-cat-icon">💍</span><span class="s11-cat-name">首饰</span></div>
+      <div class="s11-cat" onclick="s11SetCat(this,'💎 矿物')"><span class="s11-cat-icon">💎</span><span class="s11-cat-name">矿物</span></div>
+      <div class="s11-cat" onclick="s11SetCat(this,'🥒 葫芦')"><span class="s11-cat-icon">🥒</span><span class="s11-cat-name">葫芦</span></div>
+      <div class="s11-cat" onclick="s11SetCat(this,'🦴 化石')"><span class="s11-cat-icon">🦴</span><span class="s11-cat-name">化石</span></div>
+      <div class="s11-cat" onclick="s11SetCat(this,'➕ 其他')"><span class="s11-cat-icon">➕</span><span class="s11-cat-name">其他</span></div>
+    </div>
+  </div>
+
+  <!-- SKU -->
+  <div class="s11-field">
+    <div class="s11-label">SKU<span class="opt">输入或自动生成</span></div>
+    <div class="s11-sku-row">
+      <input id="s11Sku" type="text" placeholder="MZ-MET-001">
+      <div class="s11-sku-gen" onclick="s11GenSku()">⚡ 自动</div>
+    </div>
+  </div>
+
+  <!-- 售价 + 币种 -->
+  <div class="s11-field">
+    <div class="s11-label">售价<span class="req">*</span></div>
+    <div class="s11-price-row">
+      <input id="s11Price" type="text" placeholder="0" inputmode="decimal">
+      <select class="s11-cur-sel" id="s11Cur">
+        <option value="JPY">¥ JPY</option>
+        <option value="CNY">¥ CNY</option>
+        <option value="USD">$ USD</option>
+        <option value="EUR">€ EUR</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 进价 -->
+  <div class="s11-field">
+    <div class="s11-label">进价<span class="opt">单件 · 用于毛利计算</span></div>
+    <input id="s11Cost" type="text" placeholder="0" inputmode="decimal">
+  </div>
+
+  <!-- 初始库存 -->
+  <div class="s11-field">
+    <div class="s11-label">初始库存<span class="opt">本次入库件数</span></div>
+    <div class="s11-qty">
+      <div class="s11-qty-btn" onclick="s11Qty(-1)">−</div>
+      <div class="s11-qty-val" id="s11Qty">1</div>
+      <div class="s11-qty-btn" onclick="s11Qty(1)">+</div>
+    </div>
+  </div>
+
+  <!-- 备注 -->
+  <div class="s11-field">
+    <div class="s11-label">备注<span class="opt">采购来源 · 产地</span></div>
+    <textarea rows="2" placeholder="例:新疆阿勒泰采购"></textarea>
+  </div>
+
+  <!-- 摘要 -->
+  <div class="s11-summary">
+    <div class="s11-summary-label">本 次 录 入</div>
+    <div class="s11-summary-val">新商品 · 初始库存 <span class="total" id="s11SumQty">1</span> 件,将自动生成入库流水</div>
+  </div>
+
+  <!-- 确认 -->
+  <div class="s11-confirm">
+    <a class="btn btn-gold" href="screen-2-inventory.html">✓ 创 建 并 入 库</a>
+  </div>
+
+  <div style="height:20px;"></div>
+
+</div>
+</div></div></div>
+<script>
+let s11Q=1;
+function s11SetCat(el,name){
+  el.parentNode.querySelectorAll('.s11-cat').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+}
+function s11Qty(d){
+  s11Q=Math.max(0,s11Q+d);
+  document.getElementById('s11Qty').textContent=s11Q;
+  const sumEl=document.getElementById('s11SumQty');
+  if(sumEl) sumEl.textContent=s11Q;
+}
+function s11GenSku(){
+  const cur=document.querySelector('.s11-cat.cur .s11-cat-name')?.textContent||'其他';
+  const map={陨石:'MET',首饰:'JEW',矿物:'MIN',葫芦:'HLO',化石:'FOS',其他:'OTH'};
+  const code=map[cur]||'OTH';
+  const num=String(Math.floor(Math.random()*900)+100);
+  document.getElementById('s11Sku').value=`MZ-${code}-${num}`;
+  if(window.mockTip) mockTip('⚡ 已生成 SKU');
+}
+// ?edit 模式:预填当前商品数据,把 UI 切成「编辑商品」
+(function s11InitEdit(){
+  const params=new URLSearchParams(location.search);
+  if(!params.has('edit')) return;
+  // 模式切换:标题、按钮、摘要、photo 文案
+  document.querySelector('.bar-title').textContent='编 辑 商 品';
+  const confirm=document.querySelector('.s11-confirm .btn');
+  if(confirm){
+    confirm.textContent='✓ 保 存 修 改';
+    confirm.setAttribute('href','screen-3-detail.html');
+  }
+  // 摘要换文案
+  const sumWrap=document.querySelector('.s11-summary');
+  if(sumWrap) sumWrap.innerHTML=`
+    <div class="s11-summary-label">编 辑 中</div>
+    <div class="s11-summary-val">修改后保存到 <span class="total">阿勒泰陨石原石</span>,可能会生成调整流水</div>`;
+  // photo 占位换提示
+  const photo=document.querySelector('.s11-photo');
+  if(photo) photo.innerHTML=`
+    <div class="s11-photo-icon">🖼</div>
+    <div class="s11-photo-hint">当 前 商 品 主 图</div>
+    <div class="s11-photo-sub">点击替换 · 拖拽排序多张图</div>`;
+  // 预填(模拟"阿勒泰陨石原石")
+  document.getElementById('s11Name').value='阿勒泰陨石原石';
+  document.getElementById('s11Sku').value='MZ-MET-001';
+  document.getElementById('s11Price').value='2800';
+  document.getElementById('s11Cost').value='1200';
+  document.getElementById('s11Cur').value='JPY';
+  // 库存数量 → 5
+  s11Q=5;
+  document.getElementById('s11Qty').textContent=5;
+  // 类别:陨石(已经默认 cur,不动)
+  // 编辑模式下「初始库存」改名为「当前库存」
+  const qtyLabel=document.querySelectorAll('.s11-label')[5];
+  if(qtyLabel) qtyLabel.innerHTML=`当前库存<span class="opt">直接修改将生成调整流水</span>`;
+  // 加危险操作:删除商品 按钮
+  const confirmBlock=document.querySelector('.s11-confirm');
+  if(confirmBlock){
+    const del=document.createElement('div');
+    del.style.cssText='margin:14px;text-align:center;';
+    del.innerHTML=`<a href="javascript:void(0)" style="font-size:11px;color:var(--rose);text-decoration:none;letter-spacing:2px;" onclick="mockConfirm({title:'删 除 此 商 品?',message:'此操作<b>无法恢复</b>。<br>商品 <b>阿勒泰陨石原石</b> 将从库存移除,<br>但相关的入出库流水会保留。',okText:'🗑 确 认 删 除',cancelText:'取消',okClass:'btn-rose',onOk:()=>location.href='screen-2-inventory.html'})">🗑 删 除 此 商 品</a>`;
+    confirmBlock.parentNode.insertBefore(del, confirmBlock.nextSibling);
+  }
+})();
+</script>
+</body>
+</html>

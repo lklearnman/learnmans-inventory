@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 展会</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* ============================================ */
+/* 画面 6：展会 ================================ */
+/* ============================================ */
+.s6-show-card{
+  margin:14px;
+  background:linear-gradient(135deg,#1a1410 0%,var(--bg-card) 100%);
+  border:1px solid var(--gold-dim);
+  border-radius:12px;
+  padding:16px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 20px rgba(201,168,90,0.08);
+}
+.s6-show-card::before{
+  content:'';
+  position:absolute;
+  top:-50%;right:-30%;
+  width:160px;height:160px;
+  background:radial-gradient(circle,var(--gold-glow) 0%,transparent 60%);
+}
+.s6-show-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:18px;
+  color:var(--gold-light);
+  margin-bottom:6px;
+  position:relative;
+}
+.s6-show-date{
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  color:var(--text-muted);
+  margin-bottom:14px;
+  position:relative;
+}
+.s6-show-date .live{
+  display:inline-block;
+  margin-left:6px;
+  padding:2px 8px;
+  background:var(--rose);
+  color:#fff;
+  border-radius:10px;
+  font-size:9px;
+  letter-spacing:1px;
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.s6-show-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  position:relative;
+}
+.s6-show-stat{
+  text-align:center;
+  padding:8px 4px;
+  background:rgba(10,10,10,0.5);
+  border-radius:6px;
+}
+.s6-show-stat-v{font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);font-weight:500;}
+.s6-show-stat-l{font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:0.5px;}
+
+.s6-list{margin:0 14px;}
+.s6-item{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.s6-item-thumb{
+  width:50px;height:50px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#1a1410,#0a0a0a);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.s6-item-info{flex:1;min-width:0;}
+.s6-item-name{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--text);}
+.s6-item-qty{
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--text-dim);
+  margin-top:3px;
+}
+.s6-item-qty .sold{color:var(--rose);}
+.s6-item-qty .left{color:var(--jade);}
+.s6-item-actions{display:flex;gap:4px;flex-shrink:0;}
+.s6-item-btn{
+  padding:6px 10px;
+  font-size:11px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--bg-overlay);
+  color:var(--text-muted);
+  cursor:pointer;
+}
+.s6-item-btn.sell{color:var(--rose);border-color:var(--rose);}
+.s6-item-btn.ret{color:var(--jade);border-color:var(--jade);}
+
+.s6-finish{margin:20px 14px;}
+.s6-finish .btn{
+  width:100%;
+  height:54px;
+  font-size:15px;
+  letter-spacing:2px;
+}
+.s6-item-btn{text-decoration:none;}
+.s6-item-btn:hover{filter:brightness(1.2);}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab cur" href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="6">
+  <div class="app-bar">
+    <div class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="bar-title">展 会</div>
+    <a class="icon-btn" href="screen-11-new-product.html" title="新建商品"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></a>
+  </div>
+
+  <div class="s6-show-card">
+    <div class="s6-show-name">上海国际珠宝展</div>
+    <div class="s6-show-date">2026-05-08 → 05-18<span class="live">● 进行中</span></div>
+    <div class="s6-show-stats">
+      <div class="s6-show-stat"><div class="s6-show-stat-v">8</div><div class="s6-show-stat-l">带出</div></div>
+      <div class="s6-show-stat"><div class="s6-show-stat-v">3</div><div class="s6-show-stat-l">已售</div></div>
+      <div class="s6-show-stat"><div class="s6-show-stat-v">¥8.4K</div><div class="s6-show-stat-l">销售额</div></div>
+    </div>
+  </div>
+
+  <div class="sec-title" style="margin:0 18px 8px;">带出商品</div>
+
+  <div class="s6-list">
+    <div class="s6-item">
+      <div class="s6-item-thumb">
+        <svg width="36" height="36" viewBox="0 0 100 100"><defs><radialGradient id="s6m1" cx="35%" cy="30%"><stop offset="0%" stop-color="#5a5048"/><stop offset="100%" stop-color="#0f0d0a"/></radialGradient></defs><ellipse cx="50" cy="55" rx="38" ry="32" fill="url(#s6m1)"/></svg>
+      </div>
+      <div class="s6-item-info">
+        <div class="s6-item-name">阿勒泰陨石原石</div>
+        <div class="s6-item-qty">带出 <span style="color:var(--text);">2</span> · <span class="sold">已售 1</span> · <span class="left">剩 1</span></div>
+      </div>
+      <div class="s6-item-actions">
+        <a class="s6-item-btn sell" href="screen-4-stock.html?mode=out" title="登记售出">售出</a>
+        <a class="s6-item-btn ret"  href="screen-4-stock.html" title="登记归还">归还</a>
+      </div>
+    </div>
+
+    <div class="s6-item">
+      <div class="s6-item-thumb">
+        <svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="55" r="22" fill="none" stroke="#c9a85a" stroke-width="3"/><circle cx="50" cy="33" r="4" fill="#c9a85a"/></svg>
+      </div>
+      <div class="s6-item-info">
+        <div class="s6-item-name">黄金葫芦吊坠</div>
+        <div class="s6-item-qty">带出 <span style="color:var(--text);">3</span> · <span class="sold">已售 2</span> · <span class="left">剩 1</span></div>
+      </div>
+      <div class="s6-item-actions">
+        <a class="s6-item-btn sell" href="screen-4-stock.html?mode=out" title="登记售出">售出</a>
+        <a class="s6-item-btn ret"  href="screen-4-stock.html" title="登记归还">归还</a>
+      </div>
+    </div>
+
+    <div class="s6-item">
+      <div class="s6-item-thumb">
+        <svg width="36" height="36" viewBox="0 0 100 100"><polygon points="50,25 75,55 50,85 25,55" fill="#7ab38a" opacity="0.7"/></svg>
+      </div>
+      <div class="s6-item-info">
+        <div class="s6-item-name">天然绿萤石</div>
+        <div class="s6-item-qty">带出 <span style="color:var(--text);">3</span> · <span class="left">剩 3</span></div>
+      </div>
+      <div class="s6-item-actions">
+        <a class="s6-item-btn sell" href="screen-4-stock.html?mode=out" title="登记售出">售出</a>
+        <a class="s6-item-btn ret"  href="screen-4-stock.html" title="登记归还">归还</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="s6-finish">
+    <a class="btn btn-gold" href="screen-10-logs.html" style="display:inline-flex;width:100%;">⚖ 展 会 结 算 · 查看成交</a>
+  </div>
+
+  <div style="height:20px;"></div>
+</div>
+
+</div></div></div>
+</body></html>
