@@ -71,9 +71,9 @@ function exportInventoryCSV(){
     const list=(typeof getVisibleProducts==='function')?getVisibleProducts():(DB.products||[]);
     if(!list||!list.length){toast('暂无商品可导出');return;}
     const cur=(typeof inventoryCurrency!=='undefined'?inventoryCurrency:'JPY');
-    const rows=[['SKU','名称','类别','库存','单价','币种','备注']];
+    const rows=[['SKU','名称','类别','库存','单价','币种','尺寸','材质','重量','单位','产地','原产国','备注']];
     list.forEach(p=>{
-      rows.push([p.sku||'',p.name||'',p.cat||'',(p.qty!=null?p.qty:''),(p.price!=null?p.price:''),(p.currency||cur),(p.note||'').replace(/[\r\n]+/g,' ')]);
+      rows.push([p.sku||'',p.name||'',p.cat||'',(p.qty!=null?p.qty:''),(p.price!=null?p.price:''),(p.currency||cur),p.size||'',p.material||'',(p.weight!=null?p.weight:''),p.unit||'',p.origin||'',p.country||'',(p.note||'').replace(/[\r\n]+/g,' ')]);
     });
     const csv='﻿'+rows.map(r=>r.map(c=>{
       const s=String(c==null?'':c);
@@ -267,7 +267,7 @@ function updateHeader(){
 function openAddModal(prefill){
   editingId=null;pendingPhotos=[];
   document.getElementById('modal-add-title').textContent='新建商品档案';
-  ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
+  ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note','f-size','f-material','f-weight','f-unit'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
   // 重置类别 6 宫格(默认本位币 + 没有选中)
@@ -362,6 +362,12 @@ function openEditModal(id){
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
+  // 新字段(2026-05-20)
+  const _set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||'';};
+  _set('f-size',p.size);
+  _set('f-material',p.material);
+  _set('f-weight',(p.weight!==undefined&&p.weight!==null)?p.weight:'');
+  _set('f-unit',p.unit);
   // 同步类别 6 宫格(根据 cat 文本匹配)
   _syncCatGrid(p.cat||'');
   // 币种 select 跟随商品(本位币改造后实际固定 JPY,但展示用 inventoryCurrency)
@@ -425,7 +431,24 @@ function buildProduct(){
       if(rate)priceTxt=String(Math.round(num*rate));
     }
   }
-  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:priceTxt,currency:'JPY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+  // 新字段(2026-05-20)
+  const _val=id=>document.getElementById(id)?.value?.trim()||'';
+  const weightStr=_val('f-weight');
+  return{
+    id,name,sku,
+    cat:document.getElementById('f-cat').value.trim(),
+    price:priceTxt,currency:'JPY',
+    origin:_val('f-origin'),
+    country:_val('f-country'),
+    note:_val('f-note'),
+    size:_val('f-size')||null,
+    material:_val('f-material')||null,
+    unit:_val('f-unit')||null,
+    weight:weightStr?parseFloat(weightStr):null,
+    photos:[...pendingPhotos],
+    qty:editingId?(getProduct(editingId).qty||0):0,
+    createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()
+  };
 }
 async function saveProductOnly(){
   const btn=document.getElementById('btn-save-only');
@@ -777,11 +800,17 @@ async function openDetail(id){
     ? `<div class="d3-photo-dots">${photos.map((_,i)=>`<div class="d3-photo-dot${i===0?' cur':''}" onclick="d3SwitchPhoto(${i})"></div>`).join('')}</div>`
     : '';
   const counter=photos.length>1?`<div class="d3-photo-counter"><span id="d3-photo-cur">1</span> / ${photos.length}</div>`:'';
-  // meta 区:badge(类别) · 产地 · 国家
+  // meta 区:badge(类别) · 产地 · 国家 · 尺寸 · 材质 · 重量
   const metaParts=[];
   if(p.cat)metaParts.push(`<span class="badge">${p.cat}</span>`);
   if(p.origin)metaParts.push(`<span>${p.origin}</span>`);
   if(p.country)metaParts.push(`<span>${p.country}</span>`);
+  if(p.size)metaParts.push(`<span>📏 ${p.size}</span>`);
+  if(p.material)metaParts.push(`<span>💎 ${p.material}</span>`);
+  if(p.weight!=null&&p.weight!==''){
+    const wTxt=`${p.weight}${p.unit||''}`;
+    metaParts.push(`<span>⚖ ${wTxt}</span>`);
+  }
   const metaHtml=metaParts.join('<span class="dot"></span>');
 
   document.getElementById('detail-body').innerHTML=`
