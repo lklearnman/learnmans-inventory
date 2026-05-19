@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 流水</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* 画面 10: 入出库流水一览 */
+.s10-toolbar{
+  position:sticky;top:0;z-index:5;
+  background:var(--bg-main);
+  padding:12px 14px 8px;
+  border-bottom:1px solid var(--border);
+}
+.s10-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px;}
+.s10-chips::-webkit-scrollbar{display:none;}
+.s10-chip{
+  flex-shrink:0;padding:6px 12px;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:14px;
+  font-size:11px;color:var(--text-muted);cursor:pointer;white-space:nowrap;
+  transition:all 0.2s ease;
+}
+.s10-chip:hover{border-color:var(--gold-dim);color:var(--text);}
+.s10-chip.cur{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold);}
+.s10-chip .n{font-family:'DM Mono',monospace;font-size:10px;margin-left:4px;opacity:0.7;}
+.s10-daterow{display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text-muted);}
+.s10-date{
+  flex:1;display:flex;align-items:center;gap:6px;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:6px;
+  padding:6px 10px;font-family:'DM Mono',monospace;color:var(--text);
+}
+.s10-search-btn{
+  width:32px;height:30px;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;color:var(--text-muted);
+  cursor:pointer;
+}
+
+.s10-summary{
+  margin:14px;
+  background:linear-gradient(135deg,rgba(201,168,90,0.08) 0%,rgba(201,168,90,0.02) 100%);
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+  padding:12px 14px;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;
+}
+.s10-sum-cell{text-align:center;}
+.s10-sum-l{font-size:9px;color:var(--text-muted);letter-spacing:1.5px;margin-bottom:4px;}
+.s10-sum-v{font-family:'DM Mono',monospace;font-size:14px;color:var(--gold);font-weight:500;}
+.s10-sum-v.in{color:var(--jade);}
+.s10-sum-v.out{color:var(--rose);}
+.s10-sum-v .sub{font-size:9px;color:var(--text-dim);margin-left:2px;}
+
+.s10-list{padding:0 14px 12px;}
+.s10-day{
+  font-family:'Noto Serif SC',serif;
+  font-size:10px;letter-spacing:2px;color:var(--gold-dim);
+  margin:16px 4px 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.s10-day::before{content:'';width:12px;height:1px;background:var(--gold-dim);}
+.s10-day .cnt{font-family:'DM Mono',monospace;color:var(--text-muted);margin-left:auto;font-size:9px;}
+
+.s10-item{
+  display:flex;gap:10px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:10px;padding:12px;margin-bottom:8px;
+  transition:all 0.2s ease;cursor:pointer;
+}
+.s10-item:hover{border-color:var(--gold-dim);}
+.s10-item-icon{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.s10-item-icon.in{background:rgba(122,179,138,0.15);color:var(--jade);}
+.s10-item-icon.out{background:rgba(201,112,112,0.15);color:var(--rose);}
+.s10-item-icon.show{background:rgba(212,165,116,0.15);color:var(--amber);}
+.s10-item-body{flex:1;min-width:0;}
+.s10-item-row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.s10-item-name{
+  font-size:13px;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.s10-item-amt{
+  font-family:'DM Mono',monospace;font-size:13px;flex-shrink:0;font-weight:500;
+}
+.s10-item-amt.in{color:var(--jade);}
+.s10-item-amt.out{color:var(--rose);}
+.s10-item-row2{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  margin-top:4px;font-size:10px;color:var(--text-muted);
+}
+.s10-item-tag{
+  display:inline-block;font-family:'DM Mono',monospace;font-size:9px;
+  padding:1px 6px;border-radius:8px;background:var(--bg-overlay);color:var(--text-dim);
+  margin-right:4px;
+}
+.s10-item-qty{font-family:'DM Mono',monospace;color:var(--text-muted);}
+.s10-item-note{
+  font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.4;
+  padding-top:6px;border-top:1px dashed var(--border);
+}
+
+.s10-pager{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px;margin-top:6px;border-top:1px solid var(--border);
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--text-muted);
+}
+.s10-pager-btns{display:flex;gap:4px;}
+.s10-pager-btn{
+  min-width:30px;height:28px;padding:0 8px;
+  background:var(--bg-card);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-family:inherit;font-size:11px;
+}
+.s10-pager-btn:hover:not(.disabled){border-color:var(--gold-dim);color:var(--gold);}
+.s10-pager-btn.disabled{opacity:0.3;cursor:not-allowed;}
+.s10-pager-btn.cur{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold);}
+
+.s10-export{
+  display:flex;gap:8px;margin:8px 14px 0;
+}
+.s10-export .btn{flex:1;height:36px;font-size:12px;}
+
+/* 浮动新建按钮 */
+.s10-fab{
+  position:absolute;
+  right:16px;bottom:20px;
+  width:56px;height:56px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);
+  color:#1a1410;
+  display:flex;align-items:center;justify-content:center;
+  text-decoration:none;
+  box-shadow:0 4px 24px var(--gold-glow),0 2px 8px rgba(0,0,0,0.4);
+  font-size:28px;font-weight:300;
+  transition:all 0.2s ease;
+  z-index:20;
+}
+.s10-fab:hover{transform:scale(1.06);box-shadow:0 6px 32px var(--gold-glow);}
+.s10-fab:active{transform:scale(0.96);}
+.s10-fab svg{display:block;}
+.s10-item{text-decoration:none;color:inherit;}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab cur" href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="10">
+
+  <div class="app-bar">
+    <a class="icon-btn" href="index.html" title="返回概览"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">流 水</div>
+    <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+  </div>
+
+  <div class="s10-toolbar">
+    <div class="s10-chips">
+      <div class="s10-chip cur" onclick="s10SetChip(this)">全部<span class="n">128</span></div>
+      <div class="s10-chip" onclick="s10SetChip(this)">⬆ 入库<span class="n">52</span></div>
+      <div class="s10-chip" onclick="s10SetChip(this)">⬇ 出库<span class="n">68</span></div>
+      <div class="s10-chip" onclick="s10SetChip(this)">🎪 展会<span class="n">8</span></div>
+    </div>
+    <div class="s10-daterow">
+      <div class="s10-date">📅 2026-04-18</div>
+      <span>→</span>
+      <div class="s10-date">2026-05-18</div>
+      <div class="s10-search-btn" title="按商品筛选">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="s10-summary">
+    <div class="s10-sum-cell"><div class="s10-sum-l">入 库</div><div class="s10-sum-v in">+¥ 12.4K<span class="sub">/52笔</span></div></div>
+    <div class="s10-sum-cell"><div class="s10-sum-l">出 库</div><div class="s10-sum-v out">−¥ 18.6K<span class="sub">/68笔</span></div></div>
+    <div class="s10-sum-cell"><div class="s10-sum-l">净 流 水</div><div class="s10-sum-v">¥ 6.2K</div></div>
+  </div>
+
+  <div class="s10-list">
+
+    <div class="s10-day">今 天 · 2026-05-18 <span class="cnt">3 笔</span></div>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon out">⬇</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">阿勒泰陨石原石</div>
+          <div class="s10-item-amt out">−¥ 2,800</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">出库</span>
+            <span class="s10-item-qty">×1 · 单价 ¥2,800 · JPY</span>
+          </div>
+          <div>14:32</div>
+        </div>
+        <div class="s10-item-note">客户:山田珠宝 · 现金</div>
+      </div>
+    </a>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon in">⬆</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">巴西紫水晶簇</div>
+          <div class="s10-item-amt in">+¥ 3,600</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">入库</span>
+            <span class="s10-item-qty">×3 · 单价 ¥1,200 · CNY</span>
+          </div>
+          <div>11:08</div>
+        </div>
+        <div class="s10-item-note">进货:云南矿区张师傅</div>
+      </div>
+    </a>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon show">🎪</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">萤石球 (绿)</div>
+          <div class="s10-item-amt">¥ 850</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">展会售</span>
+            <span class="s10-item-qty">×1 · 单价 ¥850 · JPY</span>
+          </div>
+          <div>10:21</div>
+        </div>
+        <div class="s10-item-note">展会:东京矿物展 · 现场</div>
+      </div>
+    </a>
+
+    <div class="s10-day">昨 天 · 2026-05-17 <span class="cnt">2 笔</span></div>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon out">⬇</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">天然托帕石吊坠</div>
+          <div class="s10-item-amt out">−¥ 1,500</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">出库</span>
+            <span class="s10-item-qty">×1 · 单价 ¥1,500 · JPY</span>
+          </div>
+          <div>16:45</div>
+        </div>
+      </div>
+    </a>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon in">⬆</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">摩洛哥三叶虫化石</div>
+          <div class="s10-item-amt in">+¥ 4,200</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">入库</span>
+            <span class="s10-item-qty">×2 · 单价 ¥2,100 · CNY</span>
+          </div>
+          <div>09:30</div>
+        </div>
+      </div>
+    </a>
+
+    <div class="s10-day">2026-05-16 <span class="cnt">5 笔</span></div>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon out">⬇</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">青金石手串</div>
+          <div class="s10-item-amt out">−¥ 980</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">出库</span>
+            <span class="s10-item-qty">×1 · 单价 ¥980 · JPY</span>
+          </div>
+          <div>18:12</div>
+        </div>
+      </div>
+    </a>
+
+    <a class="s10-item" href="screen-4-stock.html">
+      <div class="s10-item-icon in">⬆</div>
+      <div class="s10-item-body">
+        <div class="s10-item-row1">
+          <div class="s10-item-name">海蓝宝戒指</div>
+          <div class="s10-item-amt in">+¥ 5,400</div>
+        </div>
+        <div class="s10-item-row2">
+          <div>
+            <span class="s10-item-tag">入库</span>
+            <span class="s10-item-qty">×3 · 单价 ¥1,800 · CNY</span>
+          </div>
+          <div>14:50</div>
+        </div>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="s10-pager">
+    <div>第 <b>1</b> / 7 页 · 共 128 笔</div>
+    <div class="s10-pager-btns" id="s10Pager">
+      <div class="s10-pager-btn" data-go="first" onclick="s10GoPage(this)">«</div>
+      <div class="s10-pager-btn" data-go="prev" onclick="s10GoPage(this)">‹</div>
+      <div class="s10-pager-btn cur" data-page="1" onclick="s10GoPage(this)">1</div>
+      <div class="s10-pager-btn" data-page="2" onclick="s10GoPage(this)">2</div>
+      <div class="s10-pager-btn" data-go="next" onclick="s10GoPage(this)">›</div>
+      <div class="s10-pager-btn" data-go="last" onclick="s10GoPage(this)">»</div>
+    </div>
+  </div>
+
+  <div class="s10-export">
+    <button class="btn btn-outline" onclick="s10ExportCSV()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 导出 CSV</button>
+    <button class="btn btn-outline" onclick="window.print()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> 打印</button>
+  </div>
+
+  <div style="height:80px;"></div>
+
+</div>
+<a class="s10-fab" href="screen-4-stock.html" title="新建入库/出库记录">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+</a>
+</div></div></div>
+<script>
+function s10SetChip(el){
+  el.parentNode.querySelectorAll('.s10-chip').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+}
+function s10ExportCSV(){
+  const rows=[['日期','时间','类型','商品','数量','单价','币种','金额','备注']];
+  let curDay='';
+  document.querySelectorAll('.s10-list > *').forEach(el=>{
+    if(el.classList.contains('s10-day')){
+      const m=el.textContent.match(/\d{4}-\d{2}-\d{2}/);
+      if(m) curDay=m[0];
+    } else if(el.classList.contains('s10-item')){
+      const type=el.querySelector('.s10-item-tag')?.textContent.trim()||'';
+      const name=el.querySelector('.s10-item-name')?.textContent.trim()||'';
+      const amt =el.querySelector('.s10-item-amt')?.textContent.trim()||'';
+      const qtyTxt=el.querySelector('.s10-item-qty')?.textContent.trim()||'';
+      const qm=qtyTxt.match(/×(\d+)/); const qty=qm?qm[1]:'';
+      const pm=qtyTxt.match(/单价\s*([¥$€][\d,.]+)/); const price=pm?pm[1]:'';
+      const cm=qtyTxt.match(/(JPY|CNY|USD|EUR)/); const ccy=cm?cm[1]:'';
+      const time=el.querySelector('.s10-item-row2 > div:last-child')?.textContent.trim()||'';
+      const note=el.querySelector('.s10-item-note')?.textContent.trim()||'';
+      rows.push([curDay,time,type,name,qty,price,ccy,amt,note]);
+    }
+  });
+  const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`流水_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  URL.revokeObjectURL(url);
+  if(window.mockTip) mockTip(`📥 已导出 ${rows.length-1} 条流水`);
+}
+const S10_TOTAL=7;
+let s10Page=1;
+function s10GoPage(el){
+  const go=el.dataset.go;
+  if(go==='first') s10Page=1;
+  else if(go==='last') s10Page=S10_TOTAL;
+  else if(go==='prev' && s10Page>1) s10Page--;
+  else if(go==='next' && s10Page<S10_TOTAL) s10Page++;
+  else if(el.dataset.page) s10Page=parseInt(el.dataset.page);
+  // 更新页码按钮 cur
+  document.querySelectorAll('#s10Pager .s10-pager-btn').forEach(b=>{
+    b.classList.remove('cur','disabled');
+    if(b.dataset.page && parseInt(b.dataset.page)===s10Page) b.classList.add('cur');
+    if((b.dataset.go==='first'||b.dataset.go==='prev') && s10Page===1) b.classList.add('disabled');
+    if((b.dataset.go==='last'||b.dataset.go==='next') && s10Page===S10_TOTAL) b.classList.add('disabled');
+  });
+  // 更新页码显示文字
+  const lbl=document.querySelector('.s10-pager > div:first-child');
+  if(lbl) lbl.innerHTML=`第 <b>${s10Page}</b> / ${S10_TOTAL} 页 · 共 128 笔`;
+}
+// 初始化禁用状态
+window.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('#s10Pager [data-go="first"],#s10Pager [data-go="prev"]').forEach(b=>b.classList.add('disabled'));
+});
+</script>
+</body>
+</html>

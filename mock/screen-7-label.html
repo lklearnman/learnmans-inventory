@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 价格标签</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* ============================================ */
+/* 画面 7：价格标签 ============================ */
+/* ============================================ */
+.s7-stepper{
+  display:flex;
+  align-items:center;
+  padding:16px;
+  background:var(--bg-card);
+  border-bottom:1px solid var(--border);
+  gap:0;
+}
+.s7-step{
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:11px;
+  color:var(--text-dim);
+}
+.s7-step-num{
+  width:24px;height:24px;
+  border-radius:50%;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;
+  font-size:11px;
+  flex-shrink:0;
+}
+.s7-step.cur .s7-step-num{
+  background:var(--gold);
+  border-color:var(--gold);
+  color:#1a1410;
+  font-weight:700;
+}
+.s7-step.done .s7-step-num{
+  background:transparent;
+  border-color:var(--jade);
+  color:var(--jade);
+}
+.s7-step.cur span{color:var(--gold);font-weight:500;}
+.s7-line{
+  flex:0 0 20px;
+  height:1px;
+  background:var(--border);
+  margin:0 4px;
+}
+
+.s7-filter-chips{
+  display:flex;
+  gap:6px;
+  padding:14px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.s7-filter-chips::-webkit-scrollbar{display:none;}
+.s7-chip{
+  flex-shrink:0;
+  padding:6px 12px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--bg-card);
+  color:var(--text-muted);
+  font-size:11px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.s7-chip.cur{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold);}
+
+.s7-sel-list{padding:0 14px;}
+.s7-sel-item{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+}
+.s7-sel-item.cur{border-color:var(--gold-dim);background:var(--gold-glow);}
+.s7-sel-check{
+  width:20px;height:20px;
+  border-radius:4px;
+  border:1px solid var(--border);
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;
+  color:#1a1410;
+}
+.s7-sel-item.cur .s7-sel-check{background:var(--gold);border-color:var(--gold);}
+.s7-sel-name{flex:1;font-size:13px;color:var(--text);}
+.s7-sel-price{font-family:'DM Mono',monospace;font-size:12px;color:var(--gold);}
+.s7-sel-qty{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);min-width:30px;text-align:right;}
+
+.s7-bottom{
+  padding:14px;
+  background:var(--bg-card);
+  border-top:1px solid var(--border);
+  display:flex;
+  gap:10px;
+}
+.s7-bottom .btn{flex:1;}
+
+/* step body 切换 */
+.s7-body{display:none;}
+.s7-body.cur{display:block;}
+
+/* step 2: 标签样式选择 */
+.s7-styles{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:14px;
+}
+.s7-style-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 12px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.s7-style-card:hover{border-color:var(--gold-dim);}
+.s7-style-card.cur{
+  border-color:var(--gold);
+  background:var(--gold-glow);
+  box-shadow:0 0 16px var(--gold-glow);
+}
+.s7-style-preview{
+  background:#f5e6c8;color:#1a1410;
+  border-radius:6px;
+  padding:8px 6px;
+  margin-bottom:10px;
+  font-family:'DM Mono',monospace;
+  position:relative;
+}
+.s7-style-preview .pname{font-size:9px;line-height:1.2;margin-bottom:3px;}
+.s7-style-preview .pcode{font-size:7px;opacity:0.7;letter-spacing:1px;margin-top:3px;}
+.s7-style-preview.qr::after{
+  content:'■';position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  font-size:24px;line-height:1;color:#1a1410;
+}
+.s7-style-name{
+  font-size:12px;color:var(--text);font-weight:500;margin-bottom:2px;
+}
+.s7-style-size{
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);
+}
+.s7-style-tag{
+  display:inline-block;
+  font-size:9px;padding:1px 6px;border-radius:8px;
+  background:var(--bg-overlay);color:var(--gold-dim);
+  margin-top:6px;letter-spacing:0.5px;
+}
+
+/* step 3: 导出 */
+.s7-export{padding:14px;}
+.s7-summary{
+  background:linear-gradient(135deg,rgba(201,168,90,0.08),rgba(201,168,90,0.02));
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+  padding:14px;margin-bottom:14px;
+}
+.s7-sum-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);padding:5px 0;}
+.s7-sum-row b{color:var(--gold);font-family:'DM Mono',monospace;font-weight:500;}
+.s7-sum-row:not(:last-child){border-bottom:1px dashed var(--border);}
+.s7-opt-block{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:10px;padding:12px;margin-bottom:10px;
+}
+.s7-opt-label{
+  font-size:10px;color:var(--gold-dim);letter-spacing:2px;margin-bottom:8px;
+}
+.s7-opt-row{display:flex;gap:6px;flex-wrap:wrap;}
+.s7-opt-chip{
+  padding:6px 12px;
+  background:var(--bg-overlay);
+  border:1px solid var(--border);
+  border-radius:14px;
+  font-size:11px;color:var(--text-muted);
+  cursor:pointer;
+}
+.s7-opt-chip.cur{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="7">
+  <div class="app-bar">
+    <a class="icon-btn" href="screen-2-inventory.html" title="返回库存"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">价 格 标 签</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="s7-stepper">
+    <div class="s7-step cur" data-step="1" onclick="s7GoStep(1)"><div class="s7-step-num">1</div><span>选商品</span></div>
+    <div class="s7-line"></div>
+    <div class="s7-step" data-step="2" onclick="s7GoStep(2)"><div class="s7-step-num">2</div><span>选样式</span></div>
+    <div class="s7-line"></div>
+    <div class="s7-step" data-step="3" onclick="s7GoStep(3)"><div class="s7-step-num">3</div><span>导出</span></div>
+  </div>
+
+  <div class="s7-body cur" data-body="1">
+    <div class="s7-filter-chips">
+      <div class="s7-chip cur" onclick="s7SetChip(this)">全部 30</div>
+      <div class="s7-chip" onclick="s7SetChip(this)">仅有库存 24</div>
+      <div class="s7-chip" onclick="s7SetChip(this)">陨石 12</div>
+      <div class="s7-chip" onclick="s7SetChip(this)">首饰 8</div>
+      <div class="s7-chip" onclick="s7SetChip(this)">葫芦 6</div>
+      <div class="s7-chip" onclick="s7SetChip(this)">矿物 4</div>
+    </div>
+
+    <div style="padding:0 14px 8px;display:flex;justify-content:space-between;align-items:center;">
+      <input placeholder="🔍 搜索..." style="height:36px;font-size:12px;">
+    </div>
+
+    <div style="padding:0 14px 8px;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;color:var(--text-muted);">已选 <span style="color:var(--gold);font-family:'DM Mono',monospace;font-weight:500;" id="s7SelCnt">3</span> / 6 项</span>
+      <span style="font-size:11px;color:var(--gold);cursor:pointer;" onclick="s7SelectAll()">全选 ☑</span>
+    </div>
+
+    <div class="s7-sel-list">
+      <div class="s7-sel-item cur" onclick="s7Toggle(this)">
+        <div class="s7-sel-check">✓</div>
+        <div class="s7-sel-name">阿勒泰陨石原石</div>
+        <div class="s7-sel-price">¥ 2,800</div>
+        <div class="s7-sel-qty">×5</div>
+      </div>
+      <div class="s7-sel-item cur" onclick="s7Toggle(this)">
+        <div class="s7-sel-check">✓</div>
+        <div class="s7-sel-name">黄金葫芦吊坠</div>
+        <div class="s7-sel-price">¥ 4,580</div>
+        <div class="s7-sel-qty">×2</div>
+      </div>
+      <div class="s7-sel-item cur" onclick="s7Toggle(this)">
+        <div class="s7-sel-check">✓</div>
+        <div class="s7-sel-name">老葫芦把件</div>
+        <div class="s7-sel-price">¥ 880</div>
+        <div class="s7-sel-qty">×8</div>
+      </div>
+      <div class="s7-sel-item" onclick="s7Toggle(this)">
+        <div class="s7-sel-check"></div>
+        <div class="s7-sel-name">天然绿萤石</div>
+        <div class="s7-sel-price">¥ 360</div>
+        <div class="s7-sel-qty">×3</div>
+      </div>
+      <div class="s7-sel-item" onclick="s7Toggle(this)">
+        <div class="s7-sel-check"></div>
+        <div class="s7-sel-name">玫瑰金镶嵌戒指</div>
+        <div class="s7-sel-price">¥ 2,200</div>
+        <div class="s7-sel-qty">×6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 选样式 -->
+  <div class="s7-body" data-body="2">
+    <div class="s7-styles">
+      <div class="s7-style-card cur" onclick="s7PickStyle(this)">
+        <div class="s7-style-preview">
+          <div class="pname">阿勒泰陨石原石</div>
+          <div style="font-size:11px;font-weight:700;">¥ 2,800</div>
+          <div class="pcode">MZ-MET-001</div>
+        </div>
+        <div class="s7-style-name">标准价签</div>
+        <div class="s7-style-size">50 × 30 mm</div>
+        <div class="s7-style-tag">推荐</div>
+      </div>
+      <div class="s7-style-card" onclick="s7PickStyle(this)">
+        <div class="s7-style-preview qr" style="padding-right:32px;text-align:left;">
+          <div class="pname">阿勒泰陨石原石</div>
+          <div style="font-size:10px;font-weight:700;">¥ 2,800</div>
+          <div class="pcode">MZ-MET-001</div>
+        </div>
+        <div class="s7-style-name">QR 标签</div>
+        <div class="s7-style-size">60 × 40 mm</div>
+      </div>
+      <div class="s7-style-card" onclick="s7PickStyle(this)">
+        <div class="s7-style-preview" style="aspect-ratio:1.6/1;display:flex;flex-direction:column;justify-content:center;padding:6px;">
+          <div class="pname" style="font-size:8px;">阿勒泰陨石原石</div>
+          <div style="font-size:9px;font-weight:700;">¥2800</div>
+        </div>
+        <div class="s7-style-name">迷你贴</div>
+        <div class="s7-style-size">30 × 20 mm</div>
+      </div>
+      <div class="s7-style-card" onclick="s7PickStyle(this)">
+        <div class="s7-style-preview" style="aspect-ratio:1/1.4;display:flex;flex-direction:column;justify-content:space-between;padding:8px 6px;">
+          <div class="pname" style="font-size:9px;line-height:1.3;">阿勒泰<br>陨石原石</div>
+          <div style="font-size:11px;font-weight:700;">¥2,800</div>
+          <div class="pcode" style="font-size:6px;">MZ-MET-001</div>
+        </div>
+        <div class="s7-style-name">吊牌</div>
+        <div class="s7-style-size">25 × 40 mm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: 导出 -->
+  <div class="s7-body" data-body="3">
+    <div class="s7-export">
+      <div class="s7-summary">
+        <div class="s7-sum-row"><span>已选商品</span><b>3 个</b></div>
+        <div class="s7-sum-row"><span>标签样式</span><b id="s7SumStyle">标准价签 · 50×30mm</b></div>
+        <div class="s7-sum-row"><span>每个商品份数</span><b id="s7SumCopies">×1</b></div>
+        <div class="s7-sum-row"><span>合计标签数</span><b id="s7SumTotal">3 张</b></div>
+      </div>
+
+      <div class="s7-opt-block">
+        <div class="s7-opt-label">每 个 商 品 份 数</div>
+        <div class="s7-opt-row">
+          <div class="s7-opt-chip cur" onclick="s7SetCopies(this,1)">×1</div>
+          <div class="s7-opt-chip" onclick="s7SetCopies(this,2)">×2</div>
+          <div class="s7-opt-chip" onclick="s7SetCopies(this,3)">×3</div>
+          <div class="s7-opt-chip" onclick="s7SetCopies(this,5)">×5</div>
+          <div class="s7-opt-chip" onclick="s7SetCopies(this,10)">×10</div>
+        </div>
+      </div>
+
+      <div class="s7-opt-block">
+        <div class="s7-opt-label">纸 张 / 输 出</div>
+        <div class="s7-opt-row">
+          <div class="s7-opt-chip cur">📄 A4 排版</div>
+          <div class="s7-opt-chip">🖨 标签纸卷</div>
+          <div class="s7-opt-chip">💧 精臣便携</div>
+        </div>
+      </div>
+
+      <div class="s7-opt-block">
+        <div class="s7-opt-label">选 项</div>
+        <div class="s7-opt-row">
+          <div class="s7-opt-chip cur">含 SKU</div>
+          <div class="s7-opt-chip cur">含价格</div>
+          <div class="s7-opt-chip">含图片</div>
+          <div class="s7-opt-chip">含二维码</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:10px;"></div>
+
+  <div class="s7-bottom">
+    <a class="btn btn-ghost" href="screen-2-inventory.html" style="display:inline-flex;">取消</a>
+    <button class="btn btn-gold" id="s7Next" onclick="s7NextStep()">下一步 ›</button>
+  </div>
+</div>
+
+</div></div></div>
+<script>
+let s7Step=1;
+function s7SetChip(el){
+  el.parentNode.querySelectorAll('.s7-chip').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+}
+function s7Toggle(el){
+  el.classList.toggle('cur');
+  const items=document.querySelectorAll('.s7-sel-item');
+  const checks=document.querySelectorAll('.s7-sel-item.cur .s7-sel-check');
+  // 同步 check 内容
+  items.forEach(it=>{
+    const chk=it.querySelector('.s7-sel-check');
+    chk.textContent=it.classList.contains('cur')?'✓':'';
+  });
+  document.getElementById('s7SelCnt').textContent=items.length>0?document.querySelectorAll('.s7-sel-item.cur').length:0;
+}
+function s7SelectAll(){
+  const items=document.querySelectorAll('.s7-sel-item');
+  const allOn=Array.from(items).every(i=>i.classList.contains('cur'));
+  items.forEach(it=>{
+    if(allOn) it.classList.remove('cur'); else it.classList.add('cur');
+    it.querySelector('.s7-sel-check').textContent=it.classList.contains('cur')?'✓':'';
+  });
+  document.getElementById('s7SelCnt').textContent=document.querySelectorAll('.s7-sel-item.cur').length;
+}
+function s7GoStep(n){
+  s7Step=n;
+  document.querySelectorAll('.s7-step').forEach(s=>{
+    const i=parseInt(s.dataset.step);
+    s.classList.remove('cur','done');
+    if(i<n) s.classList.add('done');
+    else if(i===n) s.classList.add('cur');
+  });
+  document.querySelectorAll('.s7-body').forEach(b=>{
+    b.classList.toggle('cur', parseInt(b.dataset.body)===n);
+  });
+  const next=document.getElementById('s7Next');
+  if(n===3){ next.textContent='✓ 导 出 PDF'; next.onclick=()=>location.href='screen-2-inventory.html'; }
+  else { next.textContent='下一步 ›'; next.onclick=s7NextStep; }
+  document.querySelector('.phone-scroll').scrollTop=0;
+}
+function s7NextStep(){ if(s7Step<3) s7GoStep(s7Step+1); }
+function s7PickStyle(el){
+  el.parentNode.querySelectorAll('.s7-style-card').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+  const name=el.querySelector('.s7-style-name').textContent;
+  const size=el.querySelector('.s7-style-size').textContent;
+  const sum=document.getElementById('s7SumStyle');
+  if(sum) sum.textContent=`${name} · ${size}`;
+}
+let s7Copies=1;
+function s7SetCopies(el,n){
+  el.parentNode.querySelectorAll('.s7-opt-chip').forEach(c=>c.classList.remove('cur'));
+  el.classList.add('cur');
+  s7Copies=n;
+  document.getElementById('s7SumCopies').textContent='×'+n;
+  const selN=document.querySelectorAll('.s7-sel-item.cur').length;
+  document.getElementById('s7SumTotal').textContent=(selN*n)+' 张';
+}
+</script>
+</body></html>

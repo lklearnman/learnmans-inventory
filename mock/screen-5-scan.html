@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 扫码识别</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* ============================================ */
+/* 画面 5：扫码识别 ============================ */
+/* ============================================ */
+.s5-scan-frame{
+  margin:24px 14px;
+  aspect-ratio:1/1;
+  background:#000;
+  border:1px solid var(--gold-dim);
+  border-radius:12px;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.s5-scan-corners::before,.s5-scan-corners::after,
+.s5-scan-corners > div::before,.s5-scan-corners > div::after{
+  content:'';
+  position:absolute;
+  width:30px;height:30px;
+  border:2px solid var(--gold);
+}
+.s5-scan-corners::before{top:14px;left:14px;border-right:none;border-bottom:none;}
+.s5-scan-corners::after{top:14px;right:14px;border-left:none;border-bottom:none;}
+.s5-scan-corners > div::before{bottom:14px;left:14px;border-right:none;border-top:none;}
+.s5-scan-corners > div::after{bottom:14px;right:14px;border-left:none;border-top:none;}
+.s5-scan-line{
+  position:absolute;
+  left:14px;right:14px;
+  height:2px;
+  background:linear-gradient(90deg,transparent 0%,var(--gold) 50%,transparent 100%);
+  box-shadow:0 0 16px var(--gold);
+  top:50%;
+  animation:scan 2.5s ease-in-out infinite;
+}
+@keyframes scan{
+  0%,100%{top:14%;}
+  50%{top:86%;}
+}
+.s5-scan-hint{
+  position:relative;
+  z-index:2;
+  text-align:center;
+  color:var(--text-muted);
+  font-size:12px;
+}
+.s5-scan-hint svg{margin-bottom:8px;opacity:0.4;}
+
+.s5-actions{
+  display:flex;
+  gap:10px;
+  margin:0 14px 14px;
+}
+.s5-action{
+  flex:1;
+  padding:16px 10px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
+  color:var(--text);
+  transition:all 0.2s ease;
+}
+.s5-action:hover{border-color:var(--gold-dim);}
+.s5-action.primary{
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);
+  border-color:var(--gold);
+  color:#1a1410;
+}
+.s5-action-icon{font-size:22px;display:block;margin-bottom:6px;}
+.s5-action-text{font-size:12px;font-weight:500;}
+
+.s5-result{
+  margin:0 14px 14px;
+  padding:12px 14px;
+  background:rgba(122,179,138,0.08);
+  border:1px solid var(--jade);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.s5-result-icon{
+  width:28px;height:28px;
+  border-radius:50%;
+  background:var(--jade);
+  color:#0a1a10;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+  flex-shrink:0;
+  font-weight:700;
+}
+.s5-result-text{flex:1;}
+.s5-result-title{font-size:13px;color:var(--text);}
+.s5-result-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+.s5-candidates{margin:0 14px;}
+.s5-cand{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:8px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.s5-cand-thumb{
+  width:54px;height:54px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#1a1410,#0a0a0a);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  position:relative;
+}
+.s5-cand-match{
+  position:absolute;
+  top:-4px;right:-4px;
+  background:var(--gold);
+  color:#1a1410;
+  font-size:9px;
+  padding:1px 5px;
+  border-radius:8px;
+  font-family:'DM Mono',monospace;
+  font-weight:700;
+}
+.s5-cand-info{flex:1;min-width:0;}
+.s5-cand-name{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--text);}
+.s5-cand-meta{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.s5-cand-actions{display:flex;gap:4px;flex-shrink:0;}
+.s5-cand-btn{
+  width:32px;height:32px;
+  border-radius:6px;
+  border:1px solid var(--border);
+  background:var(--bg-overlay);
+  color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  font-size:14px;
+}
+.s5-cand-btn{text-decoration:none;}
+.s5-cand-btn.in{color:var(--jade);border-color:var(--jade);}
+.s5-cand-btn.out{color:var(--rose);border-color:var(--rose);}
+.s5-cand-btn.det{color:var(--gold);border-color:var(--gold-dim);}
+.s5-cand-btn:hover{filter:brightness(1.2);}
+
+.s5-advanced{
+  margin:14px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.s5-adv-head{
+  padding:10px 14px;
+  font-size:12px;
+  color:var(--text-muted);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+}
+.s5-adv-head .arrow{
+  color:var(--text-dim);
+  transition:transform 0.2s ease;
+}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="5">
+  <div class="app-bar">
+    <a class="icon-btn" href="screen-2-inventory.html" title="返回库存"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">AI 识 别 · 扫 码</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="s5-scan-frame">
+    <div class="s5-scan-corners"><div></div></div>
+    <div class="s5-scan-line"></div>
+    <div class="s5-scan-hint">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M9 7V5h6v2"/></svg>
+      <div>将商品 / 条形码<br>对准框内</div>
+    </div>
+  </div>
+
+  <div class="s5-actions">
+    <div class="s5-action primary" onclick="s5SetSrc(this)">
+      <div class="s5-action-icon">📷</div>
+      <div class="s5-action-text">拍照识别</div>
+    </div>
+    <div class="s5-action" onclick="s5SetSrc(this)">
+      <div class="s5-action-icon">🖼️</div>
+      <div class="s5-action-text">从相册选</div>
+    </div>
+  </div>
+
+  <div class="s5-result">
+    <div class="s5-result-icon">✓</div>
+    <div class="s5-result-text">
+      <div class="s5-result-title">识别成功 · 找到 3 个候选</div>
+      <div class="s5-result-time">耗时 1.4s · Claude</div>
+    </div>
+  </div>
+
+  <div class="s5-candidates">
+    <div class="s5-cand">
+      <div class="s5-cand-thumb">
+        <span class="s5-cand-match">95%</span>
+        <svg width="40" height="40" viewBox="0 0 100 100"><defs><radialGradient id="s5m1" cx="35%" cy="30%"><stop offset="0%" stop-color="#5a5048"/><stop offset="100%" stop-color="#0f0d0a"/></radialGradient></defs><ellipse cx="50" cy="55" rx="38" ry="32" fill="url(#s5m1)"/></svg>
+      </div>
+      <div class="s5-cand-info">
+        <div class="s5-cand-name">阿勒泰陨石原石</div>
+        <div class="s5-cand-meta">库存 5 · ¥2,800</div>
+      </div>
+      <div class="s5-cand-actions">
+        <a class="s5-cand-btn in"  href="screen-4-stock.html" title="入库">⬆</a>
+        <a class="s5-cand-btn out" href="screen-4-stock.html?mode=out" title="出库">⬇</a>
+        <a class="s5-cand-btn det" href="screen-3-detail.html" title="详情">›</a>
+      </div>
+    </div>
+    <div class="s5-cand">
+      <div class="s5-cand-thumb">
+        <span class="s5-cand-match">72%</span>
+        <svg width="40" height="40" viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="36" ry="32" fill="#3a3025"/><circle cx="40" cy="48" r="3" fill="#1a1612"/></svg>
+      </div>
+      <div class="s5-cand-info">
+        <div class="s5-cand-name">橄榄陨铁</div>
+        <div class="s5-cand-meta">库存 0 · ¥1,200</div>
+      </div>
+      <div class="s5-cand-actions">
+        <a class="s5-cand-btn in"  href="screen-4-stock.html" title="入库">⬆</a>
+        <a class="s5-cand-btn out" href="screen-4-stock.html?mode=out" title="出库">⬇</a>
+        <a class="s5-cand-btn det" href="screen-3-detail.html" title="详情">›</a>
+      </div>
+    </div>
+    <div class="s5-cand">
+      <div class="s5-cand-thumb">
+        <span class="s5-cand-match" style="background:var(--text-dim);">45%</span>
+        <svg width="40" height="40" viewBox="0 0 100 100"><polygon points="50,25 75,55 50,85 25,55" fill="#7a6e5e" opacity="0.6"/></svg>
+      </div>
+      <div class="s5-cand-info">
+        <div class="s5-cand-name">天然黑曜石</div>
+        <div class="s5-cand-meta">库存 4 · ¥680</div>
+      </div>
+      <div class="s5-cand-actions">
+        <a class="s5-cand-btn in"  href="screen-4-stock.html" title="入库">⬆</a>
+        <a class="s5-cand-btn out" href="screen-4-stock.html?mode=out" title="出库">⬇</a>
+        <a class="s5-cand-btn det" href="screen-3-detail.html" title="详情">›</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="s5-advanced">
+    <div class="s5-adv-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block';this.querySelector('.arrow').style.transform=this.querySelector('.arrow').style.transform==='rotate(180deg)'?'rotate(0)':'rotate(180deg)'">
+      <span>⚙️ 高级选项</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div style="display:none;padding:12px 14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">AI引擎</div>
+      <div style="display:flex;gap:6px;">
+        <div class="badge badge-gold" style="padding:6px 12px;font-size:11px;">Claude（默认）</div>
+        <div class="badge" style="background:var(--bg-overlay);border:1px solid var(--border);color:var(--text-muted);padding:6px 12px;font-size:11px;">Gemini</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+</div>
+
+</div></div></div>
+<script>
+function s5SetSrc(el){
+  document.querySelectorAll('.s5-action').forEach(a=>a.classList.remove('primary'));
+  el.classList.add('primary');
+}
+</script>
+</body></html>

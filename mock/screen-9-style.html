@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 画面 9 - 通用样式细节</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+
+<style>
+/* ============================================ */
+/* 画面 9：通用样式细节 ========================== */
+/* ============================================ */
+.s9-section{padding:14px;}
+.s9-section h3{
+  font-family:'Noto Serif SC',serif;
+  font-size:14px;
+  color:var(--gold);
+  margin-bottom:14px;
+  letter-spacing:1px;
+}
+.s9-group{
+  margin-bottom:24px;
+  padding-bottom:20px;
+  border-bottom:1px dashed var(--border);
+}
+.s9-group:last-child{border-bottom:none;}
+.s9-row{margin-bottom:14px;}
+.s9-row-l{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;}
+.s9-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.s9-color-row{display:flex;gap:6px;flex-wrap:wrap;}
+.s9-color{
+  width:auto;flex:1;min-width:80px;
+  padding:10px 8px;
+  border-radius:6px;
+  font-family:'DM Mono',monospace;
+  font-size:9px;
+  text-align:center;
+}
+.s9-badges{display:flex;gap:6px;flex-wrap:wrap;}
+.s9-spinner{
+  width:28px;height:28px;
+  border:2px solid var(--border);
+  border-top-color:var(--gold);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">← 全部画面</a>
+  <span>画面 9 · 通用样式细节</span>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="9">
+  <div class="app-bar">
+    <div class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="bar-title">设 计 系 统</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="s9-section">
+
+    <div class="s9-group">
+      <h3>① 配色</h3>
+      <div class="s9-row">
+        <div class="s9-row-l">背景层</div>
+        <div class="s9-color-row">
+          <div class="s9-color" style="background:#0a0a0a;color:#a89c84;border:1px solid #2a2a2a;">#0a0a0a<br>主背景</div>
+          <div class="s9-color" style="background:#161616;color:#a89c84;border:1px solid #2a2a2a;">#161616<br>卡片</div>
+          <div class="s9-color" style="background:#1f1f1f;color:#a89c84;border:1px solid #2a2a2a;">#1f1f1f<br>浮层</div>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">金色系</div>
+        <div class="s9-color-row">
+          <div class="s9-color" style="background:#c9a85a;color:#1a1410;">#c9a85a<br>主金</div>
+          <div class="s9-color" style="background:#e6c478;color:#1a1410;">#e6c478<br>亮金</div>
+          <div class="s9-color" style="background:#8e7b3c;color:#fff;">#8e7b3c<br>暗金</div>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">文字</div>
+        <div class="s9-color-row">
+          <div class="s9-color" style="background:#161616;color:#f5e6c8;border:1px solid #2a2a2a;">#f5e6c8<br>主文字</div>
+          <div class="s9-color" style="background:#161616;color:#a89c84;border:1px solid #2a2a2a;">#a89c84<br>次要</div>
+          <div class="s9-color" style="background:#161616;color:#5e574a;border:1px solid #2a2a2a;">#5e574a<br>弱化</div>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">强调色（克制）</div>
+        <div class="s9-color-row">
+          <div class="s9-color" style="background:#7ab38a;color:#0a1a10;">#7ab38a<br>翠绿·入库</div>
+          <div class="s9-color" style="background:#c97070;color:#1a0a0a;">#c97070<br>玫瑰·出库</div>
+          <div class="s9-color" style="background:#d4a574;color:#1a0a0a;">#d4a574<br>琥珀·提醒</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s9-group">
+      <h3>② 按钮</h3>
+      <div class="s9-row">
+        <div class="s9-row-l">主操作 · 金色实心</div>
+        <div class="s9-btns">
+          <button class="btn btn-gold">✓ 确认入库</button>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">次操作 · 金边</div>
+        <div class="s9-btns">
+          <button class="btn btn-outline">编辑</button>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">危险 · 玫瑰边</div>
+        <div class="s9-btns">
+          <button class="btn btn-danger">删除</button>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">普通 · 灰</div>
+        <div class="s9-btns">
+          <button class="btn btn-ghost">取消</button>
+        </div>
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">入库 / 出库</div>
+        <div class="s9-btns">
+          <button class="btn btn-jade">⬆ 入库</button>
+          <button class="btn btn-rose">⬇ 出库</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="s9-group">
+      <h3>③ 输入框 / 卡片</h3>
+      <div class="s9-row">
+        <div class="s9-row-l">输入框 · 聚焦金色光晕</div>
+        <input placeholder="点这里聚焦看效果">
+      </div>
+      <div class="s9-row">
+        <div class="s9-row-l">卡片</div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;color:var(--text-muted);">普通卡片 · 圆角12px · hover金光</div>
+      </div>
+    </div>
+
+    <div class="s9-group">
+      <h3>④ Badge 标签</h3>
+      <div class="s9-row">
+        <div class="s9-badges">
+          <span class="badge badge-gold">🪨 陨石</span>
+          <span class="badge badge-jade">+5 入库</span>
+          <span class="badge badge-rose">−2 出库</span>
+          <span class="badge badge-amber">低库存</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="s9-group">
+      <h3>⑤ 加载状态</h3>
+      <div class="s9-row">
+        <div class="s9-row-l">金色细圈 旋转</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="s9-spinner"></div>
+          <span style="font-size:12px;color:var(--text-muted);">加载中...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="s9-group">
+      <h3>⑥ 字体</h3>
+      <div class="s9-row">
+        <div style="font-family:'Noto Serif SC',serif;font-size:20px;color:var(--text);letter-spacing:2px;">阿勒泰陨石原石</div>
+        <div class="s9-row-l" style="margin-top:4px;">标题 · 思源宋体</div>
+      </div>
+      <div class="s9-row">
+        <div style="font-family:'Noto Sans SC',sans-serif;font-size:14px;color:var(--text);">表面熔壳完好，有明显球粒结构。</div>
+        <div class="s9-row-l" style="margin-top:4px;">正文 · 思源黑体</div>
+      </div>
+      <div class="s9-row">
+        <div style="font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);letter-spacing:1px;">¥ 2,800 · MZ-MET-001</div>
+        <div class="s9-row-l" style="margin-top:4px;">数字/SKU · DM Mono</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div></div></div>
+
+</body>
+</html>

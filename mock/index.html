@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 概览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* 概览页 */
+.ov-wrap{padding:20px 16px 32px;}
+.ov-hero{
+  background:linear-gradient(135deg,rgba(201,168,90,0.08) 0%,rgba(201,168,90,0.02) 100%);
+  border:1px solid var(--gold-dim);
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:20px;
+}
+.ov-hero-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:14px;
+  color:var(--gold);
+  letter-spacing:3px;
+  margin-bottom:14px;
+}
+.ov-stats{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+.ov-stat{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+}
+.ov-stat-label{
+  font-size:10px;
+  color:var(--text-muted);
+  letter-spacing:1.5px;
+  margin-bottom:6px;
+}
+.ov-stat-val{
+  font-family:'DM Mono',monospace;
+  font-size:22px;
+  color:var(--gold);
+  font-weight:500;
+}
+.ov-sect-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:11px;
+  color:var(--text-muted);
+  letter-spacing:3px;
+  margin:24px 4px 12px;
+  display:flex;align-items:center;gap:8px;
+}
+.ov-sect-title::before{content:'';width:12px;height:1px;background:var(--gold-dim);}
+.ov-cards{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+.ov-card{
+  display:block;
+  text-decoration:none;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 12px;
+  position:relative;
+  transition:all 0.2s ease;
+}
+.ov-card:hover{border-color:var(--gold);transform:translateY(-1px);}
+.ov-card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:2px;
+  background:var(--gold);opacity:0;border-radius:2px 0 0 2px;
+  transition:opacity 0.2s ease;
+}
+.ov-card:hover::before{opacity:1;}
+.ov-card-num{
+  font-family:'DM Mono',monospace;
+  font-size:10px;color:var(--gold-dim);letter-spacing:2px;margin-bottom:4px;
+}
+.ov-card-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:14px;color:var(--text);letter-spacing:2px;margin-bottom:4px;
+}
+.ov-card-desc{font-size:10px;color:var(--text-muted);line-height:1.5;}
+.ov-foot{
+  text-align:center;margin-top:24px;font-size:10px;color:var(--text-dim);
+  font-family:'DM Mono',monospace;letter-spacing:1px;
+}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="ov-wrap">
+
+  <div class="ov-hero">
+    <div class="ov-hero-title">矿 珍 库 · 经 营 概 览</div>
+    <div class="ov-stats">
+      <div class="ov-stat"><div class="ov-stat-label">商品种类</div><div class="ov-stat-val">30</div></div>
+      <div class="ov-stat"><div class="ov-stat-label">总库存</div><div class="ov-stat-val">79</div></div>
+      <div class="ov-stat"><div class="ov-stat-label">展会带出</div><div class="ov-stat-val">2</div></div>
+      <div class="ov-stat"><div class="ov-stat-label">总价值</div><div class="ov-stat-val">¥45.8K</div></div>
+    </div>
+  </div>
+
+  <div class="ov-sect-title">主 要 模 块</div>
+  <div class="ov-cards">
+    <a class="ov-card" href="screen-4-stock.html" style="border-color:var(--gold-dim);background:linear-gradient(135deg,rgba(201,168,90,0.1),var(--bg-card));"><div class="ov-card-num">04</div><div class="ov-card-name" style="color:var(--gold);">⬆⬇ 入出库</div><div class="ov-card-desc">最常用 · 顶部 ➕ 也可入</div></a>
+    <a class="ov-card" href="screen-2-inventory.html"><div class="ov-card-num">02</div><div class="ov-card-name">商品</div><div class="ov-card-desc">商品卡片 · 筛选 · 列表</div></a>
+    <a class="ov-card" href="screen-5-scan.html"><div class="ov-card-num">05</div><div class="ov-card-name">扫码</div><div class="ov-card-desc">相机 · AI 识别</div></a>
+    <a class="ov-card" href="screen-6-show.html"><div class="ov-card-num">06</div><div class="ov-card-name">展会</div><div class="ov-card-desc">带出 · 实时销售</div></a>
+    <a class="ov-card" href="screen-8-stats.html"><div class="ov-card-num">08</div><div class="ov-card-name">统计</div><div class="ov-card-desc">月度汇总 · 趋势图</div></a>
+    <a class="ov-card" href="screen-10-logs.html"><div class="ov-card-num">10</div><div class="ov-card-name">流水</div><div class="ov-card-desc">入出库逐条记录 · 筛选</div></a>
+  </div>
+
+  <div class="ov-sect-title">子 页 面 · 从 主 流 程 进 入</div>
+  <div class="ov-cards">
+    <a class="ov-card" href="screen-11-new-product.html"><div class="ov-card-num">11</div><div class="ov-card-name">新建商品</div><div class="ov-card-desc">商品页 + / 顶部进入</div></a>
+    <a class="ov-card" href="screen-3-detail.html"><div class="ov-card-num">03</div><div class="ov-card-name">商品详情</div><div class="ov-card-desc">库存里点商品进入</div></a>
+    <a class="ov-card" href="screen-7-label.html"><div class="ov-card-num">07</div><div class="ov-card-name">价格标签</div><div class="ov-card-desc">库存 🖨/详情进入</div></a>
+    <a class="ov-card" href="screen-1-nav.html"><div class="ov-card-num">01</div><div class="ov-card-name">导航说明</div><div class="ov-card-desc">顶部导航设计稿</div></a>
+    <a class="ov-card" href="screen-9-style.html"><div class="ov-card-num">09</div><div class="ov-card-name">样式细节</div><div class="ov-card-desc">按钮 · badge 组件</div></a>
+  </div>
+
+  <div class="ov-foot">v1 · 2026-05-16</div>
+</div>
+</div></div></div>
+</body>
+</html>

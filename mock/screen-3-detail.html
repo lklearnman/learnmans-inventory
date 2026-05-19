@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 商品详情</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<style>
+/* ============================================ */
+/* 画面 3：商品详情 ============================ */
+/* ============================================ */
+.s3-photo{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  background:linear-gradient(135deg,#1a1410 0%,#0a0a0a 100%);
+  overflow:hidden;
+  flex-shrink:0;
+}
+.s3-photo::before,.s3-photo::after{
+  content:'';
+  position:absolute;
+  width:120px;height:120px;
+  background:radial-gradient(circle,var(--gold-glow) 0%,transparent 70%);
+  pointer-events:none;
+}
+.s3-photo::before{top:-40px;right:-40px;}
+.s3-photo::after{bottom:-40px;left:-40px;}
+.s3-photo-img{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  padding:40px;
+}
+.s3-photo-img svg{
+  filter:drop-shadow(0 12px 32px rgba(0,0,0,0.6));
+}
+.s3-photo-dots{
+  position:absolute;
+  bottom:14px;left:50%;
+  transform:translateX(-50%);
+  display:flex;gap:5px;
+}
+.s3-photo-dot{
+  width:6px;height:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.2);
+}
+.s3-photo-dot.cur{
+  background:var(--gold);
+  width:18px;
+  border-radius:3px;
+}
+.s3-photo-counter{
+  position:absolute;
+  top:14px;right:14px;
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--text-muted);
+  background:rgba(0,0,0,0.5);
+  padding:3px 8px;
+  border-radius:10px;
+  border:1px solid var(--border);
+}
+.s3-head{
+  padding:20px 16px 16px;
+  text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.s3-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:20px;
+  color:var(--text);
+  letter-spacing:1px;
+  margin-bottom:8px;
+}
+.s3-meta{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:var(--text-muted);
+}
+.s3-meta .d{width:3px;height:3px;background:var(--text-dim);border-radius:50%;}
+
+.s3-price{
+  margin:14px;
+  padding:16px;
+  background:linear-gradient(135deg,#1a1410 0%,#161616 100%);
+  border:1px solid var(--gold-dim);
+  border-radius:12px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 0 20px rgba(201,168,90,0.08);
+}
+.s3-price::before{
+  content:'';
+  position:absolute;
+  top:-50%;right:-30%;
+  width:160px;height:160px;
+  background:radial-gradient(circle,var(--gold-glow) 0%,transparent 60%);
+}
+.s3-price-label{
+  font-size:10px;
+  color:var(--gold-dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:2px;
+}
+.s3-price-main{display:flex;align-items:baseline;gap:4px;margin-bottom:10px;}
+.s3-price-cur{font-family:'DM Mono',monospace;font-size:18px;color:var(--gold);}
+.s3-price-val{
+  font-family:'DM Mono',monospace;
+  font-size:32px;
+  color:var(--gold-light);
+  font-weight:500;
+  letter-spacing:1px;
+  text-shadow:0 0 24px var(--gold-glow);
+  line-height:1;
+}
+.s3-price-sub{
+  display:flex;
+  gap:12px;
+  padding-top:10px;
+  border-top:1px dashed var(--border);
+  font-size:11px;
+}
+.s3-price-sub-item{flex:1;}
+.s3-price-sub-l{color:var(--text-dim);font-size:9px;letter-spacing:0.5px;margin-bottom:2px;}
+.s3-price-sub-v{font-family:'DM Mono',monospace;color:var(--text-muted);font-size:12px;}
+.s3-price-sub-v.profit{color:var(--jade);}
+
+.s3-stock{
+  margin:0 14px 14px;
+  padding:14px 16px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.s3-stock-main{flex:1;}
+.s3-stock-l{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:4px;}
+.s3-stock-v{font-family:'DM Mono',monospace;font-size:36px;color:var(--text);line-height:1;}
+.s3-stock-u{font-size:13px;color:var(--text-muted);margin-left:4px;}
+.s3-stock-det{
+  flex:1;
+  font-size:11px;
+  color:var(--text-muted);
+  line-height:1.8;
+  padding-left:16px;
+  border-left:1px solid var(--border);
+}
+.s3-stock-det .num{font-family:'DM Mono',monospace;color:var(--text);}
+.s3-stock-det .num.show{color:var(--amber);}
+
+.s3-sec{margin:0 14px 14px;}
+.s3-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+}
+.s3-sales-stats{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-bottom:14px;
+}
+.s3-sales-stat{
+  text-align:center;
+  padding:8px 4px;
+  background:var(--bg-overlay);
+  border-radius:6px;
+}
+.s3-sales-v{font-family:'DM Mono',monospace;font-size:16px;color:var(--gold);font-weight:500;}
+.s3-sales-l{font-size:9px;color:var(--text-dim);margin-top:2px;}
+.s3-spark{display:flex;align-items:flex-end;gap:2px;height:36px;}
+.s3-spark-b{
+  flex:1;
+  background:linear-gradient(180deg,var(--gold) 0%,var(--gold-dim) 100%);
+  border-radius:1px;
+  opacity:0.7;
+  min-height:2px;
+}
+.s3-spark-lab{
+  display:flex;justify-content:space-between;
+  font-size:9px;color:var(--text-dim);
+  font-family:'DM Mono',monospace;
+  margin-top:4px;
+}
+
+.s3-barcode{
+  background:#f5e6c8;
+  border-radius:8px;
+  padding:10px;
+  text-align:center;
+}
+.s3-barcode svg{width:100%;max-width:220px;height:auto;}
+
+.s3-note{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-left:3px solid var(--gold-dim);
+  border-radius:8px;
+  padding:12px 14px;
+  font-size:12px;
+  color:var(--text-muted);
+  line-height:1.7;
+}
+
+.s3-hist{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+}
+.s3-hist-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-bottom:1px solid var(--border);
+}
+.s3-hist-item:last-child{border-bottom:none;}
+.s3-hist-icon{
+  width:28px;height:28px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;
+  flex-shrink:0;
+}
+.s3-hist-icon.in{background:rgba(122,179,138,0.15);color:var(--jade);}
+.s3-hist-icon.out{background:rgba(201,112,112,0.15);color:var(--rose);}
+.s3-hist-icon.show{background:rgba(212,165,116,0.15);color:var(--amber);}
+.s3-hist-main{flex:1;min-width:0;}
+.s3-hist-type{font-size:12px;color:var(--text);}
+.s3-hist-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;}
+.s3-hist-qty{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;}
+.s3-hist-qty.in{color:var(--jade);}
+.s3-hist-qty.out{color:var(--rose);}
+.s3-hist-qty.show{color:var(--amber);}
+.s3-hist-more{
+  display:block;
+  text-align:center;
+  padding:10px;
+  font-size:11px;
+  color:var(--gold);
+  cursor:pointer;
+  border-top:1px solid var(--border);
+  background:var(--bg-overlay);
+}
+
+.s3-bottom-spacer{height:80px;flex-shrink:0;}
+.s3-actions{
+  position:absolute;
+  bottom:0;left:0;right:0;
+  padding:10px 14px;
+  background:linear-gradient(0deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.85) 100%);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
+  border-radius:0 0 32px 32px;
+  display:flex;
+  gap:8px;
+  z-index:50;
+}
+.s3-actions .btn{flex:1;height:44px;}
+.s3-actions .btn.edit{flex:0 0 44px;padding:0;}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab " href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="3">
+  <div class="app-bar">
+    <a class="icon-btn" href="screen-2-inventory.html" title="返回库存"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">商 品 详 情</div>
+    <div class="icon-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+  </div>
+
+  <div class="s3-photo">
+    <div class="s3-photo-counter">1 / 3</div>
+    <div class="s3-photo-img">
+      <svg width="200" height="200" viewBox="0 0 220 220">
+        <defs><radialGradient id="d3m1" cx="35%" cy="30%"><stop offset="0%" stop-color="#5a5048"/><stop offset="60%" stop-color="#2a2520"/><stop offset="100%" stop-color="#0f0d0a"/></radialGradient></defs>
+        <ellipse cx="110" cy="115" rx="80" ry="70" fill="url(#d3m1)"/>
+        <circle cx="85" cy="95" r="6" fill="#1a1612" opacity="0.7"/>
+        <circle cx="130" cy="110" r="4" fill="#1a1612" opacity="0.5"/>
+        <circle cx="105" cy="135" r="5" fill="#1a1612" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="s3-photo-dots">
+      <div class="s3-photo-dot cur"></div>
+      <div class="s3-photo-dot"></div>
+      <div class="s3-photo-dot"></div>
+    </div>
+  </div>
+
+  <div class="s3-head">
+    <div class="s3-name">阿勒泰陨石原石</div>
+    <div class="s3-meta">
+      <span class="badge badge-gold">🪨 陨石</span>
+      <span class="d"></span>
+      <span>新疆阿勒泰</span>
+      <span class="d"></span>
+      <span>🇨🇳 中国</span>
+    </div>
+  </div>
+
+  <div class="s3-price">
+    <div class="s3-price-label">售 价</div>
+    <div class="s3-price-main">
+      <span class="s3-price-cur">¥</span>
+      <span class="s3-price-val">2,800</span>
+    </div>
+    <div class="s3-price-sub">
+      <div class="s3-price-sub-item"><div class="s3-price-sub-l">进价</div><div class="s3-price-sub-v">¥ 1,200</div></div>
+      <div class="s3-price-sub-item"><div class="s3-price-sub-l">毛利率</div><div class="s3-price-sub-v profit">57.1%</div></div>
+      <div class="s3-price-sub-item"><div class="s3-price-sub-l">加价率</div><div class="s3-price-sub-v">133%</div></div>
+    </div>
+  </div>
+
+  <div class="s3-stock">
+    <div class="s3-stock-main">
+      <div class="s3-stock-l">可用库存</div>
+      <div class="s3-stock-v">5<span class="s3-stock-u">件</span></div>
+    </div>
+    <div class="s3-stock-det">
+      <div>总库存　<span class="num">7</span></div>
+      <div>展会带出 <span class="num show">2</span></div>
+      <div>累计入库 <span class="num">12</span></div>
+    </div>
+  </div>
+
+  <div class="s3-sec">
+    <div class="sec-title">销售概况</div>
+    <div class="s3-card">
+      <div class="s3-sales-stats">
+        <div class="s3-sales-stat"><div class="s3-sales-v">5</div><div class="s3-sales-l">累计售出</div></div>
+        <div class="s3-sales-stat"><div class="s3-sales-v">¥13.5K</div><div class="s3-sales-l">销售额</div></div>
+        <div class="s3-sales-stat"><div class="s3-sales-v">¥8K</div><div class="s3-sales-l">毛利</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">近30天销售</div>
+      <div class="s3-spark" id="s3spark"></div>
+      <div class="s3-spark-lab"><span>30天前</span><span>今天</span></div>
+    </div>
+  </div>
+
+  <div class="s3-sec">
+    <div class="sec-title">SKU 编码</div>
+    <div class="s3-barcode"><svg id="s3barcode"></svg></div>
+  </div>
+
+  <div class="s3-sec">
+    <div class="sec-title">备注</div>
+    <div class="s3-note">2024年9月新疆阿勒泰陨石坠落区域采集。表面熔壳完好，有明显球粒结构。带证书。</div>
+  </div>
+
+  <div class="s3-sec">
+    <div class="sec-title">操作历史</div>
+    <div class="s3-hist">
+      <div class="s3-hist-item">
+        <div class="s3-hist-icon out">⬇</div>
+        <div class="s3-hist-main"><div class="s3-hist-type">出库 · 成交 ¥2,800</div><div class="s3-hist-time">2026-05-12 14:32</div></div>
+        <div class="s3-hist-qty out">−1</div>
+      </div>
+      <div class="s3-hist-item">
+        <div class="s3-hist-icon show">★</div>
+        <div class="s3-hist-main"><div class="s3-hist-type">展会带出 · 上海珠宝展</div><div class="s3-hist-time">2026-05-08 09:15</div></div>
+        <div class="s3-hist-qty show">−2</div>
+      </div>
+      <div class="s3-hist-item">
+        <div class="s3-hist-icon in">⬆</div>
+        <div class="s3-hist-main"><div class="s3-hist-type">入库 · 进价 ¥1,200</div><div class="s3-hist-time">2026-04-22 11:20</div></div>
+        <div class="s3-hist-qty in">+5</div>
+      </div>
+      <a class="s3-hist-more" href="screen-10-logs.html" style="text-decoration:none;">查看全部 12 条记录 ▶</a>
+    </div>
+  </div>
+
+  <div class="s3-bottom-spacer"></div>
+</div>
+<!-- 浮动底部按钮 -->
+<div class="s3-actions" id="s3Actions">
+  <a class="btn btn-ghost edit" href="screen-11-new-product.html?edit=1" title="编辑商品"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
+  <a class="btn btn-ghost edit" href="screen-7-label.html" title="打印价格标签"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></a>
+  <a class="btn btn-jade" href="screen-4-stock.html">⬆ 入库</a>
+  <a class="btn btn-rose" href="screen-4-stock.html?mode=out">⬇ 出库</a>
+</div>
+
+</div></div></div>
+<script>
+JsBarcode("#s3barcode","MZ-METEOR-001",{
+  format:"CODE128",width:1.4,height:42,displayValue:true,
+  background:"transparent",lineColor:"#1a1410",fontSize:12,font:"DM Mono",margin:4
+});
+const sd=[2,0,1,0,0,3,1,0,0,2,1,4,0,0,1,2,3,0,1,5,2,0,1,0,3,2,0,1,4,2];
+const mx=Math.max(...sd);
+const sp=document.getElementById('s3spark');
+if(sp)sp.innerHTML=sd.map(v=>{
+  const h=v===0?2:Math.max(4,(v/mx)*100);
+  return `<div class="s3-spark-b" style="height:${h}%;opacity:${v===0?0.2:0.7};"></div>`;
+}).join('');
+</script>
+</body></html>

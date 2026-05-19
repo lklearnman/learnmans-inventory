@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>矿珍库 · 入出库</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<script src="common.js" defer></script>
+<style>
+/* ============================================ */
+/* 画面 4：入库出库 ============================ */
+/* ============================================ */
+.s4-tabs{
+  display:flex;
+  margin:14px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:4px;
+  gap:4px;
+}
+.s4-tab{
+  flex:1;
+  padding:10px;
+  border-radius:6px;
+  text-align:center;
+  font-size:13px;
+  color:var(--text-muted);
+  cursor:pointer;
+  transition:all 0.2s ease;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.s4-tab.cur.in{
+  background:linear-gradient(135deg,var(--jade) 0%,#5d9a72 100%);
+  color:#0a1a10;
+  font-weight:600;
+}
+.s4-tab.cur.out{
+  background:linear-gradient(135deg,var(--rose) 0%,#a55656 100%);
+  color:#1a0a0a;
+  font-weight:600;
+}
+
+.s4-field{margin:0 14px 14px;}
+.s4-label{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:11px;
+  color:var(--gold-dim);
+  letter-spacing:1px;
+  margin-bottom:6px;
+  padding-left:4px;
+}
+.s4-label .opt{color:var(--text-dim);font-size:10px;}
+
+.s4-radio-group{
+  display:flex;
+  gap:8px;
+}
+.s4-radio{
+  flex:1;
+  padding:14px 10px;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
+  font-size:12px;
+  color:var(--text-muted);
+  transition:all 0.2s ease;
+}
+.s4-radio.cur{
+  background:var(--gold-glow);
+  border-color:var(--gold);
+  color:var(--gold-light);
+  box-shadow:0 0 16px var(--gold-glow);
+}
+.s4-radio .icon{display:block;font-size:18px;margin-bottom:4px;}
+
+.s4-product{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.s4-product-thumb{
+  width:48px;height:48px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#1a1410,#0a0a0a);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.s4-product-info{flex:1;min-width:0;}
+.s4-product-name{font-family:'Noto Serif SC',serif;font-size:13px;color:var(--text);}
+.s4-product-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:2px;}
+.s4-product-stock{
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  color:var(--gold);
+  text-align:right;
+}
+.s4-product-stock-l{font-size:9px;color:var(--text-dim);}
+
+.s4-search-row{display:flex;gap:6px;}
+.s4-scan-btn{
+  flex-shrink:0;
+  width:44px;height:44px;
+  background:var(--bg-card);
+  border:1px solid var(--gold-dim);
+  color:var(--gold);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+
+.s4-qty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
+.s4-qty-btn{
+  width:44px;height:44px;
+  border-radius:50%;
+  background:var(--bg-card);
+  border:1px solid var(--gold-dim);
+  color:var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  cursor:pointer;
+}
+.s4-qty-btn:hover{background:var(--gold-glow);}
+.s4-qty-val{
+  font-family:'DM Mono',monospace;
+  font-size:36px;
+  color:var(--gold-light);
+  font-weight:500;
+  min-width:60px;
+  text-align:center;
+  text-shadow:0 0 16px var(--gold-glow);
+}
+
+.s4-preview{
+  margin:14px;
+  padding:14px;
+  background:linear-gradient(135deg,#1a1410,#161616);
+  border:1px solid var(--gold-dim);
+  border-radius:10px;
+  text-align:center;
+}
+.s4-preview-label{font-size:10px;color:var(--gold-dim);letter-spacing:2px;margin-bottom:4px;}
+.s4-preview-val{
+  font-family:'DM Mono',monospace;
+  font-size:20px;
+  color:var(--gold-light);
+  font-weight:500;
+}
+.s4-preview-val .plus{color:var(--jade);}
+.s4-preview-val .minus{color:var(--rose);}
+
+.s4-confirm{margin:14px;}
+.s4-confirm .btn{width:100%;height:50px;font-size:15px;}
+</style>
+</head>
+<body>
+<div class="app-header">
+<div class="s1-nav">
+  <div class="s1-row1">
+    <a class="s1-logo" href="index.html" style="text-decoration:none;">
+      <div class="s1-logo-mark">矿</div>
+      <div class="s1-logo-text">
+        <div class="s1-logo-name">矿珍库</div>
+        <div class="s1-logo-sub">MINERAL VAULT</div>
+      </div>
+    </a>
+    <div class="s1-icons">
+      <a class="icon-btn" href="screen-5-scan.html" title="扫码识别"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+      <a class="icon-btn-in" href="screen-4-stock.html" title="入库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 5 5 12"/></svg></a>
+      <a class="icon-btn-out" href="screen-4-stock.html?mode=out" title="出库"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+      <div class="icon-btn" onclick="mockTip('☁ 同步中... 已与 Supabase 同步')" title="同步"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg></div>
+      <div class="icon-btn" onclick="mockTip('👤 账号:演示账号 · 登录开发中')" title="账号"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    </div>
+  </div>
+  <div class="s1-row2">
+    <a class="s1-tab " href="screen-2-inventory.html">商品</a>
+    <a class="s1-tab cur" href="screen-4-stock.html">入出</a>
+    <a class="s1-tab " href="screen-6-show.html">展会</a>
+    <a class="s1-tab " href="screen-8-stats.html">统计</a>
+    <a class="s1-tab " href="screen-10-logs.html">流水</a>
+    <div class="s1-cur-chip" onclick="cycleCur()" title="切换币种 JPY/CNY/USD/EUR">¥ JPY</div>
+    <div class="s1-stats-trigger" onclick="document.getElementById('appDropdown').style.display=document.getElementById('appDropdown').style.display==='block'?'none':'block'">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 17 4-4 4 4 6-6"/></svg>
+      概览
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="s1-stats-dropdown" id="appDropdown" style="display:none;">
+      <div class="s1-stats-row"><span class="s1-stats-label">商品种类</span><span class="s1-stats-val">30</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总库存</span><span class="s1-stats-val">79</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">展会带出</span><span class="s1-stats-val">2</span></div>
+      <div class="s1-stats-row"><span class="s1-stats-label">总价值</span><span class="s1-stats-val">¥45.8K</span></div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="stage">
+<div class="phone">
+<div class="phone-scroll">
+<div class="screen active" data-s="4">
+  <div class="app-bar">
+    <a class="icon-btn" href="screen-10-logs.html" title="返回流水"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></a>
+    <div class="bar-title">入 库 / 出 库</div>
+    <div style="width:36px;"></div>
+  </div>
+
+  <div class="s4-tabs">
+    <div class="s4-tab cur in" onclick="s4SetMode('in')"><span>⬆</span> 入库</div>
+    <div class="s4-tab" onclick="s4SetMode('out')"><span>⬇</span> 出库</div>
+  </div>
+
+  <div class="s4-field">
+    <div class="s4-label" id="s4TypeLabel">入库类型</div>
+    <div class="s4-radio-group">
+      <div class="s4-radio" onclick="s4SetRadio(this)"><span class="icon">✨</span>新商品</div>
+      <div class="s4-radio cur" onclick="s4SetRadio(this)"><span class="icon">📦</span>现有 +</div>
+    </div>
+  </div>
+
+  <div class="s4-field">
+    <div class="s4-label">选择商品<span class="opt">输入名称 / SKU / 扫码</span></div>
+    <div class="s4-search-row">
+      <input placeholder="搜索商品...">
+      <a class="s4-scan-btn" href="screen-5-scan.html" title="扫码识别"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></a>
+    </div>
+    <div style="margin-top:8px;">
+      <div class="s4-product">
+        <div class="s4-product-thumb">
+          <svg width="36" height="36" viewBox="0 0 100 100"><defs><radialGradient id="s4m1" cx="35%" cy="30%"><stop offset="0%" stop-color="#5a5048"/><stop offset="100%" stop-color="#0f0d0a"/></radialGradient></defs><ellipse cx="50" cy="55" rx="38" ry="32" fill="url(#s4m1)"/></svg>
+        </div>
+        <div class="s4-product-info">
+          <div class="s4-product-name">阿勒泰陨石原石</div>
+          <div class="s4-product-meta">MZ-MET-001 · ¥2,800</div>
+        </div>
+        <div>
+          <div class="s4-product-stock">5</div>
+          <div class="s4-product-stock-l">可用</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="s4-field">
+    <div class="s4-label">数量</div>
+    <div class="s4-qty">
+      <div class="s4-qty-btn" onclick="s4Qty(-1)">−</div>
+      <div class="s4-qty-val" id="s4Qty">3</div>
+      <div class="s4-qty-btn" onclick="s4Qty(1)">+</div>
+    </div>
+  </div>
+
+  <div class="s4-field">
+    <div class="s4-label">入库进价<span class="opt">单件</span></div>
+    <input type="text" placeholder="¥ 1,200" value="¥ 1,200">
+  </div>
+
+  <div class="s4-field">
+    <div class="s4-label">备注<span class="opt">可选</span></div>
+    <textarea rows="2" placeholder="例：新疆采购"></textarea>
+  </div>
+
+  <div class="s4-preview">
+    <div class="s4-preview-label" id="s4PreviewLabel">本 次 入 库</div>
+    <div class="s4-preview-val" id="s4PreviewVal"><span class="plus">+3 件</span> · ¥ 3,600</div>
+  </div>
+
+  <div class="s4-confirm">
+    <a class="btn btn-jade" id="s4Confirm" href="screen-10-logs.html" style="display:inline-flex;width:100%;">✓ 确 认 入 库</a>
+  </div>
+
+  <div style="height:20px;"></div>
+</div>
+
+</div></div></div>
+<script>
+let s4Mode='in', s4Q=3;
+const UNIT_PRICE=1200; // 单件 ¥1,200(mock)
+function s4Render(){
+  const tabs=document.querySelectorAll('.s4-tab');
+  tabs.forEach(t=>t.classList.remove('cur','in','out'));
+  if(s4Mode==='in'){
+    tabs[0].classList.add('cur','in');
+    document.getElementById('s4TypeLabel').textContent='入库类型';
+    document.getElementById('s4PreviewLabel').textContent='本 次 入 库';
+    document.getElementById('s4PreviewVal').innerHTML=`<span class="plus">+${s4Q} 件</span> · ¥ ${(UNIT_PRICE*s4Q).toLocaleString()}`;
+    const c=document.getElementById('s4Confirm');
+    c.textContent='✓ 确 认 入 库';
+    c.className='btn btn-jade';
+    c.style.cssText='display:inline-flex;width:100%;';
+  }else{
+    tabs[1].classList.add('cur','out');
+    document.getElementById('s4TypeLabel').textContent='出库类型';
+    document.getElementById('s4PreviewLabel').textContent='本 次 出 库';
+    document.getElementById('s4PreviewVal').innerHTML=`<span class="minus">−${s4Q} 件</span> · ¥ ${(UNIT_PRICE*s4Q).toLocaleString()}`;
+    const c=document.getElementById('s4Confirm');
+    c.textContent='✓ 确 认 出 库';
+    c.className='btn btn-rose';
+    c.style.cssText='display:inline-flex;width:100%;';
+  }
+}
+function s4SetMode(m){s4Mode=m;s4Render();}
+function s4Qty(d){s4Q=Math.max(1,s4Q+d);document.getElementById('s4Qty').textContent=s4Q;s4Render();}
+function s4SetRadio(el){el.parentNode.querySelectorAll('.s4-radio').forEach(x=>x.classList.remove('cur'));el.classList.add('cur');}
+// 检测 URL 参数 ?mode=out → 自动切到出库
+(function(){
+  const m=new URLSearchParams(location.search).get('mode');
+  if(m==='out'){ s4Mode='out'; s4Render(); }
+})();
+</script>
+</body></html>
