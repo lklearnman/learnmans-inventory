@@ -1541,6 +1541,7 @@ tr.clickable{cursor:pointer;}
 }
 .logs-fab:hover{transform:scale(1.06);box-shadow:0 6px 32px var(--gold-glow);}
 .logs-fab:active{transform:scale(0.96);}
+.logs-fab svg{display:block;}
 
 /* ============================================ */
 /* 入出库 modal (screen-4) ===================== */

@@ -914,16 +914,43 @@ function _showSoldQty(productId,startTs,endTs){
     &&(!startTs||l.ts>=startTs)&&(!endTs||l.ts<=endTs))
     .reduce((a,l)=>a+(parseInt(l.qty)||0),0);
 }
-// 展会 hero 概览卡聚合
+// 展会 hero 概览卡聚合 (mock screen-6 对齐 2026-05-19: 带出 / 已售 / 销售额)
 function _renderShowHero(){
   const totalOut=DB.showItems.reduce((a,si)=>a+(parseInt(si.qty)||0),0);
-  const types=new Set(DB.showItems.map(si=>si.productId)).size;
-  const liveShows=(DB.shows||[]).filter(s=>s.live).length;
-  const shows=Math.max(liveShows,new Set(DB.showItems.map(si=>si.showName||'').filter(Boolean)).size);
+  // 已售/销售额:聚合所有 live show 期间 + 没有 show 实体的 showItems 的 out logs
+  let totalSold=0;
+  let totalSales=0;
+  const cur=(typeof inventoryCurrency!=='undefined'?inventoryCurrency:'JPY');
+  const sym=(typeof CURRENCY_SYMBOL!=='undefined'&&CURRENCY_SYMBOL[cur])||'¥';
+  // 收集每个 showItem 对应的售出
+  DB.showItems.forEach(si=>{
+    const sh=(DB.shows||[]).find(s=>s.id===si.showId);
+    const startTs=sh&&sh.startDate?new Date(sh.startDate).getTime():null;
+    const endTs=sh&&sh.endDate?new Date(sh.endDate+'T23:59:59').getTime():null;
+    const sold=(typeof _showSoldQty==='function')?_showSoldQty(si.productId,startTs,endTs):0;
+    totalSold+=sold;
+    // 销售额:对应 out logs amount(本位币换算到显示币种)
+    (DB.logs||[]).filter(l=>l.productId===si.productId&&l.type==='out'
+      &&(!startTs||l.ts>=startTs)&&(!endTs||l.ts<=endTs))
+      .forEach(l=>{
+        const bp=l.basePrice?parseFloat(l.basePrice):0;
+        const amtJpy=bp*(parseInt(l.qty)||0);
+        if(amtJpy&&typeof convertCurrency==='function'){
+          totalSales+=(convertCurrency(amtJpy,'JPY',cur)||amtJpy);
+        }else{
+          totalSales+=amtJpy;
+        }
+      });
+  });
+  const fmtK=v=>{
+    if(!v)return sym+'0';
+    if(v>=10000)return sym+(v/1000).toFixed(1)+'K';
+    return sym+Math.round(v).toLocaleString();
+  };
   const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   setT('show-hero-stat-out',totalOut);
-  setT('show-hero-stat-types',types);
-  setT('show-hero-stat-shows',shows);
+  setT('show-hero-stat-sold',totalSold);
+  setT('show-hero-stat-sales',fmtK(totalSales));
   // hero 名称/日期:有 live show 时显示第一个的名字+日期段
   const liveOne=(DB.shows||[]).find(s=>s.live);
   if(liveOne){
@@ -970,12 +997,14 @@ function renderShowList(){
         ? `<div class="show-thumb"><img src="${p.photos[0]}"></div>`
         : `<div class="show-thumb">${catEmoji(p&&p.cat)}</div>`;
       const sold=p?_showSoldQty(si.productId,startTs,endTs):0;
-      const soldHtml=sold>0?` · 已售 <strong style="color:var(--rose-light);">${sold}</strong>`:'';
+      const left=Math.max(0,(parseInt(si.qty)||0)-sold);
+      const soldHtml=sold>0?` · <span style="color:var(--rose-light);">已售 ${sold}</span>`:'';
+      const leftHtml=` · <span style="color:var(--jade-light);">剩 ${left}</span>`;
       const sellBtn=p?`<button class="btn btn-rose btn-sm" onclick="quickSellFromShow('${si.productId}')" title="开出库 modal" style="margin-right:6px;">💰 售出</button>`:'';
       return `<div class="show-item">${thumb}
         <div class="show-details">
           <div style="font-size:14px;color:var(--text);margin-bottom:4px;">${p?p.name:'已删除'}</div>
-          <div style="font-size:12px;color:var(--text-muted);">带出 <strong style="color:var(--gold);">${si.qty}</strong> 件${soldHtml} · ${fmt(si.ts)}</div>
+          <div style="font-size:12px;color:var(--text-muted);">带出 <strong style="color:var(--gold);">${si.qty}</strong>${soldHtml}${leftHtml} · ${fmt(si.ts)}</div>
         </div>
         ${sellBtn}<button class="btn btn-jade btn-sm" onclick="doReturn('${si.id}')">↩️ 归还</button>
       </div>`;
