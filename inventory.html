@@ -39,6 +39,16 @@
       <option value="JPY">JPY</option><option value="CNY">CNY</option><option value="USD">USD</option><option value="EUR">EUR</option>
     </select>
   </div>
+  <!-- 顶部圆形 icon 按钮组 (A 组改造 2026-05-19): 全屏搜索 / 入库 / 出库 / 同步 / 账号 -->
+  <div class="header-icons">
+    <button class="icon-btn" title="全局搜索" onclick="openSearch()" aria-label="搜索">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    </button>
+    <button class="icon-btn icon-btn-in" title="入库" onclick="openStockInModal(null)" aria-label="入库">⬆</button>
+    <button class="icon-btn icon-btn-out" title="出库" onclick="openStockOutModal(null)" aria-label="出库">⬇</button>
+    <button class="icon-btn" title="同步" onclick="toast('待开发')" aria-label="同步">🔄</button>
+    <button class="icon-btn" title="账号" onclick="toast('待开发')" aria-label="账号">👤</button>
+  </div>
 </header>
 
 <nav class="nav-tabs">
@@ -637,6 +647,7 @@
 <script src="js/inventory-logs.js?v=20260530-audit3"></script>
 <script src="js/inventory-ai.js?v=20260530-audit3"></script>
 <script src="js/inventory-labels.js?v=20260530-audit3"></script>
+<script src="js/inventory-search.js?v=20260530-audit3"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
@@ -668,7 +679,53 @@ window.setIOMode=function(mode){
     }catch(e){console.warn('hero stat update failed',e);}
   };
 })();
-loadAll();
+
+// ===== URL 参数路由 (A 组 2026-05-19) =====
+// 支持 ?tab=<name> / ?mode=in|out / ?edit=<id> / ?detail=<id>
+// 在 loadAll 完成后执行(否则 DB.products 还没就绪,openDetail / 编辑会失败)
+function handleUrlRoute(){
+  try{
+    const params=new URLSearchParams(location.search);
+    const tab=params.get('tab');
+    const mode=params.get('mode');
+    const editId=params.get('edit');
+    const detailId=params.get('detail');
+
+    // 1. 切 tab(必须先切,后续 modal 在对应 tab 上下文)
+    if(tab && typeof switchTab==='function'){
+      const tabEl=document.querySelector(`.nav-tab[onclick*="switchTab('${tab}'"]`);
+      switchTab(tab, tabEl||null);
+    }
+
+    // 2. mode=in|out 打开入/出库 modal
+    if(mode==='in' && typeof openStockInModal==='function'){
+      openStockInModal(null);
+      if(typeof setIOMode==='function') setIOMode('in');
+    }else if(mode==='out' && typeof openStockOutModal==='function'){
+      openStockOutModal(null);
+      if(typeof setIOMode==='function') setIOMode('out');
+    }
+
+    // 3. edit=<id> 打开商品编辑 modal
+    if(editId && typeof openAddModal==='function' && typeof getProduct==='function'){
+      const p=getProduct(editId);
+      if(p) openAddModal(p);
+      else if(typeof toast==='function') toast('未找到该商品');
+    }
+
+    // 4. detail=<id> 打开详情
+    if(detailId && typeof openDetail==='function'){
+      openDetail(detailId);
+    }
+  }catch(e){
+    console.warn('URL route parse failed', e);
+  }
+}
+
+loadAll().then(handleUrlRoute).catch(e=>{
+  console.warn('loadAll failed, still trying route', e);
+  handleUrlRoute();
+});
 </script>
 </body>
 </html>

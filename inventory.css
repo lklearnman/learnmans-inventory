@@ -17,7 +17,10 @@ input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-text{color
   --gold-glow:rgba(201,168,76,0.15);
   --jade:#4a9e7a;--jade-light:#6abf9a;
   --rose:#b05a6a;--rose-light:#d07880;--rose-dim:rgba(176,90,106,0.18);
-  --text:#e8e4d8;--text-dim:#8a8474;--text-muted:#4a4840;
+  /* 文字色四档:text > text-dim > text-muted > text-fade
+     2026-05-19 A 组改造:旧 muted #4a4840 太暗读不清,提亮到 mock 的 #a89c84;
+     #3d3830 落为新一档 text-fade 给"水印/几乎不可见"场景使用 */
+  --text:#e8e4d8;--text-dim:#8a8474;--text-muted:#a89c84;--text-fade:#3d3830;
   --amber:#d4a574;--steel:#5a7a8a;
   --radius:8px;--radius-lg:14px;
 }
@@ -34,6 +37,54 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--jade);display:inline-block;margin-right:4px;}
 .sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite;}
 .sync-dot.error{background:var(--rose);}
+/* ===== 顶部圆形 icon 按钮组 (A 组 2026-05-19) ===== */
+.header-icons{display:flex;gap:6px;margin-left:10px;align-items:center;}
+.icon-btn{
+  width:32px;height:32px;
+  border-radius:50%;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all 0.2s ease;
+  flex-shrink:0;
+  font-size:14px;
+  padding:0;
+  font-family:inherit;
+  line-height:1;
+}
+.icon-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
+.icon-btn:active{transform:scale(0.94);}
+.icon-btn-in{
+  background:rgba(74,158,122,0.18);
+  border-color:var(--jade);
+  color:var(--jade-light);
+  box-shadow:0 0 8px rgba(74,158,122,0.22);
+  font-weight:700;
+}
+.icon-btn-in:hover{background:rgba(74,158,122,0.32);border-color:var(--jade-light);color:var(--jade-light);box-shadow:0 0 12px rgba(74,158,122,0.45);}
+.icon-btn-out{
+  background:rgba(176,90,106,0.18);
+  border-color:var(--rose);
+  color:var(--rose-light);
+  box-shadow:0 0 8px rgba(176,90,106,0.22);
+  font-weight:700;
+}
+.icon-btn-out:hover{background:rgba(176,90,106,0.32);border-color:var(--rose-light);color:var(--rose-light);box-shadow:0 0 12px rgba(176,90,106,0.45);}
+@media(max-width:520px){
+  /* 窄屏:header-stats 数字区缩成只剩同步点 + 库存数,把 icon 组挤出空间 */
+  .header-stats>div:nth-child(1) span:not(.sync-dot){display:none;}
+  .header-stats>div:nth-child(3){display:none;}
+  .header-stats{gap:8px;}
+  .header-icons{gap:4px;margin-left:6px;}
+  .icon-btn{width:30px;height:30px;font-size:13px;}
+}
+@media(max-width:380px){
+  /* 极窄屏:再藏一档,只保留同步点 + icon 组 */
+  .header-stats>div:nth-child(2){display:none;}
+  .global-currency-select{display:none;}
+}
 .nav-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;padding:0 4px;position:sticky;top:56px;z-index:99;}
 .nav-tabs::-webkit-scrollbar{display:none;}
 .nav-tab{flex-shrink:0;padding:12px 14px;font-size:13px;color:var(--text-dim);cursor:pointer;position:relative;white-space:nowrap;transition:color .2s ease;border-bottom:2px solid transparent;}
@@ -1564,4 +1615,136 @@ tr.clickable{cursor:pointer;}
   .logs-summary .logs-sum-l{margin-bottom:0;}
   .logs-daterow{flex-wrap:wrap;}
   .logs-daterow .date-cell{flex:1 1 40%;}
+}
+
+/* ========= 全局确认对话框 mzConfirm (A 组 2026-05-19) ========= */
+.mz-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(0,0,0,0.78);
+  backdrop-filter:blur(8px);
+  display:none;
+  align-items:center;justify-content:center;
+  padding:24px;
+}
+.mz-overlay.show{display:flex;animation:mzFade 0.18s ease-out;}
+@keyframes mzFade{from{opacity:0;}to{opacity:1;}}
+.mz-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  max-width:340px;width:100%;
+  padding:24px 22px 18px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.6);
+  text-align:center;
+  animation:mzPop 0.2s ease-out;
+}
+@keyframes mzPop{from{transform:scale(0.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+.mz-card.danger{border-color:var(--rose);box-shadow:0 16px 48px rgba(0,0,0,0.6),0 0 32px rgba(176,90,106,0.18);}
+.mz-icon{
+  width:48px;height:48px;margin:0 auto 12px;
+  border-radius:50%;
+  background:var(--gold-glow);
+  border:1.5px solid var(--gold-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--gold);
+}
+.mz-card.danger .mz-icon{
+  background:rgba(176,90,106,0.18);
+  border-color:var(--rose);
+  color:var(--rose-light);
+}
+.mz-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:16px;color:var(--text);
+  letter-spacing:2px;margin-bottom:8px;
+}
+.mz-msg{
+  font-size:12px;color:var(--text-muted);
+  line-height:1.6;margin-bottom:20px;
+  word-break:break-word;
+}
+.mz-msg b{color:var(--gold);font-family:'DM Mono',monospace;font-weight:500;}
+.mz-actions{display:flex;gap:8px;}
+.mz-actions .btn{flex:1;height:40px;font-size:13px;letter-spacing:1px;}
+
+/* ========= 全屏全局搜索 overlay (A 组 2026-05-19) ========= */
+.gs-overlay{
+  position:fixed;inset:0;z-index:1500;
+  background:rgba(0,0,0,0.78);
+  backdrop-filter:blur(8px);
+  display:none;
+  flex-direction:column;
+}
+.gs-overlay.show{display:flex;animation:mzFade 0.18s ease-out;}
+.gs-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;
+  background:linear-gradient(180deg,rgba(14,13,11,0.98),rgba(14,13,11,0.92));
+  border-bottom:1px solid var(--gold-dim);
+}
+.gs-input-wrap{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--surface2);
+  border:1px solid var(--gold-dim);
+  border-radius:var(--radius);
+  padding:0 12px;height:42px;
+  box-shadow:0 0 16px var(--gold-glow);
+}
+.gs-input-wrap svg{color:var(--gold);flex-shrink:0;}
+.gs-input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-size:14px;height:100%;
+  font-family:inherit;padding:0;width:100%;
+}
+.gs-input::placeholder{color:var(--text-muted);}
+.gs-close{
+  width:36px;height:36px;
+  border-radius:50%;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:18px;flex-shrink:0;
+}
+.gs-close:hover{color:var(--gold);border-color:var(--gold-dim);}
+.gs-body{flex:1;overflow-y:auto;padding:14px;}
+.gs-sec{margin-bottom:18px;}
+.gs-sec-title{
+  font-size:10px;color:var(--gold-dim);letter-spacing:2px;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.gs-sec-title::before{content:'';width:12px;height:1px;background:var(--gold-dim);}
+.gs-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.gs-chip{
+  padding:5px 10px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:14px;
+  font-size:11px;color:var(--text-muted);cursor:pointer;
+}
+.gs-chip:hover{border-color:var(--gold-dim);color:var(--gold);}
+.gs-result{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px;margin-bottom:6px;
+  text-decoration:none;color:inherit;
+  cursor:pointer;transition:all 0.2s ease;
+}
+.gs-result:hover{border-color:var(--gold-dim);}
+.gs-result-thumb{
+  width:36px;height:36px;border-radius:6px;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;overflow:hidden;
+}
+.gs-result-thumb img{width:100%;height:100%;object-fit:cover;}
+.gs-result-info{flex:1;min-width:0;}
+.gs-result-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gs-result-meta{
+  font-size:10px;color:var(--text-dim);
+  font-family:'DM Mono',monospace;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.gs-result-meta b{color:var(--gold);font-weight:500;}
+.gs-empty{
+  text-align:center;padding:30px 20px;
+  color:var(--text-dim);font-size:12px;
 }

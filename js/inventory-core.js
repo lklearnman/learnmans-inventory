@@ -315,3 +315,47 @@ function _initAllCurSelects(){
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',_initAllCurSelects);
 else _initAllCurSelects();
 loadFxRates();
+
+// ========= 全局确认对话框 mzConfirm({title, message, okText, cancelText, okClass, onOk, danger, icon}) =========
+// 取代原生 confirm(),提供品牌一致的危险/普通二次确认 UI。
+// 用法:
+//   mzConfirm({title:'确认删除?', message:'此操作不可撤销', okText:'删除', okClass:'btn-rose', onOk:()=>{...}});
+//   mzConfirm({message:'保存到 Drive?', onOk:()=>{...}});
+window.mzConfirm=function(opts){
+  opts=opts||{};
+  const title=opts.title||'确认操作?';
+  const message=opts.message||'';
+  const okText=opts.okText||'确认';
+  const cancelText=opts.cancelText||'取消';
+  const okClass=opts.okClass||'btn-gold';
+  const danger=okClass==='btn-rose'||opts.danger;
+  const icon=opts.icon||(danger?'🗑':'?');
+  let ov=document.getElementById('mzOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='mzOverlay';
+    ov.className='mz-overlay';
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML=`
+    <div class="mz-card${danger?' danger':''}">
+      <div class="mz-icon">${icon}</div>
+      <div class="mz-title">${title}</div>
+      <div class="mz-msg">${message}</div>
+      <div class="mz-actions">
+        <button class="btn btn-outline" id="mzCancel">${cancelText}</button>
+        <button class="btn ${okClass}" id="mzOk">${okText}</button>
+      </div>
+    </div>`;
+  ov.classList.add('show');
+  let onKey;
+  const close=()=>{
+    ov.classList.remove('show');
+    if(onKey)document.removeEventListener('keydown',onKey);
+  };
+  document.getElementById('mzCancel').onclick=close;
+  document.getElementById('mzOk').onclick=()=>{ close(); if(opts.onOk) opts.onOk(); };
+  ov.onclick=(e)=>{ if(e.target===ov) close(); };
+  onKey=(e)=>{ if(e.key==='Escape') close(); };
+  document.addEventListener('keydown',onKey);
+};
