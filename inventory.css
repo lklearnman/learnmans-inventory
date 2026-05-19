@@ -1551,29 +1551,31 @@ tr.clickable{cursor:pointer;}
 .logs-pager-btn.cur{background:var(--gold-glow);border-color:var(--gold-dim);color:var(--gold);}
 
 .logs-export{
-  display:flex;gap:8px;margin:8px 0 0;
+  display:flex;gap:10px;margin:14px 0 0;
 }
-.logs-export .btn{flex:1;height:36px;font-size:12px;}
+/* mock screen-10 风格紧凑按钮: 圆角 SVG icon + 文字 */
+.logs-export-btn{
+  flex:1;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:38px;
+  background:transparent;
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--text-dim);
+  font-size:13px;
+  font-family:'Noto Sans SC',sans-serif;
+  letter-spacing:1px;
+  cursor:pointer;
+  transition:all 0.15s ease;
+}
+.logs-export-btn:hover{
+  border-color:var(--gold-dim);
+  color:var(--gold);
+}
+.logs-export-btn svg{flex-shrink:0;opacity:0.85;}
+.logs-export-btn:hover svg{opacity:1;}
 
-/* 浮动 FAB 新建按钮 */
-.logs-fab{
-  position:fixed;
-  right:18px;bottom:24px;
-  width:56px;height:56px;
-  border-radius:50%;
-  background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);
-  color:#1a1410;
-  display:flex;align-items:center;justify-content:center;
-  text-decoration:none;
-  box-shadow:0 4px 24px var(--gold-glow),0 2px 8px rgba(0,0,0,0.4);
-  font-size:30px;font-weight:300;line-height:1;
-  cursor:pointer;border:none;
-  transition:all 0.2s ease;
-  z-index:90;
-}
-.logs-fab:hover{transform:scale(1.06);box-shadow:0 6px 32px var(--gold-glow);}
-.logs-fab:active{transform:scale(0.96);}
-.logs-fab svg{display:block;}
+/* 旧 logs-fab 已删除 (用户反馈不要) */
 
 /* ============================================ */
 /* 入出库 modal (screen-4) ===================== */
