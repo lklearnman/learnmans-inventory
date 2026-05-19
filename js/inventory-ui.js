@@ -1,5 +1,22 @@
 // ===================== TABS =====================
 function switchTab(name,el){
+  // 「入出」tab → 直接打开 modal,不切 section(保留商品页 active)
+  if(name==='inout'){
+    if(el){
+      document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active');
+      // 短暂高亮后回到原 active tab,避免 UI 失焦
+      setTimeout(()=>{
+        el.classList.remove('active');
+        const cur=document.querySelector('.section.active');
+        const tabName=cur?cur.id.replace(/^sec-/,''):'inventory';
+        const back=document.querySelector(`.nav-tab[onclick*="switchTab('${tabName}'"]`);
+        if(back)back.classList.add('active');
+      },180);
+    }
+    if(typeof openStockInModal==='function')openStockInModal(null);
+    return;
+  }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   const target=document.getElementById('sec-'+name);
@@ -47,6 +64,30 @@ function setInvSort(mode,el){
     el.classList.add('cur');
   }
   renderInventory();
+}
+// 商品库存清单 CSV 导出 (mock screen-2 toolbar 📥)
+function exportInventoryCSV(){
+  try{
+    const list=(typeof getVisibleProducts==='function')?getVisibleProducts():(DB.products||[]);
+    if(!list||!list.length){toast('暂无商品可导出');return;}
+    const cur=(typeof inventoryCurrency!=='undefined'?inventoryCurrency:'JPY');
+    const rows=[['SKU','名称','类别','库存','单价','币种','备注']];
+    list.forEach(p=>{
+      rows.push([p.sku||'',p.name||'',p.cat||'',(p.qty!=null?p.qty:''),(p.price!=null?p.price:''),(p.currency||cur),(p.note||'').replace(/[\r\n]+/g,' ')]);
+    });
+    const csv='﻿'+rows.map(r=>r.map(c=>{
+      const s=String(c==null?'':c);
+      return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+    }).join(',')).join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    const dt=new Date().toISOString().slice(0,10);
+    a.href=url;a.download='库存清单_'+dt+'.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('✓ 已导出 '+(rows.length-1)+' 行');
+  }catch(e){toast('导出失败: '+e.message);}
 }
 function quickScan(){
   const navBtn=document.querySelector('.nav-tab[onclick*="\'scan\'"]')||document.querySelector('.nav-tab[onclick*="scan"]');
