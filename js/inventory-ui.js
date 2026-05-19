@@ -90,8 +90,19 @@ function exportInventoryCSV(){
   }catch(e){toast('导出失败: '+e.message);}
 }
 function quickScan(){
-  const navBtn=document.querySelector('.nav-tab[onclick*="\'scan\'"]')||document.querySelector('.nav-tab[onclick*="scan"]');
-  if(navBtn)switchTab('scan',navBtn);
+  // nav 已无 scan tab(2026-05-19),直接切到 sec-scan section 并启动相机
+  const target=document.getElementById('sec-scan');
+  if(target){
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    target.classList.add('active');
+    // nav 高亮短暂回到 inventory(给视觉反馈)
+    const fab=document.getElementById('logs-fab');
+    if(fab)fab.style.display='none';
+  }else{
+    // 兜底:section 不存在则提示
+    if(typeof toast==='function')toast('扫码界面未就绪');
+    return;
+  }
   if(typeof startCamera==='function')setTimeout(startCamera,80);
 }
 
