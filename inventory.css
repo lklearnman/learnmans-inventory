@@ -388,10 +388,79 @@ tr.clickable{cursor:pointer;}
 .scan-action-wide{flex:1;padding:22px 16px;}
 .scan-action-wide .scan-action-icon{font-size:30px;margin-bottom:10px;}
 .scan-action-wide .scan-action-text{font-size:14px;font-weight:600;letter-spacing:2px;}
-.scan-action-sub{margin-top:10px;font-size:11px;line-height:1.6;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 8px;align-items:center;}
-.scan-action-sub a{color:#3a2a08;text-decoration:underline;text-underline-offset:2px;opacity:0.75;display:inline-block;}
-.scan-action-sub a:hover{opacity:1;}
-.scan-action-sub-sep{color:#3a2a08;opacity:0.4;}
+/* 高级选项折叠区(mock screen-5 .s5-advanced 风格) */
+.scan-advanced{
+  margin:0 14px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+.scan-adv-head{
+  padding:10px 14px;
+  font-size:12px;
+  color:var(--text-muted);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+}
+.scan-adv-arrow{
+  color:var(--text-dim);
+  transition:transform 0.2s ease;
+  font-size:10px;
+}
+.scan-adv-arrow.open{transform:rotate(180deg);}
+.scan-adv-body{
+  display:none;
+  padding:12px 14px;
+  border-top:1px solid var(--border);
+}
+.scan-advanced.open .scan-adv-body{display:block;}
+.scan-adv-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+.scan-adv-row:last-child{margin-bottom:0;}
+.scan-adv-label{
+  font-size:11px;
+  color:var(--text-dim);
+  min-width:64px;
+}
+.scan-adv-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.scan-adv-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 12px;
+  font-size:11px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  color:var(--text-muted);
+  cursor:pointer;
+  background:var(--surface2);
+  user-select:none;
+}
+.scan-adv-chip input{display:none;}
+.scan-adv-chip.cur{
+  background:var(--gold);
+  border-color:var(--gold);
+  color:#1a1410;
+}
+.scan-adv-chip.cur .scan-ai-tag{filter:brightness(0.9);}
+.scan-adv-manual{display:flex;gap:6px;flex:1;}
+.scan-adv-manual input{
+  flex:1;
+  padding:7px 10px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  font-size:12px;
+}
 
 /* 手动输入条 */
 .scan-manual{
