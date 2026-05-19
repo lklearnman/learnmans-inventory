@@ -898,7 +898,25 @@ tr.clickable{cursor:pointer;}
 }
 #modal-detail .modal-actions .btn{flex:1;justify-content:center;padding:10px 8px;}
 
-/* 主图区 */
+/* 详情 modal 容器 — 让 d3-photo full-bleed,actions sticky */
+.modal-detail-wrap{padding:0!important;display:flex;flex-direction:column;}
+.modal-detail-wrap .modal-title{padding:20px 24px 0;margin-bottom:14px;}
+.modal-detail-wrap .modal-close{top:16px;right:16px;}
+.modal-detail-wrap .modal-body{padding:0;flex:1 1 auto;overflow-y:auto;}
+.modal-detail-wrap .modal-actions-sticky{
+  position:sticky;bottom:0;
+  margin:0;padding:10px 14px;
+  background:linear-gradient(0deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.85) 100%);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
+  border-radius:0 0 var(--radius-lg) var(--radius-lg);
+  display:flex;gap:8px;justify-content:stretch;
+  z-index:5;
+}
+.modal-detail-wrap .modal-actions-sticky .btn{flex:1;min-height:42px;}
+.modal-detail-wrap .modal-actions-sticky .btn-outline{flex:0 0 44px;padding:0;}
+
+/* 主图区 — full-bleed 到 modal 边缘 */
 .d3-photo{
   position:relative;
   width:100%;

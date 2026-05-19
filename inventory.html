@@ -534,15 +534,15 @@
 
 <!-- 商品详情 MODAL -->
 <div class="modal-overlay" id="modal-detail">
-  <div class="modal" style="max-width:480px;">
+  <div class="modal modal-detail-wrap" style="max-width:720px;">
     <div class="modal-title" id="detail-title">商 品 详 情</div>
     <button class="modal-close" onclick="closeModal('modal-detail');if(detailOpenedFromAI){detailOpenedFromAI=false;document.getElementById('ai-result').style.display='block';}">✕</button>
     <div class="modal-body" id="detail-body"></div>
-    <div class="modal-actions">
+    <div class="modal-actions modal-actions-sticky">
       <button class="btn btn-outline btn-sm" onclick="editFromDetail()" title="编辑">✏️</button>
+      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()" title="标签打印">🏷️</button>
       <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
       <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
-      <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()" title="标签打印">🏷️</button>
     </div>
   </div>
 </div>
