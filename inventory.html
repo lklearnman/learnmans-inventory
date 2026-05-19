@@ -156,10 +156,16 @@
     <div class="logs-pager-btns" id="logs-pager-btns"></div>
   </div>
 
-  <!-- 导出 / 打印 -->
+  <!-- 导出 / 打印 (mock screen-10: 紧凑 icon + 文字) -->
   <div class="logs-export">
-    <button class="btn btn-outline btn-sm" onclick="exportLogsAllCSV()">📥 导出 CSV</button>
-    <button class="btn btn-outline btn-sm" onclick="printAllLogs()">🖨️ 打印</button>
+    <button class="logs-export-btn" onclick="exportLogsAllCSV()" title="导出 CSV">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>CSV</span>
+    </button>
+    <button class="logs-export-btn" onclick="printAllLogs()" title="打印">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span>打印</span>
+    </button>
   </div>
 
   <!-- ==== 兼容旧版函数的隐藏占位(保留所有 ID,防止破坏 fetchLogsPage/renderLogsTable) ==== -->
@@ -685,10 +691,8 @@
   </div>
 </div>
 
-<!-- 浮动 FAB:新建入库/出库(仅流水 tab 显示) — mock screen-10 对齐 (SVG plus 替代文字 + ) -->
-<button class="logs-fab" id="logs-fab" onclick="openStockInModal(null)" title="新建入库/出库" style="display:none;" aria-label="新建入库/出库">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-</button>
+<!-- 流水 FAB 已删除 (用户反馈不要),入库走顶 nav ⬆ icon -->
+
 
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
