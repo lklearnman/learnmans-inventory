@@ -5,10 +5,17 @@
 (function(){
   const RECENT_KEY='mzRecentSearches';
   const RECENT_MAX=8;
+  // 默认 seed:用户初次没历史时给一组常用 chip 引导(mock screen-2 搜索 overlay 风格)
+  const SEED_RECENT=['陨石','首饰','矿物','¥1000+','缺货'];
 
   function getRecent(){
-    try{ return JSON.parse(localStorage.getItem(RECENT_KEY)||'[]'); }
-    catch(e){ return []; }
+    try{
+      const raw=localStorage.getItem(RECENT_KEY);
+      if(!raw)return SEED_RECENT.slice();
+      const arr=JSON.parse(raw);
+      return (Array.isArray(arr)&&arr.length)?arr:SEED_RECENT.slice();
+    }
+    catch(e){ return SEED_RECENT.slice(); }
   }
   function pushRecent(kw){
     kw=(kw||'').trim();
@@ -96,7 +103,7 @@
         : '';
       const listHtml = results.length
         ? `<div class="gs-sec">
-             <div class="gs-sec-title">全部商品 · 前 ${results.length} 项</div>
+             <div class="gs-sec-title">推荐 · 全部商品</div>
              ${results.map(gsItem).join('')}
            </div>`
         : `<div class="gs-empty">还没有商品,先去库存页建品吧</div>`;
