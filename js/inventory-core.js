@@ -120,8 +120,28 @@ async function loadAll(){
 }
 
 // DB field mapping
-function productToDb(p){return{id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,currency:p.currency||'JPY',origin:p.origin,country:p.country,note:p.note,qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()};}
-function dbToProduct(r){return{id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,currency:r.currency||'CNY',origin:r.origin,country:r.country,note:r.note,qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,createdAt:new Date(r.created_at).getTime()};}
+function productToDb(p){return{
+  id:p.id,name:p.name,sku:p.sku,cat:p.cat,price:p.price,
+  currency:p.currency||'JPY',origin:p.origin,country:p.country,note:p.note,
+  qty:p.qty,photos:p.photos||[],thumbnail:p.thumbnail||null,
+  // 新字段(2026-05-20)
+  size:p.size||null,
+  material:p.material||null,
+  unit:p.unit||null,
+  weight:(p.weight!==undefined&&p.weight!==null&&p.weight!=='')?parseFloat(p.weight):null,
+  created_at:p.createdAt?new Date(p.createdAt).toISOString():new Date().toISOString()
+};}
+function dbToProduct(r){return{
+  id:r.id,name:r.name,sku:r.sku,cat:r.cat,price:r.price,
+  currency:r.currency||'CNY',origin:r.origin,country:r.country,note:r.note,
+  qty:r.qty||0,photos:r.photos,thumbnail:r.thumbnail,
+  // 新字段(2026-05-20)
+  size:r.size||null,
+  material:r.material||null,
+  unit:r.unit||null,
+  weight:r.weight!==null&&r.weight!==undefined?r.weight:null,
+  createdAt:new Date(r.created_at).getTime()
+};}
 function logToDb(l){
   const originalPrice=(l.originalPrice!==undefined?l.originalPrice:l.price);
   const originalCurrency=l.originalCurrency||l.currency||'CNY';

@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-logsfields-scan5">
+<link rel="stylesheet" href="inventory.css?v=20260520-prodfields">
 
 </head>
 <body>
@@ -470,8 +470,25 @@
         </div>
         <div style="font-size:11px;color:var(--text-muted);padding:6px 0 0 0;">币种: <span id="f-currency-label" style="color:var(--gold);font-weight:600;">JPY</span></div>
       </div>
-      <div class="form-group"><label>产地 / 规格</label><input type="text" id="f-origin" placeholder="可选"></div>
+      <div class="form-group"><label>产地</label><input type="text" id="f-origin" placeholder="可选"></div>
       <div class="form-group"><label>原产国</label><input type="text" id="f-country" placeholder="例：巴西、中国"></div>
+      <!-- 新字段(2026-05-20):尺寸/材质/重量/单位 -->
+      <div class="form-group"><label>尺寸</label><input type="text" id="f-size" placeholder="例:20×15mm / 戒指 13号"></div>
+      <div class="form-group"><label>材质</label><input type="text" id="f-material" placeholder="例:18K金 / S925 / 黄铜"></div>
+      <div class="form-group"><label>重量</label>
+        <div style="display:flex;gap:6px;">
+          <input type="number" id="f-weight" placeholder="数值" step="0.01" style="flex:1;">
+          <select id="f-unit" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;color:var(--text);font-size:12px;width:78px;">
+            <option value="">单位</option>
+            <option value="g">g 克</option>
+            <option value="ct">ct 克拉</option>
+            <option value="kg">kg 公斤</option>
+            <option value="件">件</option>
+            <option value="对">对</option>
+            <option value="盒">盒</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group full"><label>备注描述</label><textarea id="f-note" placeholder="成色、特征等…"></textarea></div>
       <div class="form-group full">
         <label>商品照片（最多5张）</label>
@@ -702,12 +719,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-logsfields-scan5"></script>
-<script src="js/inventory-ui.js?v=20260520-logsfields-scan5"></script>
-<script src="js/inventory-logs.js?v=20260520-logsfields-scan5"></script>
-<script src="js/inventory-ai.js?v=20260520-logsfields-scan5"></script>
-<script src="js/inventory-labels.js?v=20260520-logsfields-scan5"></script>
-<script src="js/inventory-search.js?v=20260520-logsfields-scan5"></script>
+<script src="js/inventory-core.js?v=20260520-prodfields"></script>
+<script src="js/inventory-ui.js?v=20260520-prodfields"></script>
+<script src="js/inventory-logs.js?v=20260520-prodfields"></script>
+<script src="js/inventory-ai.js?v=20260520-prodfields"></script>
+<script src="js/inventory-labels.js?v=20260520-prodfields"></script>
+<script src="js/inventory-search.js?v=20260520-prodfields"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
