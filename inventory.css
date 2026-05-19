@@ -1644,12 +1644,13 @@ tr.clickable{cursor:pointer;}
 .sio-qty-btn:active{transform:scale(0.94);}
 
 @media (max-width:480px){
-  .logs-summary{grid-template-columns:1fr;gap:6px;}
-  .logs-summary .logs-sum-cell{display:flex;justify-content:space-between;text-align:left;padding:2px 0;border-bottom:1px dashed var(--border);}
-  .logs-summary .logs-sum-cell:last-child{border-bottom:none;}
-  .logs-summary .logs-sum-l{margin-bottom:0;}
+  /* mock screen-10 保持三列 — 不再叠成单列 */
+  .logs-summary{grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px 8px;}
+  .logs-sum-v{font-size:12px;}
+  .logs-sum-v .sub{font-size:8px;margin-left:1px;}
   .logs-daterow{flex-wrap:wrap;}
   .logs-daterow .date-cell{flex:1 1 40%;}
+  .logs-daterow .search-input{flex:1 1 100% !important;margin-top:4px;}
 }
 
 /* ========= 全局确认对话框 mzConfirm (A 组 2026-05-19) ========= */
