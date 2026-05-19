@@ -743,9 +743,23 @@ tr.clickable{cursor:pointer;}
 
 .inv-toolbar-row{
   display:flex;align-items:center;gap:8px;
-  margin-bottom:10px;padding:0 2px;
+  margin-bottom:10px;padding:0 2px;flex-wrap:wrap;
 }
 .inv-toolbar-row-2{justify-content:space-between;margin-top:2px;margin-bottom:14px;}
+@media (max-width:480px){
+  /* 行 2(全选 + 类别筛选 + 标签打印)在窄屏紧凑 1 行 */
+  .inv-toolbar-row-2{gap:6px;flex-wrap:nowrap;}
+  .inv-toolbar-row-2 #label-print-btn{padding:5px 9px;font-size:11px;white-space:nowrap;}
+  .inv-toolbar-row-2 .inv-select-all{font-size:11px !important;flex-shrink:0;white-space:nowrap;}
+  .inv-toolbar-row-2 .inv-cat-filter{flex:0 1 auto;min-width:0;max-width:120px;}
+  .inv-toolbar-row-2 > div{margin-left:auto;flex-shrink:0;}
+}
+@media (max-width:380px){
+  .inv-toolbar-row-2{gap:4px;}
+  .inv-toolbar-row-2 #label-print-btn{padding:4px 7px;font-size:10.5px;}
+  .inv-toolbar-row-2 .inv-select-all{font-size:10.5px !important;gap:4px !important;}
+  .inv-toolbar-row-2 .inv-cat-filter{font-size:10.5px;height:26px;max-width:100px;padding:0 18px 0 6px;background-position:right 4px center;}
+}
 .inv-sort{
   flex:1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;
 }
@@ -1788,11 +1802,35 @@ tr.clickable{cursor:pointer;}
   }
 }
 
-/* 商品卡更紧凑的 info padding 跟 mock 一致 */
-.product-card .product-info{padding:8px 9px 9px;}
-.product-card .product-name{font-size:12.5px;margin-bottom:3px;line-height:1.25;}
-.product-card .product-price{font-size:13px;margin-bottom:1px;}
-.product-card .product-sku{font-size:10px;letter-spacing:0.3px;}
+/* 商品卡更紧凑的 info padding 跟 mock 一致 (mock screen-2 .s2-card-*) */
+.product-card .product-info{padding:10px 12px 12px;}
+.product-card .product-name{
+  font-family:'Noto Serif SC',serif;
+  font-size:13px;color:var(--text);font-weight:500;line-height:1.3;
+  margin-bottom:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.product-card .product-price{
+  font-family:'DM Mono',monospace;
+  font-size:15px;color:var(--gold);font-weight:500;
+  letter-spacing:0.5px;margin-bottom:1px;
+}
+.product-card .product-sku{
+  font-family:'DM Mono',monospace;
+  font-size:9px;color:var(--text-muted);
+  letter-spacing:0.3px;margin-top:2px;
+}
+/* 卡片 qty 徽章细节(mock 半圆 24x24 + blur) */
+.product-card .product-qty{
+  min-width:24px;height:24px;
+  border-radius:12px;
+  padding:0 6px;font-size:11px;
+}
+/* 卡片 cat chip 字号紧凑 */
+.product-card .category-badge{
+  font-size:9px;padding:2px 6px;border-radius:10px;
+  letter-spacing:0.5px;
+}
 
 /* 商品 toolbar 紧凑:把 sort + view-toggle 行的上下间距压一档 */
 .sec-products .inv-toolbar-row,
@@ -1832,11 +1870,19 @@ tr.clickable{cursor:pointer;}
 .s2-label-btn{border-color:var(--gold-dim);color:var(--gold);}
 .s2-csv-btn:hover,.s2-search-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
 .s2-label-btn:hover{background:rgba(201,168,90,0.15);border-color:var(--gold);}
-/* 手机窄屏:允许换行,sort chips 占满 1 行,其余按钮换到第 2 行 */
-@media (max-width:420px){
+/* 手机窄屏:允许换行,sort chips 占满 1 行,其余按钮换到第 2 行 (mock screen-2 真 1-2 行) */
+@media (max-width:480px){
   .s2-toolbar{flex-wrap:wrap;gap:6px;padding:6px 2px 8px;}
   .s2-toolbar .s2-sort,
   .s2-toolbar .inv-sort{order:10;flex:1 1 100%;}
+}
+/* iPhone SE / 375 极窄:再压一档,gap 4px, padding 4px, sort chips 字号缩小 */
+@media (max-width:380px){
+  .s2-toolbar{gap:4px;padding:6px 0 8px;}
+  .s2-toolbar .inv-sort{gap:4px;}
+  .s2-toolbar .inv-sort-btn{padding:4px 8px;font-size:10.5px;}
+  .s2-new-btn,.s2-csv-btn,.s2-search-btn,.s2-label-btn{width:30px;height:30px;}
+  .s2-toolbar .inv-view-toggle>button{width:28px;height:26px;}
 }
 
 /* 编辑模式删除按钮 (2026-05-19, mock screen-11?edit=1 风格) */
