@@ -271,6 +271,12 @@ function openAddModal(prefill){
   document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
   if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
+  // 新建模式:隐藏「删除此商品」入口
+  const dz=document.getElementById('modal-edit-danger');
+  if(dz)dz.style.display='none';
+  // 新建模式:恢复「建档并入库」按钮
+  const btnStockIn=document.getElementById('btn-save-stockin');
+  if(btnStockIn)btnStockIn.style.display='';
   document.getElementById('modal-add').classList.add('open');
 }
 function openEditModal(id){
@@ -300,9 +306,38 @@ function openEditModal(id){
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
   renderPhotoPreviews();closeModal('modal-detail');
+  // 编辑模式:显示「删除此商品」入口
+  const dz=document.getElementById('modal-edit-danger');
+  if(dz)dz.style.display='';
+  // 编辑模式:隐藏「建档并入库」(无意义)
+  const btnStockIn=document.getElementById('btn-save-stockin');
+  if(btnStockIn)btnStockIn.style.display='none';
   document.getElementById('modal-add').classList.add('open');
 }
 function openAddThenStockIn(){openAddModal();document.getElementById('modal-add').dataset.stockin='1';}
+// 编辑 modal 内删除 (移自详情底部 2026-05-19)
+async function deleteFromEdit(){
+  if(!editingId){toast('未在编辑模式');return;}
+  const p=getProduct(editingId);
+  const name=p?p.name:'此商品';
+  const eid=editingId;
+  mzConfirm({
+    title:'删除商品?',
+    message:`将永久删除「${name}」及其所有入出库/展会记录,此操作不可撤销。`,
+    okText:'确认删除',
+    okClass:'btn-rose',
+    icon:'🗑',
+    onOk:async()=>{
+      DB.products=DB.products.filter(p=>p.id!==eid);
+      DB.logs=DB.logs.filter(l=>l.productId!==eid);
+      DB.showItems=DB.showItems.filter(s=>s.productId!==eid);
+      try{await deleteProduct(eid);}catch(e){console.warn('deleteProduct failed',e);}
+      closeModal('modal-add');renderInventory();
+      if(typeof updateHeader==='function')updateHeader();
+      toast('已删除');
+    }
+  });
+}
 async function handlePhotos(e){
   const files=[...e.target.files],rem=5-pendingPhotos.length;
   if(rem<=0){toast('最多5张');return;}

@@ -101,17 +101,20 @@
     <button class="s2-label-btn" onclick="openLabelModal()" title="打印价格标签" aria-label="价格标签"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
     <button class="s2-csv-btn" onclick="exportInventoryCSV()" title="导出 CSV" aria-label="导出 CSV"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
   </div>
-  <!-- 隐藏占位:旧版 search/cat-filter 输入仍存在以兼容 renderInventory() 读取 -->
+  <!-- 隐藏占位:旧版 inv-search 输入仍保留以兼容 renderInventory() 读取 -->
   <div style="display:none;" aria-hidden="true">
     <input id="inv-search" oninput="renderInventory()">
-    <select id="cat-filter-select" onchange="setCatFilter(this.value)"><option value="all">全部</option></select>
   </div>
   <div id="inv-toolbar" class="inv-toolbar-row inv-toolbar-row-2">
     <label class="inv-select-all" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;">
       <input type="checkbox" id="select-all-cb" onchange="toggleSelectAllVisible()">
       <span id="select-all-label">全选</span>
     </label>
-    <div style="display:flex;align-items:center;gap:8px;">
+    <!-- 类别筛选 (恢复 UI 入口 2026-05-19) -->
+    <select id="cat-filter-select" class="inv-cat-filter" onchange="setCatFilter(this.value)" title="按类别筛选" aria-label="类别筛选">
+      <option value="all">📁 全部类别</option>
+    </select>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
       <button class="btn btn-outline btn-sm" id="label-print-btn" onclick="openLabelModal()" title="打印已选商品的价格标签">🏷️ 标签打印</button>
     </div>
   </div>
@@ -205,7 +208,8 @@
   <div id="show-list" class="show-list-wrap"></div>
 
   <!-- 结算入口:跳到流水查看成交 -->
-  <div class="show-finish"><button class="btn btn-gold show-finish-btn" onclick="switchTab('inout',document.querySelectorAll('.nav-tab')[1])">⚖ 展 会 结 算 · 查看成交</button></div>
+  <!-- 结算改跳流水 (mock 拆分日志 2026-05-19 下午 - 业务逻辑应是查看成交记录) -->
+  <div class="show-finish"><button class="btn btn-gold show-finish-btn" onclick="switchTab('logs',document.querySelector('.nav-tab[onclick*=\'logs\']'))">⚖ 展 会 结 算 · 查看成交</button></div>
 </div>
 
 <!-- 扫码 (screen-5 设计) -->
@@ -444,6 +448,10 @@
       <button class="btn btn-gold" id="btn-save-only" onclick="saveProductOnly()">仅建档</button>
       <button class="btn btn-outline" id="btn-save-stockin" onclick="saveProductAndStockIn()">建档并入库 →</button>
     </div>
+    <!-- 编辑模式专用:删除商品 (2026-05-19, 移自详情底部) -->
+    <div class="modal-edit-danger" id="modal-edit-danger" style="display:none;">
+      <a href="javascript:void(0)" class="edit-delete-link" onclick="deleteFromEdit()">🗑 删 除 此 商 品</a>
+    </div>
   </div>
 </div>
 
@@ -499,7 +507,6 @@
       <button class="btn btn-jade btn-sm" onclick="stockInFromDetail()">⬆️ 入库</button>
       <button class="btn btn-rose btn-sm" onclick="quickOutFromDetail()">⬇️ 出库</button>
       <button class="btn btn-outline btn-sm" onclick="printLabelFromDetail()" title="标签打印">🏷️</button>
-      <button class="btn btn-outline btn-sm" onclick="deleteFromDetail()" style="border-color:var(--rose);color:var(--rose);" title="删除">🗑️</button>
     </div>
   </div>
 </div>
