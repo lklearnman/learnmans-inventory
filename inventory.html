@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-qa">
+<link rel="stylesheet" href="inventory.css?v=20260520-pol">
 
 </head>
 <body>
@@ -429,14 +429,15 @@
       <div class="form-group full"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group full">
         <label>类别</label>
-        <div class="s11-cat-grid" id="f-cat-grid">
-          <div class="s11-cat" data-cat="陨石" onclick="setAddCat('陨石')"><span class="s11-cat-icon">🪨</span><span class="s11-cat-name">陨石</span></div>
-          <div class="s11-cat" data-cat="首饰" onclick="setAddCat('首饰')"><span class="s11-cat-icon">💍</span><span class="s11-cat-name">首饰</span></div>
-          <div class="s11-cat" data-cat="矿物" onclick="setAddCat('矿物')"><span class="s11-cat-icon">💎</span><span class="s11-cat-name">矿物</span></div>
-          <div class="s11-cat" data-cat="葫芦" onclick="setAddCat('葫芦')"><span class="s11-cat-icon">🥒</span><span class="s11-cat-name">葫芦</span></div>
-          <div class="s11-cat" data-cat="化石" onclick="setAddCat('化石')"><span class="s11-cat-icon">🦴</span><span class="s11-cat-name">化石</span></div>
-          <div class="s11-cat" data-cat="其他" onclick="setAddCat('其他')"><span class="s11-cat-icon">➕</span><span class="s11-cat-name">其他</span></div>
-        </div>
+        <select id="f-cat-sel" onchange="onAddCatSel(this.value)">
+          <option value="">— 选择类别 —</option>
+          <option value="陨石">🪨 陨石</option>
+          <option value="首饰">💍 首饰</option>
+          <option value="矿物">💎 矿物</option>
+          <option value="葫芦">🥒 葫芦</option>
+          <option value="化石">🦴 化石</option>
+          <option value="__other__">➕ 其他(自定义)</option>
+        </select>
         <input type="text" id="f-cat" placeholder="或手动输入类别" list="cat-list" style="margin-top:6px;font-size:12px;"><datalist id="cat-list"></datalist>
       </div>
       <div class="form-group full">
@@ -469,7 +470,6 @@
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal('modal-add')">取消</button>
       <button class="btn btn-gold" id="btn-save-only" onclick="saveProductOnly()">仅建档</button>
       <button class="btn btn-outline" id="btn-save-stockin" onclick="saveProductAndStockIn()">建档并入库 →</button>
     </div>
@@ -694,12 +694,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-qa"></script>
-<script src="js/inventory-ui.js?v=20260520-qa"></script>
-<script src="js/inventory-logs.js?v=20260520-qa"></script>
-<script src="js/inventory-ai.js?v=20260520-qa"></script>
-<script src="js/inventory-labels.js?v=20260520-qa"></script>
-<script src="js/inventory-search.js?v=20260520-qa"></script>
+<script src="js/inventory-core.js?v=20260520-pol"></script>
+<script src="js/inventory-ui.js?v=20260520-pol"></script>
+<script src="js/inventory-logs.js?v=20260520-pol"></script>
+<script src="js/inventory-ai.js?v=20260520-pol"></script>
+<script src="js/inventory-labels.js?v=20260520-pol"></script>
+<script src="js/inventory-search.js?v=20260520-pol"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
