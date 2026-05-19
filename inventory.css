@@ -26,12 +26,13 @@ input[type="date"]:not(.has-value):not(:focus)::-webkit-datetime-edit-text{color
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-.app-header{background:linear-gradient(180deg,rgba(26,25,21,0.98) 0%,rgba(26,25,21,0.92) 100%);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+/* === screen-1 mock 对齐 2026-05-19: app-header 行高跟 mock 的 .s1-row1 一致(12px padding + 32px mark = 56) === */
+.app-header{background:linear-gradient(180deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.92) 100%);border-bottom:1px solid var(--border);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:56px;gap:10px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
 .logo{font-family:'Noto Serif SC',serif;font-size:17px;color:var(--gold);letter-spacing:2px;display:flex;align-items:center;gap:8px;}
-.logo-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-weight:700;color:#1a1410;font-size:14px;box-shadow:0 0 16px var(--gold-glow);}
-.logo-text{display:flex;flex-direction:column;line-height:1.1;}
-.logo-name{font-size:14px;color:var(--text);letter-spacing:2px;font-weight:500;}
-.logo-sub{font-family:'DM Mono',monospace;font-size:8px;color:var(--text-dim);letter-spacing:1px;margin-top:1px;}
+.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dim) 100%);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC',serif;font-weight:700;color:#1a1410;font-size:16px;box-shadow:0 0 16px var(--gold-glow);}
+.logo-text{display:flex;flex-direction:column;line-height:1.1;white-space:nowrap;}
+.logo-name{font-family:'Noto Serif SC',serif;font-size:15px;color:var(--text);letter-spacing:2px;font-weight:500;white-space:nowrap;}
+.logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:1px;white-space:nowrap;}
 .header-stats{display:flex;gap:14px;font-size:12px;color:var(--text-dim);align-items:center;}
 .header-stats span{color:var(--gold);font-family:'DM Mono',monospace;}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:var(--jade);display:inline-block;margin-right:4px;}
@@ -39,10 +40,11 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 .sync-dot.error{background:var(--rose);}
 /* ===== 顶部圆形 icon 按钮组 (A 组 2026-05-19) ===== */
 .header-icons{display:flex;gap:6px;margin-left:10px;align-items:center;}
+/* === icon-btn 尺寸跟 mock 的 .icon-btn(common.css 36x36)对齐 2026-05-19 === */
 .icon-btn{
-  width:32px;height:32px;
+  width:36px;height:36px;
   border-radius:50%;
-  background:var(--surface2);
+  background:var(--bg-card,var(--surface2));
   border:1px solid var(--border);
   color:var(--text-muted);
   display:flex;align-items:center;justify-content:center;
@@ -56,6 +58,11 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
 }
 .icon-btn:hover{border-color:var(--gold-dim);color:var(--gold);}
 .icon-btn:active{transform:scale(0.94);}
+.icon-btn-in,.icon-btn-out{
+  width:36px;height:36px;
+  border-radius:50%;
+  border:1.5px solid;
+}
 .icon-btn-in{
   background:rgba(74,158,122,0.18);
   border-color:var(--jade);
@@ -78,19 +85,26 @@ body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text
   .header-stats>div:nth-child(3){display:none;}
   .header-stats{gap:8px;}
   .header-icons{gap:4px;margin-left:6px;}
-  .icon-btn{width:30px;height:30px;font-size:13px;}
+  /* 5 个 icon 在 375 容不下,缩到 32x32 仍能塞下 */
+  .icon-btn,.icon-btn-in,.icon-btn-out{width:32px;height:32px;font-size:13px;}
 }
-@media(max-width:380px){
-  /* 极窄屏:再藏一档,只保留同步点 + icon 组 */
+@media(max-width:480px){
+  /* 5 个 icon-btn 跟 logo 一起在 ≤480 容纳不下币种 chip,顶部隐藏(toolbar 内仍可切换) */
   .header-stats>div:nth-child(2){display:none;}
   .global-currency-select{display:none;}
 }
-.nav-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;padding:0 4px;position:sticky;top:56px;z-index:99;}
+@media(max-width:380px){
+  /* 极窄屏:再藏 stats 同步点容器,保留 5 icon */
+  .header-stats{display:none;}
+}
+/* === nav-tabs mock .s1-row2 对齐 2026-05-19: padding/间距/全宽下划线 === */
+.nav-tabs{display:flex;background:linear-gradient(180deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.92) 100%);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;padding:0 14px;gap:4px;position:sticky;top:56px;z-index:99;}
 .nav-tabs::-webkit-scrollbar{display:none;}
-.nav-tab{flex-shrink:0;padding:12px 14px;font-size:13px;color:var(--text-dim);cursor:pointer;position:relative;white-space:nowrap;transition:color .2s ease;border-bottom:2px solid transparent;}
+.nav-tab{flex-shrink:0;padding:12px 4px;margin-right:14px;font-size:13px;color:var(--text-muted);cursor:pointer;position:relative;white-space:nowrap;transition:color .2s ease;border-bottom:none;}
+.nav-tab:last-child{margin-right:0;}
 .nav-tab:hover{color:var(--text);}
 .nav-tab.active{color:var(--gold);}
-.nav-tab.active::after{content:'';position:absolute;bottom:-1px;left:8px;right:8px;height:2px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold-dim) 100%);border-radius:2px 2px 0 0;}
+.nav-tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold-dim) 100%);border-radius:2px 2px 0 0;}
 .main{padding:20px;max-width:900px;margin:0 auto;}
 .section{display:none;}.section.active{display:block;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
@@ -2036,14 +2050,19 @@ tr.clickable{cursor:pointer;}
 }
 
 .sio-confirm-row{
-  display:flex;gap:8px;align-items:stretch;
+  display:flex !important;
+  gap:8px;
+  align-items:stretch;
+  justify-content:stretch !important;
+  width:100%;
 }
 .sio-cancel-btn{
   flex:0 0 auto;
   min-width:78px;
 }
 .sio-confirm-big{
-  flex:1;
+  flex:1 1 100% !important;
+  width:100% !important;
   height:50px;
   font-size:15px;
   letter-spacing:2px;
