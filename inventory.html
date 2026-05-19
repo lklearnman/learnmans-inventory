@@ -12,7 +12,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-scanai">
+<link rel="stylesheet" href="inventory.css?v=20260520-aitrim">
 
 </head>
 <body>
@@ -258,7 +258,7 @@
       <div class="scan-action-sub">
         <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('scan-photo-input').click();">📸 摄像头扫不到? 拍照让 AI 读条码</a>
         <span class="scan-action-sub-sep">·</span>
-        <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('ai-camera-input').click();">🖼 AI 识图建品(新商品)</a>
+        <a href="javascript:void(0)" onclick="event.stopPropagation();document.getElementById('ai-library-input').click();">🖼 AI 识图建品(新商品)</a>
       </div>
     </div>
   </div>
@@ -277,13 +277,12 @@
     <div id="scan-result" style="display:none;margin-top:12px;"></div>
   </div>
 
-  <!-- AI 识图建品 (相册选图 / 引擎选择 / 测试后端) -->
+  <!-- AI 引擎设置(识别入口在摄像头扫码大卡的副链接里) -->
   <div class="scan-ai-card">
     <div class="scan-ai-head">
-      <span>🤖 AI 识图建品</span>
+      <span>🤖 AI 引擎设置</span>
       <button class="btn btn-outline btn-sm scan-ai-test" onclick="testAIBackend()" title="测试 AI 后端是否通">🔍 测试后端</button>
     </div>
-    <p class="scan-ai-desc">拍照或从相册选图,AI 自动识别名称、类别、产地</p>
 
     <div class="scan-ai-provider">
       <span class="scan-ai-provider-label">AI 引擎</span>
@@ -297,10 +296,7 @@
       </label>
     </div>
 
-    <div class="scan-ai-buttons">
-      <button class="btn btn-gold" onclick="document.getElementById('ai-camera-input').click()">📷 拍照识别</button>
-      <button class="btn btn-outline" onclick="document.getElementById('ai-library-input').click()">🖼️ 从相册选图</button>
-    </div>
+    <!-- 隐藏 input(摄像头扫码大卡副链接调用,这里保留 input 不破 JS 引用) -->
     <input type="file" id="ai-camera-input" accept="image/*" capture="environment" style="display:none" onchange="doAIRecognize(event)">
     <input type="file" id="ai-library-input" accept="image/*" style="display:none" onchange="doAIRecognize(event)">
 
@@ -694,12 +690,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-scanai"></script>
-<script src="js/inventory-ui.js?v=20260520-scanai"></script>
-<script src="js/inventory-logs.js?v=20260520-scanai"></script>
-<script src="js/inventory-ai.js?v=20260520-scanai"></script>
-<script src="js/inventory-labels.js?v=20260520-scanai"></script>
-<script src="js/inventory-search.js?v=20260520-scanai"></script>
+<script src="js/inventory-core.js?v=20260520-aitrim"></script>
+<script src="js/inventory-ui.js?v=20260520-aitrim"></script>
+<script src="js/inventory-logs.js?v=20260520-aitrim"></script>
+<script src="js/inventory-ai.js?v=20260520-aitrim"></script>
+<script src="js/inventory-labels.js?v=20260520-aitrim"></script>
+<script src="js/inventory-search.js?v=20260520-aitrim"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
