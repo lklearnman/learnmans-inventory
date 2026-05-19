@@ -270,7 +270,15 @@ function openAddModal(prefill){
   ['f-name','f-sku','f-cat','f-price','f-origin','f-country','f-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-rec-hint').innerHTML='';
   document.getElementById('photo-previews').innerHTML='';
-  if(prefill){['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});}
+  // 重置类别 6 宫格(默认本位币 + 没有选中)
+  _resetCatGrid();
+  // 币种 select 默认跟随全局 inventoryCurrency
+  const cs=document.getElementById('f-currency-sel');
+  if(cs){cs.value=(typeof inventoryCurrency!=='undefined'?inventoryCurrency:'JPY');onAddCurrencyChange(cs.value);}
+  if(prefill){
+    ['name','cat','note','origin','country'].forEach(k=>{if(prefill[k])document.getElementById('f-'+k).value=prefill[k];});
+    if(prefill.cat)_syncCatGrid(prefill.cat);
+  }
   // 新建模式:隐藏「删除此商品」入口
   const dz=document.getElementById('modal-edit-danger');
   if(dz)dz.style.display='none';
@@ -278,6 +286,37 @@ function openAddModal(prefill){
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='';
   document.getElementById('modal-add').classList.add('open');
+}
+function _resetCatGrid(){
+  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>c.classList.remove('cur'));
+}
+function _syncCatGrid(catText){
+  _resetCatGrid();
+  if(!catText)return;
+  const t=String(catText);
+  document.querySelectorAll('#f-cat-grid .s11-cat').forEach(c=>{
+    if(t.indexOf(c.dataset.cat)>=0)c.classList.add('cur');
+  });
+}
+function setAddCat(cat){
+  _resetCatGrid();
+  const el=document.querySelector(`#f-cat-grid .s11-cat[data-cat="${cat}"]`);
+  if(el)el.classList.add('cur');
+  document.getElementById('f-cat').value=cat;
+}
+function autoGenSku(){
+  const cur=document.querySelector('#f-cat-grid .s11-cat.cur')?.dataset.cat||document.getElementById('f-cat').value.trim()||'其他';
+  const map={陨石:'MET',首饰:'JEW',矿物:'MIN',葫芦:'HLO',化石:'FOS',其他:'OTH'};
+  let code='OTH';
+  Object.keys(map).forEach(k=>{if(cur.indexOf(k)>=0)code=map[k];});
+  const num=String(Math.floor(Math.random()*900)+100);
+  document.getElementById('f-sku').value=`MZ-${code}-${num}`;
+  if(typeof toast==='function')toast('⚡ 已生成 SKU');
+}
+function onAddCurrencyChange(cur){
+  // 同步 label
+  const lab=document.getElementById('f-currency-label');
+  if(lab)lab.textContent=cur||'JPY';
 }
 function openEditModal(id){
   const p=getProduct(id);if(!p)return;
@@ -305,6 +344,11 @@ function openEditModal(id){
   document.getElementById('f-origin').value=p.origin||'';
   document.getElementById('f-country').value=p.country||'';
   document.getElementById('f-note').value=p.note||'';
+  // 同步类别 6 宫格(根据 cat 文本匹配)
+  _syncCatGrid(p.cat||'');
+  // 币种 select 跟随商品(本位币改造后实际固定 JPY,但展示用 inventoryCurrency)
+  const cs=document.getElementById('f-currency-sel');
+  if(cs){cs.value=p.currency||(typeof inventoryCurrency!=='undefined'?inventoryCurrency:'JPY');onAddCurrencyChange(cs.value);}
   renderPhotoPreviews();closeModal('modal-detail');
   // 编辑模式:显示「删除此商品」入口
   const dz=document.getElementById('modal-edit-danger');
@@ -353,7 +397,17 @@ function buildProduct(){
   if(!name){toast('请填写商品名称');return null;}
   const sku=document.getElementById('f-sku').value.trim()||('MZ-'+uid().toUpperCase().slice(0,6));
   const id=editingId||uid();
-  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:document.getElementById('f-price').value.trim(),currency:'JPY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
+  // 本位币改造:price 统一存 JPY。如果用户在币种 select 选了非 JPY 输入,这里换算
+  let priceTxt=document.getElementById('f-price').value.trim();
+  const selCur=document.getElementById('f-currency-sel')?.value||'JPY';
+  if(priceTxt&&selCur!=='JPY'){
+    const num=parseFloat(priceTxt);
+    if(!isNaN(num)&&typeof getFxRate==='function'){
+      const rate=getFxRate(selCur,'JPY');
+      if(rate)priceTxt=String(Math.round(num*rate));
+    }
+  }
+  return{id,name,sku,cat:document.getElementById('f-cat').value.trim(),price:priceTxt,currency:'JPY',origin:document.getElementById('f-origin').value.trim(),country:document.getElementById('f-country').value.trim(),note:document.getElementById('f-note').value.trim(),photos:[...pendingPhotos],qty:editingId?(getProduct(editingId).qty||0):0,createdAt:editingId?(getProduct(editingId).createdAt||Date.now()):Date.now()};
 }
 async function saveProductOnly(){
   const btn=document.getElementById('btn-save-only');
@@ -505,6 +559,27 @@ function updateStockInInfo(){
   const el=document.getElementById('si-current-info');
   if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：'+fmtPriceRaw(p.price,p.currency||'CNY'):''}`;}
   else el.style.display='none';
+  // 商品预览卡(screen-4 .s4-product 风格)
+  const card=document.getElementById('sio-product-card');
+  if(card){
+    if(p){
+      card.style.display='flex';
+      const thumb=document.getElementById('sio-product-thumb');
+      const thumbSrc=p.thumbnail||(p.photos&&p.photos[0])||'';
+      if(thumb)thumb.innerHTML=thumbSrc?`<img src="${thumbSrc}" alt="">`:'💎';
+      const nameEl=document.getElementById('sio-product-name');
+      if(nameEl)nameEl.textContent=p.name||'—';
+      const metaEl=document.getElementById('sio-product-meta');
+      if(metaEl){
+        const priceTxt=p.price?(' · '+(typeof fmtPriceRaw==='function'?fmtPriceRaw(p.price,p.currency||'JPY'):p.price)):'';
+        metaEl.textContent=(p.sku||'—')+priceTxt;
+      }
+      const stockEl=document.getElementById('sio-product-stock');
+      if(stockEl)stockEl.textContent=String(p.qty||0);
+    }else{
+      card.style.display='none';
+    }
+  }
   renderStockioPreview();
 }
 
