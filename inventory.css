@@ -1839,3 +1839,46 @@ tr.clickable{cursor:pointer;}
   .s2-toolbar .inv-sort{order:10;flex:1 1 100%;}
 }
 
+/* 编辑模式删除按钮 (2026-05-19, mock screen-11?edit=1 风格) */
+.modal-edit-danger{
+  margin:14px 0 4px;
+  text-align:center;
+  border-top:1px dashed var(--rose);
+  padding-top:14px;
+}
+.edit-delete-link{
+  display:inline-block;
+  font-size:12px;
+  color:var(--rose);
+  text-decoration:none;
+  letter-spacing:2px;
+  padding:8px 16px;
+  border-radius:6px;
+  transition:background 0.15s ease;
+}
+.edit-delete-link:hover{background:rgba(255,122,122,0.08);}
+
+/* 类别筛选 select (2026-05-19 恢复, toolbar row-2) */
+.inv-cat-filter{
+  height:28px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:6px;
+  color:var(--text);
+  font-size:12px;
+  padding:0 24px 0 8px;
+  cursor:pointer;
+  max-width:140px;
+  text-overflow:ellipsis;
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23c9a85a' stroke-width='2.5'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 6px center;
+}
+.inv-cat-filter:hover{border-color:var(--gold-dim);}
+.inv-cat-filter:focus{outline:none;border-color:var(--gold);}
+@media (max-width:420px){
+  .inv-cat-filter{max-width:120px;font-size:11px;}
+}
+
