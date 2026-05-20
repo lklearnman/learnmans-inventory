@@ -283,6 +283,9 @@ function openAddModal(prefill){
   // 新建模式:恢复「登录+入库」按钮
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='';
+  // 新建模式:主按钮文案「商品登录」
+  const btnOnly=document.getElementById('btn-save-only');
+  if(btnOnly)btnOnly.textContent='商品登录';
   document.getElementById('modal-add').classList.add('open');
 }
 function _resetCatGrid(){
@@ -388,6 +391,9 @@ function openEditModal(id){
   // 编辑模式:隐藏「登录+入库」(无意义)
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='none';
+  // 编辑模式:主按钮文案「修改」
+  const btnOnly=document.getElementById('btn-save-only');
+  if(btnOnly)btnOnly.textContent='修改';
   document.getElementById('modal-add').classList.add('open');
 }
 function openAddThenStockIn(){openAddModal();document.getElementById('modal-add').dataset.stockin='1';}
@@ -477,7 +483,7 @@ async function saveProductOnly(){
   if(editingId){
     const idx=DB.products.findIndex(p=>p.id===editingId);
     if(idx>=0)DB.products[idx]=data;
-    toast('✅ 已更新');
+    toast('✅ 修改完成');
   }else{
     DB.products.unshift(data);
     toast('✅ 商品登录完成（库存0）');
