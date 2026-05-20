@@ -282,7 +282,7 @@ function openAddModal(prefill){
   // 新建模式:隐藏「删除此商品」入口
   const dz=document.getElementById('modal-edit-danger');
   if(dz)dz.style.display='none';
-  // 新建模式:恢复「建档并入库」按钮
+  // 新建模式:恢复「登录+入库」按钮
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='';
   document.getElementById('modal-add').classList.add('open');
@@ -377,7 +377,7 @@ function openEditModal(id){
   // 编辑模式:显示「删除此商品」入口
   const dz=document.getElementById('modal-edit-danger');
   if(dz)dz.style.display='';
-  // 编辑模式:隐藏「建档并入库」(无意义)
+  // 编辑模式:隐藏「登录+入库」(无意义)
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='none';
   document.getElementById('modal-add').classList.add('open');
@@ -472,7 +472,7 @@ async function saveProductOnly(){
     toast('✅ 已更新');
   }else{
     DB.products.unshift(data);
-    toast('✅ 建档完成（库存0）');
+    toast('✅ 商品登录完成（库存0）');
   }
   await upsertProduct(data);
   closeModal('modal-add');renderInventory();
