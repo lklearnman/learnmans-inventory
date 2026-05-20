@@ -584,20 +584,29 @@ async function testAIBackend(){
   }
 }
 
-// 同义词对照表
+// 同义词对照表(中英日)
 const SYNONYMS=[
-  ['陨石','天铁','铁陨石','石铁陨石','陨铁','meteorite'],
-  ['葫芦','葫芦形','葫芦状'],
-  ['宝石','gemstone','gem'],
-  ['首饰','jewelry','吊坠','项链','手链','戒指','耳环','手镯'],
-  ['矿物','矿石','crystal','水晶'],
-  ['玛瑙','agate'],
-  ['琥珀','amber'],
-  ['翡翠','jadeite','硬玉'],
-  ['和田玉','软玉','nephrite'],
-  ['黄金','金','gold'],
-  ['白银','银','silver'],
-  ['钻石','diamond','钻'],
+  ['陨石','天铁','铁陨石','石铁陨石','陨铁','隕石','鉄隕石','石鉄隕石','meteorite'],
+  ['葫芦','葫芦形','葫芦状','ひょうたん'],
+  ['宝石','gemstone','gem','ジュエリー'],
+  ['首饰','jewelry','吊坠','项链','手链','戒指','耳环','手镯','ペンダント','ネックレス','リング','イヤリング','ブレスレット','指輪'],
+  ['吊坠','ペンダント','pendant'],
+  ['项链','ネックレス','necklace'],
+  ['戒指','指輪','リング','ring'],
+  ['耳环','イヤリング','ピアス','earring'],
+  ['手链','ブレスレット','bracelet'],
+  ['矿物','矿石','crystal','水晶','鉱物','鉱石','クリスタル'],
+  ['化石','fossil','フォッシル'],
+  ['标本','標本','specimen'],
+  ['玛瑙','agate','メノウ','瑪瑙'],
+  ['琥珀','amber','コハク','こはく'],
+  ['翡翠','jadeite','硬玉','ヒスイ','翡翠'],
+  ['和田玉','软玉','nephrite','ネフライト'],
+  ['黄金','金','gold','ゴールド'],
+  ['白银','银','silver','シルバー','銀'],
+  ['钻石','diamond','钻','ダイヤ','ダイヤモンド'],
+  ['橄榄陨石','橄榄','パラサイト','オリーブ','pallasite'],
+  ['シホテアリン','シホテ・アリン','sikhote-alin','sikhotealin'],
 ];
 
 function expandSynonyms(word){
@@ -611,20 +620,22 @@ function expandSynonyms(word){
 }
 
 // 通用词黑名单：IDF 过低，单独命中不算疑似
-const COMMON_WORDS = new Set(['吊坠','项链','戒指','耳环','手链','手镯','宝石','矿物','矿石','元石','陨石','化石','水晶','其他','未分类','摆件','标本','石头','石','吊','坠','坠子','克','mm','cm','jewelry','gem','gemstone','crystal']);
+const COMMON_WORDS = new Set(['吊坠','项链','戒指','耳环','手链','手镯','宝石','矿物','矿石','元石','陨石','化石','水晶','其他','未分类','摆件','标本','石头','石','吊','坠','坠子','克','mm','cm','jewelry','gem','gemstone','crystal','ペンダント','ネックレス','リング','イヤリング','ピアス','ブレスレット','ジュエリー','宝石','鉱物','鉱石','隕石','化石','水晶','標本','石','その他','未分類','指輪']);
 
-// 搜索库存匹配商品
+// 搜索库存匹配商品(支持中日双语)
 function searchByAIResult(parsed){
-  const keywords=[parsed.name,parsed.cat,parsed.origin].filter(Boolean).join(' ');
-  // 分词
-  const rawWords=keywords.replace(/[，,、。！？\s]+/g,' ').split(' ').filter(w=>w.length>=2);
+  // AI 现在可能同时返回 name_ja / name_zh / name(向后兼容)
+  const aiNames=[parsed.name_ja,parsed.name_zh,parsed.name].filter(Boolean);
+  const keywords=[...aiNames,parsed.cat,parsed.origin].filter(Boolean).join(' ');
+  // 分词(CJK 单字符也保留,避免日文短词被过滤)
+  const rawWords=keywords.replace(/[，,、。！？・\s]+/g,' ').split(' ').filter(w=>w.length>=2);
   // 展开同义词
   const expandedWords=[...new Set(rawWords.flatMap(w=>expandSynonyms(w)))];
   // 过滤通用词和过短词
   const filteredWords=expandedWords.filter(w=>w.length>=2 && !COMMON_WORDS.has(w.toLowerCase()));
 
-  // AI 返回的原始 name（精确匹配置顶用）
-  const aiName=(parsed.name||'').trim().toLowerCase();
+  // AI 返回的完整 name(中/日)用于精确置顶
+  const aiNamesLower=aiNames.map(n=>(n||'').trim().toLowerCase()).filter(n=>n.length>=2);
 
   // 按匹配分数排序，匹配越多越靠前
   const calcScore=(p)=>{
@@ -640,8 +651,8 @@ function searchByAIResult(parsed){
       if(note.includes(wl)) s+=1;       // 备注
       return s;
     },0);
-    // AI name 完整字符串出现在 DB name 里 → 直接置顶
-    if(aiName && aiName.length>=2 && name.includes(aiName)) score+=10;
+    // AI name(任一语言)完整字符串出现在 DB name 里 → 直接置顶
+    if(aiNamesLower.some(n=>name.includes(n))) score+=10;
     return score;
   };
 
@@ -739,7 +750,7 @@ async function doAIRecognize(e){
     res.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
       <div style="font-size:12px;color:var(--jade-light);margin-bottom:10px;">✅ AI识别完成 · ${providerLabel}</div>
       <div class="detail-grid">
-        <div class="detail-field"><label>识别名称</label><div class="val">${parsed.name||'—'}</div></div>
+        <div class="detail-field"><label>识别名称</label><div class="val">${parsed.name_ja||parsed.name||'—'}${parsed.name_zh&&parsed.name_zh!==parsed.name_ja?` <span style="color:var(--text-muted);font-size:12px;">/ ${parsed.name_zh}</span>`:''}</div></div>
         <div class="detail-field"><label>类别</label><div class="val">${parsed.cat||'—'}</div></div>
         ${parsed.origin?`<div class="detail-field"><label>产地/规格</label><div class="val">${parsed.origin}</div></div>`:''}
         ${parsed.country?`<div class="detail-field"><label>原产国</label><div class="val">${parsed.country}</div></div>`:''}
