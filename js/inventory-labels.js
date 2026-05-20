@@ -139,7 +139,14 @@ function toggleLabelField(field){
 // label-size 切换钩子。早期版本会自动 sku→qr,后来用户指出根因是
 // barcode 分辨率不够(不是物理限制),撤回 auto-flip。函数保留以备后续微调。
 function onLabelSizeChange(size){
-  // 当前是 no-op。如果将来想做提示/默认勾选改动,在这里加。
+  // fold25x30 / fold30x25(对折标签 A 面只 15mm 高,产地塞不下,默认不显示产地)
+  if(size === 'fold25x30' || size === 'fold30x25'){
+    const orig = document.getElementById('lbl-origin');
+    if(orig) orig.checked = false;
+    // 同步 chip 高亮
+    const chip = document.querySelector('#label-show-chips .label-chip[data-field="origin"]');
+    if(chip) chip.classList.remove('cur');
+  }
 }
 
 function getLabelConfig(){
