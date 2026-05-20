@@ -327,8 +327,17 @@ function autoGenSku(){
   const map={陨石:'MET',首饰:'JEW',矿物:'MIN',葫芦:'HLO',化石:'FOS',其他:'OTH'};
   let code='OTH';
   Object.keys(map).forEach(k=>{if(cur.indexOf(k)>=0)code=map[k];});
-  const num=String(Math.floor(Math.random()*900)+100);
-  document.getElementById('f-sku').value=`MZ-${code}-${num}`;
+  const prefix=`MZ-${code}-`;
+  let maxN=0;
+  (DB.products||[]).forEach(p=>{
+    const s=p.sku||'';
+    if(s.indexOf(prefix)===0){
+      const n=parseInt(s.slice(prefix.length),10);
+      if(!isNaN(n)&&n>maxN)maxN=n;
+    }
+  });
+  const num=String(maxN+1).padStart(6,'0');
+  document.getElementById('f-sku').value=`${prefix}${num}`;
   if(typeof toast==='function')toast('⚡ 已生成 SKU');
 }
 function onAddCurrencyChange(cur){
