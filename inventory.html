@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-batch5">
+<link rel="stylesheet" href="inventory.css?v=20260520-p13">
 
 </head>
 <body>
@@ -97,12 +97,12 @@
   <div class="s2-toolbar" id="inv-s2-toolbar">
     <button class="s2-new-btn" onclick="openAddModal()" title="新建商品" aria-label="新建商品">+</button>
     <button class="s2-csv-btn s2-search-btn" onclick="openSearch()" title="搜索商品" aria-label="搜索"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
-    <div class="s2-sort inv-sort" id="inv-sort">
-      <div class="s2-sort-btn inv-sort-btn cur" data-sort="new" onclick="setInvSort('new',this)" title="按创建时间倒序">📅 最新</div>
-      <div class="s2-sort-btn inv-sort-btn" data-sort="qty" onclick="setInvSort('qty',this)" title="按可用库存倒序">📦 库存</div>
-      <div class="s2-sort-btn inv-sort-btn" data-sort="price" onclick="setInvSort('price',this)" title="按价格倒序">¥ 价格</div>
-      <div class="s2-sort-btn inv-sort-btn" data-sort="az" onclick="setInvSort('az',this)" title="按名称 A-Z">A-Z</div>
-    </div>
+    <select class="inv-sort-select" id="inv-sort-select" onchange="setInvSort(this.value)" title="排序" aria-label="排序">
+      <option value="new">📅 最新</option>
+      <option value="qty">📦 库存</option>
+      <option value="price">¥ 价格</option>
+      <option value="az">🔤 A-Z</option>
+    </select>
     <div class="s2-view-toggle inv-view-toggle" id="inv-view-toggle">
       <button class="cur" id="view-toggle-grid" data-view="grid" onclick="setInventoryView('grid')" title="网格视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button>
       <button id="view-toggle-list" data-view="list" onclick="setInventoryView('list')" title="列表视图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -540,8 +540,8 @@
       </div>
       <div class="form-group full"><label id="si-price-label">本次进价</label>
         <div style="display:flex;gap:6px;">
-          <input type="text" id="si-price" placeholder="进货成本" style="flex:1;min-width:0;" oninput="renderStockioPreview()">
-          <select id="si-currency" onchange="onPriceCurrencyChange('si-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;min-width:74px;">
+          <input type="text" id="si-price" placeholder="进货成本" style="flex:1 1 0;min-width:0;width:auto;" oninput="renderStockioPreview()">
+          <select id="si-currency" onchange="onPriceCurrencyChange('si-price',this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;color:var(--text);font-size:12px;flex:0 0 86px;width:86px;">
             <option value="JPY">JPY ¥</option><option value="CNY">CNY ¥</option><option value="USD">USD $</option><option value="EUR">EUR €</option>
           </select>
         </div>
@@ -551,8 +551,8 @@
       <div class="form-group full"><label>材质</label><input type="text" id="si-material" placeholder="例:18K金 / S925 / 黄铜"></div>
       <div class="form-group full"><label>重量</label>
         <div style="display:flex;gap:6px;">
-          <input type="number" id="si-weight" placeholder="数值" step="0.01" style="flex:1;">
-          <select id="si-unit" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;color:var(--text);font-size:12px;width:78px;">
+          <input type="number" id="si-weight" placeholder="数值" step="0.01" style="flex:1 1 0;min-width:0;width:auto;">
+          <select id="si-unit" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;color:var(--text);font-size:12px;flex:0 0 86px;width:86px;">
             <option value="">单位</option>
             <option value="g">g 克</option>
             <option value="ct">ct 克拉</option>
@@ -735,12 +735,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-batch5"></script>
-<script src="js/inventory-ui.js?v=20260520-batch5"></script>
-<script src="js/inventory-logs.js?v=20260520-batch5"></script>
-<script src="js/inventory-ai.js?v=20260520-batch5"></script>
-<script src="js/inventory-labels.js?v=20260520-batch5"></script>
-<script src="js/inventory-search.js?v=20260520-batch5"></script>
+<script src="js/inventory-core.js?v=20260520-p13"></script>
+<script src="js/inventory-ui.js?v=20260520-p13"></script>
+<script src="js/inventory-logs.js?v=20260520-p13"></script>
+<script src="js/inventory-ai.js?v=20260520-p13"></script>
+<script src="js/inventory-labels.js?v=20260520-p13"></script>
+<script src="js/inventory-search.js?v=20260520-p13"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
