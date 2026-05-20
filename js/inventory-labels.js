@@ -144,8 +144,13 @@ function onLabelSizeChange(size){
     const orig = document.getElementById('lbl-origin');
     if(orig) orig.checked = false;
     // 同步 chip 高亮
-    const chip = document.querySelector('#label-show-chips .label-chip[data-field="origin"]');
-    if(chip) chip.classList.remove('cur');
+    const origChip = document.querySelector('#label-show-chips .label-chip[data-field="origin"]');
+    if(origChip) origChip.classList.remove('cur');
+    // QR 是 A 面布局关键,默认勾选
+    const qr = document.getElementById('lbl-qr');
+    if(qr) qr.checked = true;
+    const qrChip = document.querySelector('#label-show-chips .label-chip[data-field="qr"]');
+    if(qrChip) qrChip.classList.add('cur');
   }
 }
 
