@@ -171,13 +171,23 @@ async function startCamera(){
         scheduleNext();return;
       }
 
-      // 路径 B: jsQR + ZXing (全 sync)
+      // 路径 B: jsQR + ZBar + ZXing
       let hit=null;
       if(hasJsQR){
         try{
           const id=roiCtx.getImageData(0,0,targetSide,targetSide);
           const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
           if(r&&r.data){hit={engine:'jsQR',code:r.data};}
+        }catch(_){}
+      }
+      // ZBar.wasm 优先 (1D 条码识别率远超 ZXing.js,wasm 未加载时跳过)
+      if(!hit&&window.zbarScanImageData){
+        try{
+          const id=roiCtx.getImageData(0,0,targetSide,targetSide);
+          const results=await window.zbarScanImageData(id);
+          if(results&&results.length){
+            hit={engine:'ZBar',code:results[0].decode()};
+          }
         }catch(_){}
       }
       if(!hit){
@@ -294,6 +304,20 @@ async function decodeFileImage(file){
         if(codes&&codes.length){
           const code=codes[0].rawValue;
           if(bar)bar.textContent=`✅ [BD] ${code}`;
+          stopCamera();
+          showScanResult(code,'camera-scan-result');
+          return;
+        }
+      }catch(_){}
+    }
+    // 路径 2.5: ZBar.wasm (1D 识别率远超 ZXing.js,优先于 ZXing 兜底)
+    if(window.zbarScanImageData){
+      try{
+        const id=cx.getImageData(0,0,w,h);
+        const results=await window.zbarScanImageData(id);
+        if(results&&results.length){
+          const code=results[0].decode();
+          if(bar)bar.textContent=`✅ [ZBar] ${code}`;
           stopCamera();
           showScanResult(code,'camera-scan-result');
           return;

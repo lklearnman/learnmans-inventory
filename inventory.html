@@ -17,12 +17,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script type="module">
+  // ZBar.wasm — 1D 条码识别率显著优于 ZXing.js,优先尝试,加载失败静默 fallback
+  try{
+    const mod=await import('https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.10.1/dist/index.js');
+    window.zbarScanImageData=mod.scanImageData;
+    console.log('[ZBar] wasm loaded');
+  }catch(e){
+    console.warn('[ZBar] load failed, fallback to ZXing:',e);
+  }
+</script>
 <!-- Quagga2 已移除 (false positive 严重,把 CODE128 误读成短数字) -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-photofix">
+<link rel="stylesheet" href="inventory.css?v=20260520-zbar">
 
 </head>
 <body>
@@ -760,12 +770,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-photofix"></script>
-<script src="js/inventory-ui.js?v=20260520-photofix"></script>
-<script src="js/inventory-logs.js?v=20260520-photofix"></script>
-<script src="js/inventory-ai.js?v=20260520-photofix"></script>
-<script src="js/inventory-labels.js?v=20260520-photofix"></script>
-<script src="js/inventory-search.js?v=20260520-photofix"></script>
+<script src="js/inventory-core.js?v=20260520-zbar"></script>
+<script src="js/inventory-ui.js?v=20260520-zbar"></script>
+<script src="js/inventory-logs.js?v=20260520-zbar"></script>
+<script src="js/inventory-ai.js?v=20260520-zbar"></script>
+<script src="js/inventory-labels.js?v=20260520-zbar"></script>
+<script src="js/inventory-search.js?v=20260520-zbar"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
