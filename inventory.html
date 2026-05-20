@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-batch3">
+<link rel="stylesheet" href="inventory.css?v=20260520-batch4">
 
 </head>
 <body>
@@ -435,7 +435,7 @@
   <div class="modal">
     <div class="modal-title" id="modal-add-title">新建商品档案</div>
     <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
-    <div class="info-box">💡 建品只创建档案，库存为0。建完后可用「入库」功能补库存。</div>
+    <div class="info-box">💡 仅商品登录,库存为0。之后用「入库」功能补库存。</div>
     <div class="form-grid">
       <div class="form-group full"><label>商品名称 *</label><input type="text" id="f-name" placeholder="例：紫水晶原石"></div>
       <div class="form-group full">
@@ -499,7 +499,7 @@
     </div>
     <div class="modal-actions modal-add-actions">
       <button class="btn btn-outline modal-add-btn modal-add-btn-only" id="btn-save-only" onclick="saveProductOnly()">商品登录</button>
-      <button class="btn btn-jade modal-add-btn modal-add-btn-stockin" id="btn-save-stockin" onclick="saveProductAndStockIn()">✓ 建档并入库</button>
+      <button class="btn btn-jade modal-add-btn modal-add-btn-stockin" id="btn-save-stockin" onclick="saveProductAndStockIn()">✓ 登录+入库</button>
     </div>
     <!-- 编辑模式专用:删除商品 (2026-05-19, 移自详情底部) -->
     <div class="modal-edit-danger" id="modal-edit-danger" style="display:none;">
@@ -735,12 +735,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-batch3"></script>
-<script src="js/inventory-ui.js?v=20260520-batch3"></script>
-<script src="js/inventory-logs.js?v=20260520-batch3"></script>
-<script src="js/inventory-ai.js?v=20260520-batch3"></script>
-<script src="js/inventory-labels.js?v=20260520-batch3"></script>
-<script src="js/inventory-search.js?v=20260520-batch3"></script>
+<script src="js/inventory-core.js?v=20260520-batch4"></script>
+<script src="js/inventory-ui.js?v=20260520-batch4"></script>
+<script src="js/inventory-logs.js?v=20260520-batch4"></script>
+<script src="js/inventory-ai.js?v=20260520-batch4"></script>
+<script src="js/inventory-labels.js?v=20260520-batch4"></script>
+<script src="js/inventory-search.js?v=20260520-batch4"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
