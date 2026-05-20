@@ -18,13 +18,27 @@ async function startCamera(){
     // 手动 getUserMedia,逐级降级
     let stream;
     try{
+      // 优先 4K (3840x2160) — iPhone 11+/Android 旗舰物理支持,1D 条码每 module 多 2x camera 像素
       stream=await navigator.mediaDevices.getUserMedia({video:{
         facingMode:{ideal:'environment'},
-        width:{ideal:1920},height:{ideal:1080}
+        width:{ideal:3840},height:{ideal:2160}
       }});
-    }catch(e1){
-      bar.textContent='② 高清失败,降级…';
-      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    }catch(e0){
+      try{
+        // 降级到 1080p
+        stream=await navigator.mediaDevices.getUserMedia({video:{
+          facingMode:{ideal:'environment'},
+          width:{ideal:1920},height:{ideal:1080}
+        }});
+      }catch(e1){
+        if(e1&&(e1.name==='NotAllowedError'||e1.name==='SecurityError')){
+          bar.innerHTML='❌ 摄像头被拒绝。iOS:<b>设置 → Safari → 相机 → 允许</b>;Android:浏览器地址栏锁图标 → 权限 → 相机';
+          toast('请允许相机权限');
+          throw e1;
+        }
+        bar.textContent='② 高清失败,降级…';
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      }
     }
     _scanStream=stream;
     _scanStopFlag=false;
@@ -129,7 +143,7 @@ async function startCamera(){
       }
       const roi=computeROI();
       // 横长方形:宽度保留到 1280 上限,高度按比例缩放,保住 1D 条码横向像素
-      const sw=Math.min(roi.sw,1280);
+      const sw=Math.min(roi.sw,1920);
       const sh=Math.floor(roi.sh*(sw/roi.sw));
       roiCanvas.width=sw;
       roiCanvas.height=sh;
