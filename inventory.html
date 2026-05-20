@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=scanvideofix-pricefix4">
+<link rel="stylesheet" href="inventory.css?v=20260520-scantrue">
 
 </head>
 <body>
@@ -251,17 +251,7 @@
       <div class="scan-fs-top">
         <button class="scan-fs-back" onclick="stopCamera()" aria-label="返回">‹</button>
       </div>
-      <!-- 中央:仅 4 角 corner bracket + 扫描线 -->
-      <div class="scan-fs-stage">
-        <div class="scan-fs-frame">
-          <span class="scan-fs-corner tl"></span>
-          <span class="scan-fs-corner tr"></span>
-          <span class="scan-fs-corner bl"></span>
-          <span class="scan-fs-corner br"></span>
-          <div class="scan-line"></div>
-        </div>
-        <div class="scan-fs-hint">扫描包装盒条码 / 商品条码</div>
-      </div>
+      <!-- 中央取景框已移除:全屏明亮 camera feed,无任何中心标记 -->
       <!-- 底部:圆按钮 + 占位条 -->
       <div class="scan-fs-bottom">
         <div class="scan-fs-btn-row">
@@ -269,8 +259,7 @@
           <button id="scan-gallery-btn" class="scan-btn-circle" onclick="document.getElementById('scan-file-input').click()" aria-label="相册选图">🖼</button>
         </div>
         <div class="scan-fs-preview-bar">
-          <span>扫描商品后</span>
-          <span class="scan-fs-preview-arrow">预览 ▲</span>
+          <span>将条码对准镜头</span>
         </div>
       </div>
       <!-- 隐藏 input: 相册选图解码 -->
@@ -761,12 +750,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=scanvideofix-pricefix4"></script>
-<script src="js/inventory-ui.js?v=scanvideofix-pricefix4"></script>
-<script src="js/inventory-logs.js?v=scanvideofix-pricefix4"></script>
-<script src="js/inventory-ai.js?v=scanvideofix-pricefix4"></script>
-<script src="js/inventory-labels.js?v=scanvideofix-pricefix4"></script>
-<script src="js/inventory-search.js?v=scanvideofix-pricefix4"></script>
+<script src="js/inventory-core.js?v=20260520-scantrue"></script>
+<script src="js/inventory-ui.js?v=20260520-scantrue"></script>
+<script src="js/inventory-logs.js?v=20260520-scantrue"></script>
+<script src="js/inventory-ai.js?v=20260520-scantrue"></script>
+<script src="js/inventory-labels.js?v=20260520-scantrue"></script>
+<script src="js/inventory-search.js?v=20260520-scantrue"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
