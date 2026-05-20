@@ -465,16 +465,17 @@ async function exportLabelsPDF(){
         comp.width=cvW;comp.height=cvH;
         const cctx=comp.getContext('2d');
         cctx.fillStyle='#fff';cctx.fillRect(0,0,cvW,cvH);
-        const bcMmW=cfg.w-fpad*2;         // 22.6mm 满铺
+        const bcMarginMm=3.5;             // 两边各留 3.5mm
+        const bcMmW=cfg.w-bcMarginMm*2;   // 18mm
         const bcMmH=cfg.bcH;              // 9mm
-        const bcPxX=fpad*scale;
+        const bcPxX=bcMarginMm*scale;
         const bcPxY=fpad*scale;
         const bcPxW=bcMmW*scale;
         const bcPxH=bcMmH*scale;
         cctx.drawImage(bc,bcPxX,bcPxY,bcPxW,bcPxH);
-        // SKU 文字: barcode 下方居中(B 面正向坐标,旋转后视觉仍在 barcode 下方)
+        // SKU 文字: barcode 下方居中,字号比 subSize 略小(对折 B 面节省空间)
         const skuTxt=p.sku||p.id||'';
-        const skuPx=Math.round(cfg.subSize*scale*0.9);
+        const skuPx=Math.round(cfg.subSize*scale*0.6);
         cctx.fillStyle='#222';
         cctx.font=`${skuPx}px monospace`;
         cctx.textAlign='center';
