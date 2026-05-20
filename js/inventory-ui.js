@@ -952,8 +952,11 @@ async function openDetail(id){
       const wrap=document.getElementById('detail-photos');
       if(wrap)wrap.innerHTML=`<img id="detail-photo-main" src="${p.photos[0]}" onclick="viewPhoto(detailPhotos,0)">`;
     }
+    bindDetailPhotoSwipe();
   });
   detailPhotos=p.photos||[];
+  window._detailCurPhotoIdx=0;
+  bindDetailPhotoSwipe();
   // 渲染 SKU 条码
   if(p.sku&&window.JsBarcode){
     try{
@@ -977,6 +980,57 @@ function d3SwitchPhoto(i){
   }
   document.querySelectorAll('#modal-detail .d3-photo-dot').forEach((d,j)=>d.classList.toggle('cur',j===i));
   const cur=document.getElementById('d3-photo-cur');if(cur)cur.textContent=i+1;
+  window._detailCurPhotoIdx=i;
+}
+// 详情主图 swipe(触摸+鼠标拖拽)左右切换
+function bindDetailPhotoSwipe(){
+  const main=document.getElementById('detail-photo-main');
+  if(!main||main.tagName!=='IMG')return;
+  if(!detailPhotos||detailPhotos.length<2)return;
+  if(main.dataset.swipeBound==='1')return;
+  main.dataset.swipeBound='1';
+  let startX=null,moved=false;
+  const onEnd=(endX)=>{
+    if(startX===null)return;
+    const dx=endX-startX;
+    startX=null;
+    if(Math.abs(dx)<30)return; // 当点击,不切
+    const len=detailPhotos.length;
+    const cur=window._detailCurPhotoIdx||0;
+    const next=dx<0?(cur+1)%len:(cur-1+len)%len;
+    d3SwitchPhoto(next);
+  };
+  // touch
+  main.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;moved=false;},{passive:true});
+  main.addEventListener('touchmove',e=>{if(startX!==null&&Math.abs(e.touches[0].clientX-startX)>10)moved=true;},{passive:true});
+  main.addEventListener('touchend',e=>{
+    const endX=e.changedTouches[0].clientX;
+    const wasSwipe=startX!==null&&Math.abs(endX-startX)>=30;
+    if(wasSwipe){
+      // 阻止随后的 click 触发满屏
+      const blocker=ev=>{ev.stopPropagation();ev.preventDefault();main.removeEventListener('click',blocker,true);};
+      main.addEventListener('click',blocker,true);
+      setTimeout(()=>main.removeEventListener('click',blocker,true),400);
+    }
+    onEnd(endX);
+  },{passive:true});
+  // mouse drag
+  let mouseDown=false;
+  main.addEventListener('mousedown',e=>{startX=e.clientX;mouseDown=true;moved=false;});
+  main.addEventListener('mousemove',e=>{if(mouseDown&&startX!==null&&Math.abs(e.clientX-startX)>10)moved=true;});
+  main.addEventListener('mouseup',e=>{
+    if(!mouseDown){startX=null;return;}
+    mouseDown=false;
+    const endX=e.clientX;
+    const wasSwipe=startX!==null&&Math.abs(endX-startX)>=30;
+    if(wasSwipe){
+      const blocker=ev=>{ev.stopPropagation();ev.preventDefault();main.removeEventListener('click',blocker,true);};
+      main.addEventListener('click',blocker,true);
+      setTimeout(()=>main.removeEventListener('click',blocker,true),400);
+    }
+    onEnd(endX);
+  });
+  main.addEventListener('mouseleave',()=>{mouseDown=false;startX=null;});
 }
 function catEmojiSafe(cat){
   try{if(typeof catEmoji==='function')return catEmoji(cat);}catch(e){}
