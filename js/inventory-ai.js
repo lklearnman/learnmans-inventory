@@ -91,12 +91,15 @@ async function startCamera(){
 
     function computeROI(){
       const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      const side=Math.min(vw,vh);
-      return{
-        sx:Math.floor((vw-side)/2),
-        sy:Math.floor((vh-side)/2),
-        sw:side,sh:side
-      };
+      // 奇数帧:整宽 × 中心 45% 高(适合 1D 横向条码)
+      // 偶数帧:100% 短边正方形(适合 QR 和居中条码)
+      if(_scanFrames % 2 === 1){
+        const sw=vw, sh=Math.floor(vh*0.45);
+        return {sx:0, sy:Math.floor((vh-sh)/2), sw, sh};
+      } else {
+        const side=Math.min(vw,vh);
+        return {sx:Math.floor((vw-side)/2), sy:Math.floor((vh-side)/2), sw:side, sh:side};
+      }
     }
     console.log('[scan] video',videoEl.videoWidth+'×'+videoEl.videoHeight,'ROI=',computeROI());
 
