@@ -136,6 +136,7 @@ function getLabelConfig(){
     tiny:{w:25,h:15,nameSize:5,priceSize:7,subSize:4,bcW:0.45,bcH:5},
     mini:{w:30,h:20,nameSize:6,priceSize:9,subSize:5,bcW:0.55,bcH:6},
     'fold-ring':{w:25,h:30,nameSize:6,priceSize:10,subSize:4,bcW:0.5,bcH:9,fold:true},
+    fold30x25:{w:30,h:25,nameSize:7,priceSize:8,subSize:6,bcW:0.5,bcH:10,fold2side:true},
     small:{w:40,h:30,nameSize:8,priceSize:11,subSize:6,bcW:0.6,bcH:8},
     medium:{w:60,h:40,nameSize:10,priceSize:14,subSize:7,bcW:0.8,bcH:10},
     large:{w:90,h:60,nameSize:14,priceSize:20,subSize:9,bcW:1.2,bcH:14},
@@ -347,6 +348,87 @@ async function exportLabelsPDF(){
         ? fmtPrice(p.price,cfg.labelCurrency,pCur)
         : fmtPriceRaw(p.price,pCur);
       priceW=pdf.getTextWidth(priceTxt);
+    }
+
+    // 对折 30×25mm 双面:左半 (0-15) 名+产地 正向;右半 (15-30) barcode+价 旋转 180°
+    // 中间虚线折线。对折后两面分别正向阅读:左半在外面正面,右半折过去也变正向
+    // 实现策略:左半用常规绘制;右半把 barcode 的 canvas 预旋转 180° 后 addImage,
+    // 价格文字用 jsPDF angle:180 旋转。旋转 180° 时文字锚点行为:基线翻转,以锚点为中心,
+    // align:'center' 会让文字以锚点为水平中心展开,所以锚点直接放视觉位置的镜像点即可
+    if(cfg.fold2side){
+      const halfW=cfg.w/2; // 15mm
+      const fpad=1.2;
+      // === 左半:商品名 + 产地 ===
+      let lcy=y+fpad+cfg.nameSize*0.4;
+      if(cfg.showName&&p.name){
+        pdf.setFontSize(cfg.nameSize);
+        setFont('bold');
+        pdf.setTextColor(0);
+        const nameLines=pdf.splitTextToSize(p.name,halfW-fpad*2).slice(0,2);
+        pdf.text(nameLines,x+halfW/2,lcy,{align:'center'});
+        lcy+=cfg.nameSize*0.5*nameLines.length+1;
+      }
+      if(cfg.showOrigin&&p.origin){
+        pdf.setFontSize(cfg.subSize);
+        setFont('normal');
+        pdf.setTextColor(80);
+        const oLines=pdf.splitTextToSize(p.origin,halfW-fpad*2).slice(0,2);
+        pdf.text(oLines,x+halfW/2,lcy+cfg.subSize*0.4,{align:'center'});
+      }
+
+      // === 中间折线 ===
+      pdf.setDrawColor(150);
+      pdf.setLineDashPattern([0.5,0.5],0);
+      pdf.line(x+halfW,y,x+halfW,y+cfg.h);
+      pdf.setLineDashPattern([],0);
+      pdf.setDrawColor(0);
+
+      // === 右半:barcode(预旋转 PNG) + 价格(angle:180) ===
+      // 视觉目标(对折后从对面看 = 旋转 180° 后):上 barcode、下 价格
+      // 右半区域: x∈[x+halfW, x+w], y∈[y, y+h]
+      const rcx=x+halfW+halfW/2; // 右半中心 x = x + 22.5
+      const rcy=y+cfg.h/2;       // 右半中心 y = y + 12.5
+      const bcW=halfW-fpad*2;    // ~12.6mm
+      const bcH=Math.min(cfg.bcH,cfg.h*0.45); // ~10mm
+
+      // 视觉位置(旋转后看到的位置):barcode 在右半视觉上方,价格在视觉下方
+      // 把视觉位置点 (vx, vy) 映射到画布物理位置 (px, py) = 旋转 180° 镜像:
+      //   px = 2*rcx - vx,  py = 2*rcy - vy
+      // 视觉上:barcode 矩形左上 = (x+halfW+fpad, y+fpad),右下 = (x+w-fpad, y+fpad+bcH)
+      // 物理:旋转 180° 后矩形右下变成原左上 → addImage 的左上角 = 视觉右下镜像
+      // 即把视觉矩形 (vx, vy, w, h) 整体旋转 180°:物理左上 = (2*rcx - vx - w, 2*rcy - vy - h)
+      try{
+        const code=getBarcodeContent(p);
+        const srcCanvas=document.createElement('canvas');
+        JsBarcode(srcCanvas,code||'NA',{format:'CODE128',displayValue:false,width:24,height:cfg.bcH*80,margin:10});
+        // 旋转 180° 到新 canvas
+        const rot=document.createElement('canvas');
+        rot.width=srcCanvas.width;rot.height=srcCanvas.height;
+        const rctx=rot.getContext('2d');
+        rctx.translate(rot.width,rot.height);
+        rctx.rotate(Math.PI);
+        rctx.drawImage(srcCanvas,0,0);
+        const rotUrl=rot.toDataURL('image/png');
+        // 视觉位置:barcode 在右半上部
+        const vBcX=x+halfW+fpad;
+        const vBcY=y+fpad;
+        // 物理位置(旋转 180° 后视觉变成这位置):因为图像已经预旋转,addImage 直接放视觉位置即可
+        // 等等:图像在 canvas 里已经被旋转 180°,jsPDF addImage 不会再旋转
+        // 那图像 PDF 渲染后是「上下颠倒」状态 → 对折后从背面看正好正向 ✓
+        pdf.addImage(rotUrl,'PNG',vBcX,vBcY,bcW,bcH);
+      }catch(e){console.log('fold30 barcode',e);}
+
+      // 价格:用 jsPDF 文字 angle:180,锚点放视觉位置(jsPDF 旋转文字以锚点为中心)
+      if(priceTxt){
+        pdf.setFontSize(cfg.priceSize);
+        setFont('bold');
+        pdf.setTextColor(0);
+        // 视觉:价格在右半下部居中
+        const vPriceX=x+halfW+halfW/2;
+        const vPriceY=y+cfg.h-fpad-cfg.priceSize*0.15;
+        pdf.text(priceTxt,vPriceX,vPriceY,{align:'center',angle:180});
+      }
+      continue; // 跳过常规渲染
     }
 
     // F型对折标签:上下分区,上半 barcode/SKU(对折后变背面),下半 名+价(正面)
