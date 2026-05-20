@@ -576,7 +576,7 @@ function _applyStockioMode(){
     document.getElementById('sio-preview-label').textContent='本 次 出 库';
     const btn=document.getElementById('sio-confirm-btn');
     btn.textContent='✓ 确认出库';
-    btn.className='btn btn-rose sio-confirm-big';
+    btn.className='btn btn-gold sio-confirm-big';
   }
   renderStockioPreview();
 }

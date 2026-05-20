@@ -2257,7 +2257,7 @@ tr.clickable{cursor:pointer;}
   display:flex;align-items:center;justify-content:center;
 }
 .modal-add-btn-only{
-  flex:0 0 90px !important;
+  flex:1 1 auto !important;
 }
 .modal-add-btn-stockin{
   flex:1 1 auto !important;

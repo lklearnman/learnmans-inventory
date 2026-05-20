@@ -339,7 +339,7 @@ async function exportLabelsPDF(){
     // 价格文本 + 宽度先算出来,后面布局决策要用
     let priceTxt='';
     let priceW=0;
-    if(cfg.showPrice&&p.price){
+    if(cfg.showPrice && p.price!=null && String(p.price).trim()!==''){
       pdf.setFontSize(cfg.priceSize);
       setFont('bold');
       const pCur=p.currency||'CNY';
