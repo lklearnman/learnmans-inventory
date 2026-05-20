@@ -82,18 +82,18 @@ async function startCamera(){
     let bdBusy=false;
     bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准黄框…`;
 
-    // ROI 裁剪:从视频中心取 60% 短边正方形,匹配 CSS .scan-frame
+    // ROI 裁剪:整宽 × 中心 45% 高,1D 条码横向占满视频宽度像素
     const roiCanvas=document.createElement('canvas');
     const roiCtx=roiCanvas.getContext('2d',{willReadFrequently:true});
     const innerReader=useBD?null:zxingReader.reader;
 
     function computeROI(){
       const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      const side=Math.floor(Math.min(vw,vh)*0.6);
+      const sh=Math.floor(vh*0.45);
       return{
-        sx:Math.floor((vw-side)/2),
-        sy:Math.floor((vh-side)/2),
-        sw:side,sh:side
+        sx:0,
+        sy:Math.floor((vh-sh)/2),
+        sw:vw,sh:sh
       };
     }
 
@@ -104,11 +104,12 @@ async function startCamera(){
         scheduleNext();return;
       }
       const roi=computeROI();
-      // 解码 canvas 缩放到最大 720,平衡分辨率与速度
-      const targetSide=Math.min(roi.sw,720);
-      roiCanvas.width=targetSide;
-      roiCanvas.height=targetSide;
-      roiCtx.drawImage(videoEl,roi.sx,roi.sy,roi.sw,roi.sh,0,0,targetSide,targetSide);
+      // 横长方形:宽度保留到 1280 上限,高度按比例缩放,保住 1D 条码横向像素
+      const sw=Math.min(roi.sw,1280);
+      const sh=Math.floor(roi.sh*(sw/roi.sw));
+      roiCanvas.width=sw;
+      roiCanvas.height=sh;
+      roiCtx.drawImage(videoEl,roi.sx,roi.sy,roi.sw,roi.sh,0,0,sw,sh);
       _scanFrames++;
 
       // 路径 A: BarcodeDetector (async)
@@ -131,7 +132,7 @@ async function startCamera(){
           if(name!==lastErr){lastErr=name;bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ${name}`;}
         }
         if(_scanFrames%10===0){
-          bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
+          bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${sw}×${sh} | 对准黄框…`;
         }
         scheduleNext();return;
       }
@@ -140,7 +141,7 @@ async function startCamera(){
       let hit=null;
       if(hasJsQR){
         try{
-          const id=roiCtx.getImageData(0,0,targetSide,targetSide);
+          const id=roiCtx.getImageData(0,0,sw,sh);
           const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
           if(r&&r.data){hit={engine:'jsQR',code:r.data};}
         }catch(_){}
@@ -179,7 +180,7 @@ async function startCamera(){
         return;
       }
       if(_scanFrames%10===0){
-        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
+        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${sw}×${sh} | 对准黄框…`;
       }
       scheduleNext();
     }
