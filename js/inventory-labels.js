@@ -246,7 +246,7 @@ function previewLabels(){
 
 function renderLabelHTML(p,cfg){
   const pCur=p.currency||'CNY';
-  const priceTxt=cfg.showPrice&&p.price
+  const priceTxt=(cfg.showPrice && p.price!=null && String(p.price).trim()!=='')
     ? (cfg.labelCurrency
         ? fmtPrice(p.price,cfg.labelCurrency,pCur)
         : fmtPriceRaw(p.price,pCur))
