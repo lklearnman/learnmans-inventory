@@ -426,12 +426,12 @@ async function exportLabelsPDF(){
         pdf.setTextColor(100);
         pdf.text(p.origin,x+cfg.w/2,acy+cfg.subSize*0.4,{align:'center'});
       }
-      // 左下 QR: 缩小到 3mm,贴 A 面底部左侧,给价格更多空间
-      const qrSize=3.0;
+      // 左下 QR: 3.5mm,贴 A 面底部左侧,给价格更多空间
+      const qrSize=3.5;
       try{
         const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
         if(qr){
-          pdf.addImage(qr,'PNG',x+1,y+halfH-fpad-qrSize-0.5,qrSize,qrSize);
+          pdf.addImage(qr,'PNG',x+1,y+11,qrSize,qrSize);
         }
       }catch(e){console.log('foldH qr',e);}
       // 右下 价格(缩小字号,贴 A 面底部更靠下)
