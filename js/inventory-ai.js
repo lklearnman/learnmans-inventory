@@ -159,6 +159,19 @@ async function startCamera(){
           }
         }
       }
+      // 全帧兜底:每 6 帧尝试一次 ZXing 全画面扫描(成本高但覆盖更广)
+      if(!hit && innerReader && _scanFrames%6===0){
+        try{
+          const fullCanvas=document.createElement('canvas');
+          fullCanvas.width=videoEl.videoWidth;
+          fullCanvas.height=videoEl.videoHeight;
+          fullCanvas.getContext('2d').drawImage(videoEl,0,0);
+          const src2=new ZXing.HTMLCanvasElementLuminanceSource(fullCanvas);
+          const bmp2=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src2));
+          const r2=innerReader.decode(bmp2);
+          if(r2){hit={engine:'ZXing-full',code:r2.getText()};}
+        }catch(_){}
+      }
       if(hit){
         bar.textContent=`✅ [${hit.engine}] ${hit.code}`;
         stopCamera();
