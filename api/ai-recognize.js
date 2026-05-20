@@ -2,18 +2,22 @@
 // 支持前端选择 provider + 超时机制
 // 环境变量：GEMINI_API_KEY、ANTHROPIC_API_KEY
 
-const SYSTEM_PROMPT = '你是专业矿物宝石首饰库管助手。识别图片商品，返回JSON：{"name":"商品名","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格","country":"原产国","note":"50字内描述"}。只返回JSON，不要加任何markdown代码块或多余文字。';
+const SYSTEM_PROMPT = '你是专业矿物宝石首饰库管助手。仔细观察图片，识别商品的种类、可能产地、外观特征。返回 JSON：{"name":"商品名（精确，如\\"巴西紫水晶族晶\\"）","cat":"类别（矿物标本/宝石/首饰/元石/化石/其他）","origin":"产地或规格（如\\"约 30×40mm\\"）","country":"原产国（中文）","note":"100字内特征描述（颜色/纹理/品质/晶系等）"}。只返回 JSON，不加 markdown 代码块或多余文字。';
 
 const GEMINI_MODELS = [
-  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
   'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
   'gemini-1.5-flash',
 ];
 
+const CLAUDE_PRIMARY_MODEL = 'claude-sonnet-4-5-20251022';
+const CLAUDE_FALLBACK_MODEL = 'claude-haiku-4-5-20251001';
+
 // 每个模型的超时（毫秒）
 // ⚠️ Vercel Hobby plan 函数最长 10 秒，超过就会被强杀。
-// 这里设 9000，留 1 秒给后续 JSON.parse 和响应。
 const TIMEOUT_MS = 9000;
+const CLAUDE_SONNET_TIMEOUT_MS = 8000;
 
 function fetchWithTimeout(url, options, ms) {
   return Promise.race([
@@ -35,7 +39,7 @@ async function callGemini(model, imageBase64, mediaType) {
           { inline_data: { mime_type: mediaType, data: imageBase64 } },
           { text: SYSTEM_PROMPT + '\n\n识别这个商品' }
         ]}],
-        generationConfig: { maxOutputTokens: 600, temperature: 0.1 },
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.3 },
       }),
     },
     TIMEOUT_MS
@@ -54,7 +58,7 @@ async function callGemini(model, imageBase64, mediaType) {
   return { text, provider: `Gemini/${model}` };
 }
 
-async function callClaude(imageBase64, mediaType) {
+async function callClaude(imageBase64, mediaType, model = CLAUDE_PRIMARY_MODEL, timeoutMs = TIMEOUT_MS) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY 未配置');
   const res = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
@@ -65,23 +69,36 @@ async function callClaude(imageBase64, mediaType) {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
+      model,
+      max_tokens: 1024,
+      temperature: 0.3,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
         { type: 'text', text: '识别这个商品' }
       ]}],
     }),
-  }, TIMEOUT_MS);
+  }, timeoutMs);
   if (!res.ok) {
     const errBody = await res.text();
-    throw new Error(`Claude ${res.status}: ${errBody.slice(0, 200)}`);
+    throw new Error(`Claude ${model} ${res.status}: ${errBody.slice(0, 200)}`);
   }
   const data = await res.json();
   const text = (data.content || []).map(c => c.text || '').join('');
-  if (!text) throw new Error('Claude 空响应');
-  return { text, provider: 'Claude/haiku' };
+  if (!text) throw new Error(`Claude ${model} 空响应`);
+  const tag = model.includes('sonnet') ? 'sonnet' : 'haiku';
+  return { text, provider: `Claude/${tag}` };
+}
+
+// 先 Sonnet（8s timeout），超时/失败 fallback Haiku
+async function callClaudeWithFallback(imageBase64, mediaType) {
+  try {
+    return await callClaude(imageBase64, mediaType, CLAUDE_PRIMARY_MODEL, CLAUDE_SONNET_TIMEOUT_MS);
+  } catch (err) {
+    // Sonnet 失败或超时 → 降级 Haiku
+    const { text, provider } = await callClaude(imageBase64, mediaType, CLAUDE_FALLBACK_MODEL, TIMEOUT_MS);
+    return { text, provider: provider + '(fallback)' };
+  }
 }
 
 export default async function handler(req, res) {
@@ -97,7 +114,8 @@ export default async function handler(req, res) {
       hasClaudeKey: !!process.env.ANTHROPIC_API_KEY,
       hasGeminiKey: !!process.env.GEMINI_API_KEY,
       timeoutMs: TIMEOUT_MS,
-      claudeModel: 'claude-haiku-4-5-20251001',
+      claudePrimary: CLAUDE_PRIMARY_MODEL,
+      claudeFallback: CLAUDE_FALLBACK_MODEL,
       geminiModels: GEMINI_MODELS,
       time: new Date().toISOString(),
     });
@@ -122,13 +140,12 @@ export default async function handler(req, res) {
   // 优先用户选的 provider
   if (provider === 'claude') {
     try {
-      const { text, provider: prv } = await callClaude(imageBase64, mediaType);
+      const { text, provider: prv } = await callClaudeWithFallback(imageBase64, mediaType);
       const clean = text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(clean);
       return res.status(200).json({ result: parsed, provider: prv });
     } catch (err) {
       errors.push('Claude: ' + err.message);
-      // Claude 失败时不 fallback 到 Gemini（用户选了 Claude）
       return res.status(500).json({ error: 'Claude 识别失败', details: errors });
     }
   }
@@ -149,7 +166,7 @@ export default async function handler(req, res) {
 
   // Gemini 全部失败，fallback Claude
   try {
-    const { text, provider: prv } = await callClaude(imageBase64, mediaType);
+    const { text, provider: prv } = await callClaudeWithFallback(imageBase64, mediaType);
     const clean = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
     return res.status(200).json({ result: parsed, provider: prv + '(fallback)' });

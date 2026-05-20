@@ -520,7 +520,7 @@ function _syncAiChip(){
 
 // 📏 图片压缩：iPhone 原图常 5-10MB，base64 后超 Vercel 4.5MB 限制 + Safari "Load failed"
 // 压到最长边 1600px、JPEG 85% → 大约 200-500KB，又快又稳
-async function compressImageForAI(file, maxSize=1600, quality=0.85){
+async function compressImageForAI(file, maxSize=2048, quality=0.92){
   // 先把文件加载成 Image
   const dataURL = await new Promise((resolve, reject) => {
     const r = new FileReader();
