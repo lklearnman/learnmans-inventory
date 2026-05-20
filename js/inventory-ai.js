@@ -113,7 +113,7 @@ async function startCamera(){
 
     function computeROI(){
       const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      const side=Math.floor(Math.min(vw,vh)*0.6);
+      const side=Math.floor(Math.min(vw,vh)*0.9);
       return{
         sx:Math.floor((vw-side)/2),
         sy:Math.floor((vh-side)/2),
