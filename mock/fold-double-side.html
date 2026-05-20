@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>对折标签 Mock — 30×25mm</title>
+<title>对折标签 Mock — 25×30mm 水平对折</title>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
@@ -17,12 +17,7 @@
   }
   h1 { font-size: 20px; margin: 0 0 8px; }
   .meta { color: #999; font-size: 13px; margin-bottom: 24px; }
-  .row {
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-    margin-bottom: 32px;
-  }
+  .row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 32px; align-items: flex-start; }
   .panel {
     background: #252525;
     border: 1px solid #333;
@@ -30,16 +25,8 @@
     padding: 16px;
   }
   .panel h2 { font-size: 14px; margin: 0 0 12px; color: #6cf; font-weight: 600; }
-  .label-svg {
-    background: #fff;
-    border-radius: 4px;
-    display: block;
-  }
-  .legend {
-    margin-top: 12px;
-    font-size: 12px;
-    color: #bbb;
-  }
+  .label-svg { background: #fff; border-radius: 4px; display: block; }
+  .legend { margin-top: 12px; font-size: 12px; color: #bbb; }
   .legend b { color: #ffd866; }
   .notes {
     background: #222;
@@ -56,133 +43,102 @@
 </head>
 <body>
 
-<h1>对折标签设计 Mock</h1>
-<div class="meta">单张未折 30×25mm,沿中线对折,每面 15×25mm。下方 SVG 为 10× 放大(300×250 px / 面 150×250 px)。</div>
+<h1>对折标签设计 Mock — 25×30mm</h1>
+<div class="meta">整张未折 <b>25mm 宽 × 30mm 高</b>(竖向),沿 y=15mm <b>水平折线</b>上下对折。对折后每面 <b>25×15mm 横放</b>。下方 SVG 为 10× 放大。</div>
 
 <div class="notes">
-  <p><b>A 面(对折后外侧 / 内侧之一):</b>整面 1D Barcode (CODE128) 满铺 + 下方小字 SKU 文本。便于快速扫码。</p>
-  <p><b>B 面(对折后另一面):</b>上方商品名 + 产地,下方左 QR 小码 + 右价格。给客户看的信息面。</p>
-  <p><b>折线:</b>X=15mm 中线,虚线标记。绘制时 B 面不旋转,翻面后实际看到的方向就是这样。</p>
+  <p><b>A 面(上半 0–15mm,25×15 横放):</b>顶部商品名 + 产地;左下 QR 10×10mm;右下价格大字加粗。给客户看的信息面。</p>
+  <p><b>B 面(下半 15–30mm,25×15 横放):</b>整面 1D Barcode (CODE128) 满铺 + 下方小字印 SKU 文本(人眼可读)。便于扫码。</p>
+  <p><b>对折后:</b>外侧客人看(A 面信息),内侧店主扫(B 面 barcode)。</p>
 </div>
 
 <div class="row">
   <div class="panel">
-    <h2>① 未折前 — 整张 30×25mm(展平视图)</h2>
-    <svg class="label-svg" id="flat" width="300" height="250" viewBox="0 0 300 250" xmlns="http://www.w3.org/2000/svg">
-      <!-- 整张白底 -->
-      <rect x="0" y="0" width="300" height="250" fill="#fff"/>
+    <h2>① 未折前 — 整张 25×30mm(竖向展平视图)</h2>
+    <svg class="label-svg" id="flat" width="250" height="300" viewBox="0 0 250 300" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="250" height="300" fill="#fff"/>
 
-      <!-- A 面 (左,0-150) -->
+      <!-- A 面 (上,0-150) — 信息面 -->
       <g id="aFaceFlat">
-        <!-- barcode 占位:中央竖向铺 -->
-        <g id="bcFlat" transform="translate(10,10)"></g>
-        <!-- SKU 文本 -->
-        <text x="75" y="235" font-family="monospace" font-size="11" text-anchor="middle" fill="#000">MZ-MET-000125</text>
-      </g>
-
-      <!-- B 面 (右,150-300) -->
-      <g id="bFaceFlat" transform="translate(150,0)">
-        <!-- 商品名 -->
-        <text x="75" y="28" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="600" text-anchor="middle" fill="#000">2種隕石五角</text>
-        <text x="75" y="48" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" text-anchor="middle" fill="#000">10+12mm</text>
+        <!-- 商品名 2 行 -->
+        <text x="10" y="22" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="700" fill="#000">2種隕石五角</text>
+        <text x="10" y="38" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="700" fill="#000">10+12mm</text>
         <!-- 产地 -->
-        <text x="75" y="78" font-family="-apple-system, PingFang SC, sans-serif" font-size="11" text-anchor="middle" fill="#444">セリコ(Sericho)</text>
+        <text x="10" y="55" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" fill="#666">セリコ(Sericho)</text>
 
-        <!-- 分隔线 -->
-        <line x1="10" y1="100" x2="140" y2="100" stroke="#ddd" stroke-width="1"/>
+        <!-- QR 左下 80×80(对应 8mm 物理,留 1mm 内边距) -->
+        <g id="qrFlat" transform="translate(10,65)"></g>
 
-        <!-- QR (左) -->
-        <g id="qrFlat" transform="translate(15,125)"></g>
-        <!-- 价格 (右) -->
-        <text x="135" y="170" font-family="-apple-system, PingFang SC, sans-serif" font-size="22" font-weight="700" text-anchor="end" fill="#000">¥13,985</text>
-        <text x="135" y="190" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" text-anchor="end" fill="#444">円</text>
+        <!-- 价格 右下 加粗 -->
+        <text x="240" y="125" font-family="-apple-system, PingFang SC, sans-serif" font-size="22" font-weight="700" text-anchor="end" fill="#000">¥13,985</text>
+        <text x="240" y="142" font-family="-apple-system, PingFang SC, sans-serif" font-size="11" text-anchor="end" fill="#444">円</text>
       </g>
 
-      <!-- 折线虚线 -->
-      <line x1="150" y1="0" x2="150" y2="250" stroke="#e22" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <!-- B 面 (下,150-300) — 扫码面 -->
+      <g id="bFaceFlat">
+        <!-- 整面 barcode:25×11mm 区域(留 quiet zone 1.5mm 左右、1mm 上下) -->
+        <g id="bcFlat" transform="translate(15,160)"></g>
+        <!-- SKU 文字 -->
+        <text x="125" y="292" font-family="monospace" font-size="12" text-anchor="middle" fill="#000">MZ-MET-000125</text>
+      </g>
 
-      <!-- 折线标注 -->
-      <text x="155" y="14" font-family="sans-serif" font-size="10" fill="#e22">↕ 折线</text>
+      <!-- 折线(水平虚线) -->
+      <line x1="0" y1="150" x2="250" y2="150" stroke="#e22" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <text x="6" y="148" font-family="sans-serif" font-size="10" fill="#e22">↔ 折线 y=15mm</text>
 
-      <!-- A/B 面角标 -->
-      <text x="8" y="14" font-family="sans-serif" font-size="11" font-weight="700" fill="#999">A 面</text>
-      <text x="280" y="14" font-family="sans-serif" font-size="11" font-weight="700" fill="#999" text-anchor="end">B 面</text>
+      <!-- A/B 角标 -->
+      <text x="240" y="14" font-family="sans-serif" font-size="11" font-weight="700" fill="#999" text-anchor="end">A 面(上)</text>
+      <text x="240" y="164" font-family="sans-serif" font-size="11" font-weight="700" fill="#999" text-anchor="end">B 面(下)</text>
     </svg>
     <div class="legend">
-      <span class="swatch" style="background:#e22"></span>红色虚线 = 折线(15mm 处)<br>
-      A 面满铺 barcode + SKU;B 面商品名/产地/QR/价格
+      <span class="swatch" style="background:#e22"></span>红色虚线 = 水平折线(y=15mm)<br>
+      上半 A 面信息(名/产地/QR/价格)· 下半 B 面满铺 barcode + SKU
     </div>
   </div>
-</div>
-
-<div class="row">
-  <div class="panel">
-    <h2>② 对折后 — A 面视角(15×25mm)</h2>
-    <svg class="label-svg" width="150" height="250" viewBox="0 0 150 250" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="150" height="250" fill="#fff"/>
-      <g id="bcFolded" transform="translate(10,10)"></g>
-      <text x="75" y="235" font-family="monospace" font-size="11" text-anchor="middle" fill="#000">MZ-MET-000125</text>
-      <!-- 折边阴影提示 -->
-      <rect x="148" y="0" width="2" height="250" fill="#f0f0f0"/>
-    </svg>
-    <div class="legend">扫码面 — 摆台时朝外便于结账扫描</div>
-  </div>
 
   <div class="panel">
-    <h2>③ 对折后 — B 面视角(翻过来,15×25mm)</h2>
-    <svg class="label-svg" width="150" height="250" viewBox="0 0 150 250" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="150" height="250" fill="#fff"/>
-      <text x="75" y="28" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="600" text-anchor="middle" fill="#000">2種隕石五角</text>
-      <text x="75" y="48" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" text-anchor="middle" fill="#000">10+12mm</text>
-      <text x="75" y="78" font-family="-apple-system, PingFang SC, sans-serif" font-size="11" text-anchor="middle" fill="#444">セリコ(Sericho)</text>
-      <line x1="10" y1="100" x2="140" y2="100" stroke="#ddd" stroke-width="1"/>
-      <g id="qrFolded" transform="translate(15,125)"></g>
-      <text x="135" y="170" font-family="-apple-system, PingFang SC, sans-serif" font-size="22" font-weight="700" text-anchor="end" fill="#000">¥13,985</text>
-      <text x="135" y="190" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" text-anchor="end" fill="#444">円</text>
-      <rect x="0" y="0" width="2" height="250" fill="#f0f0f0"/>
+    <h2>② 对折后 — A 面外侧预览(25×15mm 横放)</h2>
+    <svg class="label-svg" width="250" height="150" viewBox="0 0 250 150" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="250" height="150" fill="#fff"/>
+      <text x="10" y="22" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="700" fill="#000">2種隕石五角</text>
+      <text x="10" y="38" font-family="-apple-system, PingFang SC, sans-serif" font-size="14" font-weight="700" fill="#000">10+12mm</text>
+      <text x="10" y="55" font-family="-apple-system, PingFang SC, sans-serif" font-size="12" fill="#666">セリコ(Sericho)</text>
+      <g id="qrFolded" transform="translate(10,65)"></g>
+      <text x="240" y="125" font-family="-apple-system, PingFang SC, sans-serif" font-size="22" font-weight="700" text-anchor="end" fill="#000">¥13,985</text>
+      <text x="240" y="142" font-family="-apple-system, PingFang SC, sans-serif" font-size="11" text-anchor="end" fill="#444">円</text>
+      <!-- 折边阴影 -->
+      <rect x="0" y="148" width="250" height="2" fill="#f0f0f0"/>
     </svg>
-    <div class="legend">客户面 — 商品名 + 产地 + QR + 价格</div>
+    <div class="legend">客人看到的外侧 — 商品名 / 产地 / QR / 价格</div>
   </div>
 </div>
 
 <div class="notes">
-  <p><b>翻面视觉效果:</b>对折后两面背靠背贴合,挂在样品上时一面对外(barcode)一面贴内(信息)。也可对调,看销售习惯。</p>
-  <p><b>尺寸预算:</b>每面 15×25mm 在 300DPI ≈ 177×295 px。barcode 至少 8mm 高才稳扫,QR ≥ 8×8mm,字号建议 6-8pt。</p>
+  <p><b>对折后:</b>外侧客人看(A 面信息) / 内侧店主扫(B 面 barcode)。</p>
+  <p><b>尺寸预算:</b>25×15mm 在 300DPI ≈ 295×177 px。barcode 高 11mm 远超 8mm 稳扫阈值;QR 8×8mm 含 quiet zone 实际码区 ~7mm,CODE128 13 字符在 25mm 宽度内 width=1.5 模块充裕。</p>
 </div>
 
 <script>
-  // 渲染 barcode 到展平 A 面(竖向铺满区域)
+  // 渲染 barcode 到 B 面(横向铺满 220×100,对应 22×10mm 码区,含 1.5mm 左右 quiet zone)
   function renderBarcodes() {
-    // 用临时 svg 渲染再挂回去
     const tmp = document.createElementNS('http://www.w3.org/2000/svg','svg');
     JsBarcode(tmp, "MZ-MET-000125", {
       format: "CODE128",
-      width: 2,
-      height: 200,
+      width: 1.6,
+      height: 100,
       displayValue: false,
       margin: 0,
       background: "#fff",
       lineColor: "#000"
     });
-    // flat A
+    // flat B
     const flatHost = document.getElementById('bcFlat');
-    const cloneA = tmp.cloneNode(true);
-    // 强制大小填充 130×210
-    cloneA.setAttribute('width','130');
-    cloneA.setAttribute('height','210');
-    cloneA.setAttribute('preserveAspectRatio','none');
-    flatHost.appendChild(cloneA);
-
-    // folded A
-    const foldedHost = document.getElementById('bcFolded');
-    const cloneB = tmp.cloneNode(true);
-    cloneB.setAttribute('width','130');
-    cloneB.setAttribute('height','210');
-    cloneB.setAttribute('preserveAspectRatio','none');
-    foldedHost.appendChild(cloneB);
+    const clone = tmp.cloneNode(true);
+    clone.setAttribute('width','220');
+    clone.setAttribute('height','110');
+    flatHost.appendChild(clone);
   }
 
-  // 渲染 QR 到 canvas,再转成 image 嵌入 svg
   function renderQR(targetId) {
     const div = document.createElement('div');
     new QRCode(div, {
