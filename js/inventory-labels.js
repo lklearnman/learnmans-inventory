@@ -430,19 +430,14 @@ async function exportLabelsPDF(){
       pdf.setDrawColor(0);
 
       // === 右半:barcode(预旋转 PNG) + 价格(angle:180) ===
-      // 视觉目标(对折后从对面看 = 旋转 180° 后):上 barcode、下 价格
-      // 右半区域: x∈[x+halfW, x+w], y∈[y, y+h]
-      const rcx=x+halfW+halfW/2; // 右半中心 x = x + 22.5
-      const rcy=y+cfg.h/2;       // 右半中心 y = y + 12.5
-      const bcW=halfW-fpad*2;    // ~12.6mm
+      // 修复(2026-05-20):
+      //   - barcode 用 canvas 预旋转 180° 再 addImage,坐标直接放右半正确区域
+      //   - 价格用 jsPDF angle:180,锚点放在视觉位置「镜像点」
+      //     jsPDF angle:180 + align:'center' 时,文字以锚点为中心旋转 180°,
+      //     旋转后文字向锚点的「左上」方向延伸(基线翻转),所以要把锚点
+      //     放在视觉位置(右半下方居中)的镜像点 = 右半上方居中
+      const bcW=halfW-fpad*2;                 // ~12.6mm
       const bcH=Math.min(cfg.bcH,cfg.h*0.45); // ~10mm
-
-      // 视觉位置(旋转后看到的位置):barcode 在右半视觉上方,价格在视觉下方
-      // 把视觉位置点 (vx, vy) 映射到画布物理位置 (px, py) = 旋转 180° 镜像:
-      //   px = 2*rcx - vx,  py = 2*rcy - vy
-      // 视觉上:barcode 矩形左上 = (x+halfW+fpad, y+fpad),右下 = (x+w-fpad, y+fpad+bcH)
-      // 物理:旋转 180° 后矩形右下变成原左上 → addImage 的左上角 = 视觉右下镜像
-      // 即把视觉矩形 (vx, vy, w, h) 整体旋转 180°:物理左上 = (2*rcx - vx - w, 2*rcy - vy - h)
       try{
         const code=getBarcodeContent(p);
         const srcCanvas=document.createElement('canvas');
@@ -455,24 +450,26 @@ async function exportLabelsPDF(){
         rctx.rotate(Math.PI);
         rctx.drawImage(srcCanvas,0,0);
         const rotUrl=rot.toDataURL('image/png');
-        // 视觉位置:barcode 在右半上部
-        const vBcX=x+halfW+fpad;
-        const vBcY=y+fpad;
-        // 物理位置(旋转 180° 后视觉变成这位置):因为图像已经预旋转,addImage 直接放视觉位置即可
-        // 等等:图像在 canvas 里已经被旋转 180°,jsPDF addImage 不会再旋转
-        // 那图像 PDF 渲染后是「上下颠倒」状态 → 对折后从背面看正好正向 ✓
-        pdf.addImage(rotUrl,'PNG',vBcX,vBcY,bcW,bcH);
+        // 右半区域 x∈[x+halfW, x+w]、y∈[y, y+h]。barcode 放右半上部居中。
+        // canvas 已预旋转 180°,addImage 直接放视觉目标位置
+        const bcX=x+halfW+(halfW-bcW)/2;
+        const bcY=y+fpad;
+        pdf.addImage(rotUrl,'PNG',bcX,bcY,bcW,bcH);
       }catch(e){console.log('fold30 barcode',e);}
 
-      // 价格:用 jsPDF 文字 angle:180,锚点放视觉位置(jsPDF 旋转文字以锚点为中心)
+      // 价格:jsPDF text angle:180 + align:'center'
+      // 视觉目标:价格在右半底部居中,即视觉锚点 (x+halfW+halfW/2, y+cfg.h-fpad)
+      // 但 angle:180 让字向锚点反方向延伸 → 锚点要放在视觉位置「绕右半中心 180° 镜像」处
+      // 右半中心 = (x+halfW+halfW/2, y+cfg.h/2);视觉位置 y=y+cfg.h-fpad
+      // 镜像 y = 2*(y+cfg.h/2) - (y+cfg.h-fpad) = y+fpad
+      // 镜像 x:中心 x 不变 → x+halfW+halfW/2
       if(priceTxt){
         pdf.setFontSize(cfg.priceSize);
         setFont('bold');
         pdf.setTextColor(0);
-        // 视觉:价格在右半下部居中
-        const vPriceX=x+halfW+halfW/2;
-        const vPriceY=y+cfg.h-fpad-cfg.priceSize*0.15;
-        pdf.text(priceTxt,vPriceX,vPriceY,{align:'center',angle:180});
+        const priceX=x+halfW+halfW/2;          // 右半中心 x = 22.5
+        const priceY=y+fpad+cfg.priceSize*0.15; // 右半顶部稍下,旋转 180° 后视觉到底部
+        pdf.text(priceTxt,priceX,priceY,{align:'center',angle:180});
       }
       continue; // 跳过常规渲染
     }
