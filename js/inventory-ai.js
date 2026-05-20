@@ -173,7 +173,8 @@ async function startCamera(){
 
       // 路径 B: jsQR + ZBar + ZXing
       let hit=null;
-      if(hasJsQR){
+      // jsQR 只解 QR 码,矿珍库主要是 CODE128 1D — 每 3 帧跑一次,降低开销
+      if(hasJsQR && _scanFrames%3===0){
         try{
           const id=roiCtx.getImageData(0,0,targetSide,targetSide);
           const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
@@ -181,10 +182,14 @@ async function startCamera(){
         }catch(_){}
       }
       // ZBar.wasm 优先 (1D 条码识别率远超 ZXing.js,wasm 未加载时跳过)
+      // 用 Promise.race + 80ms 超时,防止 iOS Safari 偶发卡顿阻塞 tick
       if(!hit&&window.zbarScanImageData){
         try{
           const id=roiCtx.getImageData(0,0,targetSide,targetSide);
-          const results=await window.zbarScanImageData(id);
+          const results=await Promise.race([
+            window.zbarScanImageData(id),
+            new Promise(r=>setTimeout(()=>r(null),80))
+          ]);
           if(results&&results.length){
             hit={engine:'ZBar',code:results[0].decode()};
           }
@@ -240,7 +245,7 @@ async function startCamera(){
       if(typeof videoEl.requestVideoFrameCallback==='function'){
         _scanRaf=videoEl.requestVideoFrameCallback(()=>tick());
       }else{
-        _scanRaf=setTimeout(tick,60);
+        _scanRaf=setTimeout(tick,40);
       }
     }
     tick();
