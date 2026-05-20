@@ -191,11 +191,29 @@ async function startCamera(){
         }catch(_){}
       }
       if(!hit){
+        // 三 binarizer 轮换:每帧只跑 1 个,3 帧覆盖一周(Hybrid/Global/Invert)
+        const bin=_scanFrames%3;
         try{
-          const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
-          const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-          const result=innerReader.decode(bmp);
-          if(result){hit={engine:'ZXing',code:result.getText()};}
+          if(bin===0){
+            const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
+            const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+            const r=innerReader.decode(bmp);
+            if(r) hit={engine:'ZXing-Hybrid',code:r.getText()};
+          }else if(bin===1){
+            const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
+            const bmp=new ZXing.BinaryBitmap(new ZXing.GlobalHistogramBinarizer(src));
+            const r=innerReader.decode(bmp);
+            if(r) hit={engine:'ZXing-Global',code:r.getText()};
+          }else{
+            const id=roiCtx.getImageData(0,0,targetSide,targetSide);
+            for(let i=0;i<id.data.length;i+=4){id.data[i]=255-id.data[i];id.data[i+1]=255-id.data[i+1];id.data[i+2]=255-id.data[i+2];}
+            const inv=document.createElement('canvas');inv.width=targetSide;inv.height=targetSide;
+            inv.getContext('2d').putImageData(id,0,0);
+            const src=new ZXing.HTMLCanvasElementLuminanceSource(inv);
+            const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+            const r=innerReader.decode(bmp);
+            if(r) hit={engine:'ZXing-Invert',code:r.getText()};
+          }
         }catch(err){
           const name=err&&err.name?err.name:String(err);
           if(name!=='NotFoundException'&&name!==lastErr){
@@ -847,12 +865,6 @@ async function decodePhotoFile(file){
 
 // DOMContentLoaded 时绑定拍照/相册按钮(HTML inline onchange 是兜底,这里再保一层)
 document.addEventListener('DOMContentLoaded',function(){
-  const photoBtn=document.getElementById('scan-photo-btn');
-  const photoIn=document.getElementById('scan-photo-input');
-  if(photoBtn&&photoIn){
-    photoBtn.addEventListener('click',function(e){e.preventDefault();photoIn.click();});
-    photoIn.addEventListener('change',function(){const f=this.files&&this.files[0];if(f)decodePhotoFile(f);this.value='';});
-  }
   const galBtn=document.getElementById('scan-gallery-btn');
   const galIn=document.getElementById('scan-file-input');
   if(galBtn&&galIn){
