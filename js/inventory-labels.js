@@ -490,7 +490,7 @@ async function exportLabelsPDF(){
         cctx.drawImage(bc,bcPxX,bcPxY,bcPxW,bcPxH);
         // SKU 文字: barcode 下方居中,字号比 subSize 略小(对折 B 面节省空间)
         const skuTxt=p.sku||p.id||'';
-        const skuPx=Math.round(cfg.subSize*scale*0.6);
+        const skuPx=Math.round(cfg.subSize*scale*0.35);
         cctx.fillStyle='#222';
         cctx.font=`${skuPx}px monospace`;
         cctx.textAlign='center';
