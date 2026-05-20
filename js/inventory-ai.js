@@ -8,28 +8,10 @@ let _torchOn=false;
 async function startCamera(){
   const bar=document.getElementById('camera-result-bar');
   try{
-    document.getElementById('camera-wrap').style.display='flex';
+    document.getElementById('camera-wrap').style.display='block';
     document.getElementById('camera-start-wrap').style.display='none';
-    const _csr=document.getElementById('camera-scan-result');if(_csr)_csr.style.display='none';
-    document.body.style.overflow='hidden';
+    document.getElementById('camera-scan-result').style.display='none';
     bar.textContent='① 启动摄像头…';
-
-    // 权限预检 (iOS Safari 不支持 permissions.query('camera') 会 throw,忽略)
-    try{
-      if(navigator.permissions&&navigator.permissions.query){
-        const st=await navigator.permissions.query({name:'camera'});
-        if(st&&st.state==='denied'){
-          bar.innerHTML='❌ 摄像头权限被拒绝。请到 <b>设置 → Safari → 网站设置 → learnmans-inventory.vercel.app → 相机:允许</b> 后重新打开本页面';
-          toast('请到系统设置开启相机权限');
-          return;
-        }
-      }
-    }catch(_){/* iOS Safari throws on name:'camera' — ignore */}
-
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      bar.textContent='❌ 浏览器不支持摄像头 API';
-      return;
-    }
 
     // 手动 getUserMedia,逐级降级
     let stream;
@@ -39,12 +21,6 @@ async function startCamera(){
         width:{ideal:1920},height:{ideal:1080}
       }});
     }catch(e1){
-      // 用户 reject / NotAllowedError
-      if(e1&&(e1.name==='NotAllowedError'||e1.name==='SecurityError')){
-        bar.innerHTML='❌ 摄像头被拒绝。iOS:<b>设置 → Safari → 相机 → 允许</b>;Android:浏览器地址栏锁图标 → 权限 → 相机';
-        toast('请允许相机权限');
-        throw e1;
-      }
       bar.textContent='② 高清失败,降级…';
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
     }
@@ -206,11 +182,10 @@ async function startCamera(){
     }
     tick();
   }catch(e){
-    if(bar){bar.textContent='❌ '+(e.message||e);}
+    bar.textContent='❌ '+(e.message||e);
     toast('摄像头错误: '+(e.message||e));
     document.getElementById('camera-wrap').style.display='none';
     document.getElementById('camera-start-wrap').style.display='block';
-    document.body.style.overflow='';
   }
 }
 function stopCamera(){
@@ -228,90 +203,6 @@ function stopCamera(){
   _torchOn=false;
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
-  document.body.style.overflow='';
-}
-
-// ===================== 相册选图 → 本地解码 (jsQR + ZXing,不走 AI) =====================
-async function decodeFileImage(file){
-  if(!file)return;
-  const bar=document.getElementById('camera-result-bar');
-  const fileInput=document.getElementById('scan-file-input');
-  if(fileInput)fileInput.value=''; // 让下次选同一张也触发
-  if(bar)bar.textContent='🖼 解码相册图…';
-  try{
-    const url=URL.createObjectURL(file);
-    const img=new Image();
-    img.decoding='async';
-    await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error('图片加载失败'));img.src=url;});
-    URL.revokeObjectURL(url);
-    // 高保真画到 canvas (限制最大 1600 边,避免内存爆炸)
-    const maxSide=1600;
-    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
-    const w=Math.round(img.naturalWidth*scale);
-    const h=Math.round(img.naturalHeight*scale);
-    const cv=document.createElement('canvas');
-    cv.width=w;cv.height=h;
-    const cx=cv.getContext('2d',{willReadFrequently:true});
-    cx.drawImage(img,0,0,w,h);
-
-    // 路径 1: jsQR (二维码)
-    if(typeof jsQR==='function'){
-      try{
-        const id=cx.getImageData(0,0,w,h);
-        const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
-        if(r&&r.data){
-          if(bar)bar.textContent=`✅ [jsQR] ${r.data}`;
-          stopCamera();
-          showScanResult(r.data,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    // 路径 2: BarcodeDetector (Android Chrome)
-    if('BarcodeDetector' in window){
-      try{
-        const bd=new window.BarcodeDetector({formats:[
-          'qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','data_matrix'
-        ]});
-        const codes=await bd.detect(cv);
-        if(codes&&codes.length){
-          const code=codes[0].rawValue;
-          if(bar)bar.textContent=`✅ [BD] ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    // 路径 3: ZXing (兜底,iOS Safari 主路径)
-    if(window.ZXing){
-      try{
-        const hints=new Map();
-        const fmt=ZXing.BarcodeFormat;
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-          fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,fmt.EAN_13,fmt.EAN_8,
-          fmt.UPC_A,fmt.UPC_E,fmt.ITF,fmt.DATA_MATRIX
-        ]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-        const reader=new ZXing.BrowserMultiFormatReader(hints);
-        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv);
-        const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-        const result=reader.reader.decode(bmp);
-        if(result){
-          const code=result.getText();
-          if(bar)bar.textContent=`✅ [ZXing] ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    if(bar)bar.textContent='❌ 图中未识别到条码/QR(可尝试拍照识别走 AI)';
-    toast('图中没找到条码');
-  }catch(e){
-    if(bar)bar.textContent='❌ 相册解码失败: '+(e.message||e);
-    toast('解码失败: '+(e.message||e));
-  }
 }
 
 async function toggleTorch(){
