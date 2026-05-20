@@ -408,41 +408,9 @@ tr.clickable{cursor:pointer;}
   display:block;
 }
 .scan-fs-top, .scan-fs-stage, .scan-fs-bottom{position:relative; z-index:2;}
-.scan-fs-frame{
-  width:70vw;
-  max-width:300px;
-  aspect-ratio:1;
-  border:none;
-  border-radius:8px;
-  position:relative;
-  /* 周围轻微暗化,中心透出 video */
-  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
-  background:transparent;
-}
-.scan-fs-corner{
-  position:absolute;
-  width:26px;height:26px;
-  border:3px solid var(--gold);
-  pointer-events:none;
-}
-.scan-fs-corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none;border-top-left-radius:8px;}
-.scan-fs-corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none;border-top-right-radius:8px;}
-.scan-fs-corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none;border-bottom-left-radius:8px;}
-.scan-fs-corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none;border-bottom-right-radius:8px;}
-.scan-fs-frame .scan-line{
-  position:absolute;
-  left:0;right:0;
-  height:2px;
-  width:100%;
-  top:0;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent);
-  box-shadow:0 0 12px var(--gold);
-  animation:scan-fs-line 1.5s ease-in-out infinite alternate;
-}
-@keyframes scan-fs-line{
-  from{top:0;}
-  to{top:calc(100% - 2px);}
-}
+/* 全屏扫码:中央取景框/4 角/扫描线全部移除,只剩明亮 camera feed */
+.scan-fs-frame,.scan-fs-corner,.scan-fs-frame .scan-line{display:none !important;}
+.scan-fs-stage{display:none !important;}
 .scan-fs-hint{
   background:rgba(0,0,0,.55);
   color:#fff;
