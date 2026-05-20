@@ -55,7 +55,8 @@ function renderLabelList(){
     const thumb=tn
       ?`<div class="label-prod-thumb"><img src="${tn}"></div>`
       :`<div class="label-prod-thumb">${typeof catEmoji==='function'?catEmoji(p.cat):'💎'}</div>`;
-    const priceTxt=(typeof fmtPriceRaw==='function')?fmtPriceRaw(p.price,p.currency||'JPY'):'';
+    const _rn=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
+    const priceTxt=(!isNaN(_rn)&&typeof fmtPriceRaw==='function')?fmtPriceRaw(_rn,p.currency||'JPY'):'';
     return`<div class="label-prod-row">
       ${thumb}
       <span class="label-prod-name">${p.name||'未命名'}</span>
@@ -245,12 +246,23 @@ function previewLabels(){
 }
 
 function renderLabelHTML(p,cfg){
-  const pCur=p.currency||'CNY';
-  const priceTxt=(cfg.showPrice && p.price!=null && String(p.price).trim()!=='')
-    ? (cfg.labelCurrency
-        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
-        : fmtPriceRaw(p.price,pCur))
-    : '';
+  const pCur=p.currency||'JPY';
+  // 同 PDF 路径同款防御性逻辑:数值化 + 降级 + console.warn
+  let priceTxt='';
+  if(cfg.showPrice){
+    const rawNum=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
+    if(!isNaN(rawNum)){
+      let t='';
+      if(cfg.labelCurrency){
+        t=(typeof fmtPrice==='function')?fmtPrice(rawNum,cfg.labelCurrency,pCur):'';
+        if(!t||t==='—')t=(typeof fmtPriceRaw==='function')?fmtPriceRaw(rawNum,cfg.labelCurrency):(cfg.labelCurrency+' '+rawNum);
+      }else{
+        t=(typeof fmtPriceRaw==='function')?fmtPriceRaw(rawNum,pCur):(pCur+' '+rawNum);
+      }
+      if(t&&t!=='—')priceTxt=t;
+      else console.warn('[label preview] 价格格式化为空',{id:p.id,price:p.price,pCur,labelCur:cfg.labelCurrency});
+    }
+  }
   // 镜像 PDF 布局:
   // - 顶区: 商品名 (2 行 clamp) + 产地 (1 行 clamp)
   // - 底区: 价格(无 QR 时贴 barcode 上方右对齐) + barcode + SKU 文字
@@ -338,16 +350,32 @@ async function exportLabelsPDF(){
     let cy=y+pad+cfg.nameSize*0.4;
 
     // 价格文本 + 宽度先算出来,后面布局决策要用
+    // 防御性策略(第 3 次修复,2026-05-20):
+    // 1) 数值化 price,只要能 parseFloat 成功就显示,不被空白/类型问题挡掉
+    // 2) labelCurrency 路径若 fmtPrice 返回 '—'(汇率缺失/异常),回退 fmtPriceRaw
+    // 3) 若仍拿不到价格但 showPrice=true,console.warn 让 F12 可见,而不是无声失败
     let priceTxt='';
     let priceW=0;
-    if(cfg.showPrice && p.price!=null && String(p.price).trim()!==''){
-      pdf.setFontSize(cfg.priceSize);
-      setFont('bold');
-      const pCur=p.currency||'CNY';
-      priceTxt=cfg.labelCurrency
-        ? fmtPrice(p.price,cfg.labelCurrency,pCur)
-        : fmtPriceRaw(p.price,pCur);
-      priceW=pdf.getTextWidth(priceTxt);
+    if(cfg.showPrice){
+      const rawNum=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
+      if(!isNaN(rawNum)){
+        pdf.setFontSize(cfg.priceSize);
+        setFont('bold');
+        const pCur=p.currency||'JPY';
+        let t='';
+        if(cfg.labelCurrency){
+          t=(typeof fmtPrice==='function')?fmtPrice(rawNum,cfg.labelCurrency,pCur):'';
+          if(!t||t==='—'){
+            t=(typeof fmtPriceRaw==='function')?fmtPriceRaw(rawNum,cfg.labelCurrency):(cfg.labelCurrency+' '+rawNum);
+          }
+        }else{
+          t=(typeof fmtPriceRaw==='function')?fmtPriceRaw(rawNum,pCur):(pCur+' '+rawNum);
+        }
+        if(t&&t!=='—'){priceTxt=t;priceW=pdf.getTextWidth(priceTxt);}
+        else console.warn('[label] 价格格式化为空',{id:p.id,price:p.price,pCur,labelCur:cfg.labelCurrency,t});
+      }else if(p.price!=null&&p.price!==''){
+        console.warn('[label] price 非数字,跳过显示',{id:p.id,price:p.price});
+      }
     }
 
     // 对折 30×25mm 双面:左半 (0-15) 名+产地 正向;右半 (15-30) barcode+价 旋转 180°
