@@ -1,88 +1,43 @@
 // ===================== 摄像头扫码 =====================
-// v5 (2026-05-19): 砍 Quagga2 (误识别), ROI 裁剪到黄框, requestVideoFrameCallback
 let _scanFrames=0;
 let _scanStream=null;
-let _scanRaf=null;
-let _scanStopFlag=false;
-let _torchOn=false;
+let _scanLoop=null;
 async function startCamera(){
   const bar=document.getElementById('camera-result-bar');
   try{
-    const _wrap=document.getElementById('camera-wrap');
-    // 把 overlay 移到 body 末尾,避免被 .scan-stage(overflow:hidden + border-radius)困住导致 fixed 失效 / video 不显示
-    if(_wrap&&_wrap.parentNode!==document.body){
-      _wrap.__origParent=_wrap.parentNode;
-      _wrap.__origNext=_wrap.nextSibling;
-      document.body.appendChild(_wrap);
-    }
-    _wrap.style.display='flex';
+    document.getElementById('camera-wrap').style.display='block';
     document.getElementById('camera-start-wrap').style.display='none';
-    const _csr=document.getElementById('camera-scan-result');if(_csr)_csr.style.display='none';
-    document.body.style.overflow='hidden';
+    document.getElementById('camera-scan-result').style.display='none';
     bar.textContent='① 启动摄像头…';
-
-    // 权限预检 (iOS Safari 不支持 permissions.query('camera') 会 throw,忽略)
-    try{
-      if(navigator.permissions&&navigator.permissions.query){
-        const st=await navigator.permissions.query({name:'camera'});
-        if(st&&st.state==='denied'){
-          bar.innerHTML='❌ 摄像头权限被拒绝。请到 <b>设置 → Safari → 网站设置 → learnmans-inventory.vercel.app → 相机:允许</b> 后重新打开本页面';
-          toast('请到系统设置开启相机权限');
-          return;
-        }
-      }
-    }catch(_){/* iOS Safari throws on name:'camera' — ignore */}
-
-    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-      bar.textContent='❌ 浏览器不支持摄像头 API';
-      return;
-    }
 
     // 手动 getUserMedia,逐级降级
     let stream;
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{
         facingMode:{ideal:'environment'},
-        width:{ideal:1920},height:{ideal:1080},
-        frameRate:{ideal:60}
+        width:{ideal:1920},height:{ideal:1080}
       }});
     }catch(e1){
-      // 用户 reject / NotAllowedError
-      if(e1&&(e1.name==='NotAllowedError'||e1.name==='SecurityError')){
-        bar.innerHTML='❌ 摄像头被拒绝。iOS:<b>设置 → Safari → 相机 → 允许</b>;Android:浏览器地址栏锁图标 → 权限 → 相机';
-        toast('请允许相机权限');
-        throw e1;
-      }
       bar.textContent='② 高清失败,降级…';
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
     }
     _scanStream=stream;
-    _scanStopFlag=false;
     const videoEl=document.getElementById('camera-video');
     videoEl.setAttribute('playsinline','');
     videoEl.muted=true;
     videoEl.srcObject=stream;
     await videoEl.play().catch(e=>{bar.textContent='video.play 失败: '+e.message;});
 
-    // 连续对焦 + 手电筒按钮可用性
+    // 试着开连续对焦(iOS 经常 ignore)
     const track=stream.getVideoTracks()[0];
     if(track&&track.applyConstraints){
-      // iOS Safari 优化:连续对焦 + 白平衡 + 曝光,逐项尝试避免一个不支持导致全失败
       try{await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
-      try{await track.applyConstraints({advanced:[{whiteBalanceMode:'continuous'}]});}catch(e){}
-      try{await track.applyConstraints({advanced:[{exposureMode:'continuous'}]});}catch(e){}
-    }
-    const caps=(track&&track.getCapabilities)?track.getCapabilities():{};
-    const torchBtn=document.getElementById('scan-torch-btn');
-    if(torchBtn){
-      torchBtn.style.display=caps.torch?'inline-flex':'none';
-      _torchOn=false;
-      torchBtn.textContent='🔦';
     }
     const s=track?track.getSettings():{};
     const resTxt=`${s.width||'?'}×${s.height||'?'}`;
 
-    // 路径 A: 原生 BarcodeDetector (Chrome Android / Edge);iOS Safari 无
+    // 阶段 A: 优先用原生 BarcodeDetector(iOS 16.4+ Safari / Chrome Android)
+    // 没有则 fall-through 到阶段 B(ZXing 0.19.1)
     let bdDetector=null;
     let useBD=false;
     if('BarcodeDetector' in window){
@@ -95,10 +50,12 @@ async function startCamera(){
         useBD=true;
       }catch(_){useBD=false;}
     }
+    // 阶段 C: 多库并行(jsQR + Quagga2 + ZXing),BD 优先时不需要
     const hasJsQR=typeof jsQR==='function';
-    // Quagga2 已砍 — false positive 严重(把 MZ-MP1KOA 读成 11924470)
-    const tag=useBD?'[A:Native]':`[ZXing${hasJsQR?'+jsQR':''}]`;
+    const hasQuagga=typeof Quagga!=='undefined';
+    const tag=useBD?'[A:BarcodeDetector]':`[C:Multi ZXing${hasJsQR?'+jsQR':''}${hasQuagga?'+Quagga':''}]`;
 
+    // ZXing reader 仅在 fallback 路径需要
     if(!useBD&&!zxingReader){
       const hints=new Map();
       const fmt=ZXing.BarcodeFormat;
@@ -108,117 +65,78 @@ async function startCamera(){
         fmt.ITF,fmt.DATA_MATRIX
       ]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);}
+      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,100);}
       catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
     }
 
     _scanFrames=0;
     let lastErr='';
     let bdBusy=false;
-    bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准黄框…`;
+    let quaggaBusy=false;
+    bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准框内…`;
 
-    // ROI 裁剪:从视频中心取 60% 短边正方形,匹配 CSS .scan-frame
-    const roiCanvas=document.createElement('canvas');
-    const roiCtx=roiCanvas.getContext('2d',{willReadFrequently:true});
+    const canvas=useBD?null:document.createElement('canvas');
+    const ctx=canvas?canvas.getContext('2d'):null;
     const innerReader=useBD?null:zxingReader.reader;
-
-    function computeROI(){
-      const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      const side=Math.floor(Math.min(vw,vh)*0.9);
-      return{
-        sx:Math.floor((vw-side)/2),
-        sy:Math.floor((vh-side)/2),
-        sw:side,sh:side
-      };
-    }
-
-    async function tick(){
-      if(_scanStopFlag||!_scanStream)return;
+    _scanLoop=setInterval(()=>{
+      if(!_scanStream)return;
       if(videoEl.readyState<2||!videoEl.videoWidth){
         bar.textContent=`📹 ${tag} ${resTxt} | 等待视频帧 readyState=${videoEl.readyState}`;
-        scheduleNext();return;
+        return;
       }
-      const roi=computeROI();
-      // 解码 canvas 缩放到最大 720,平衡分辨率与速度
-      const targetSide=Math.min(roi.sw,720);
-      roiCanvas.width=targetSide;
-      roiCanvas.height=targetSide;
-      roiCtx.drawImage(videoEl,roi.sx,roi.sy,roi.sw,roi.sh,0,0,targetSide,targetSide);
-      _scanFrames++;
 
-      // 路径 A: BarcodeDetector (async)
+      // 阶段 A: BarcodeDetector 直读 video 元素
       if(useBD){
-        if(bdBusy){scheduleNext();return;}
+        if(bdBusy)return;
+        _scanFrames++;
         bdBusy=true;
-        try{
-          const codes=await bdDetector.detect(roiCanvas);
+        bdDetector.detect(videoEl).then(codes=>{
           bdBusy=false;
+          if(!_scanStream)return;
           if(codes&&codes.length){
             const code=codes[0].rawValue;
-            bar.textContent=`✅ ${tag} ${code}`;
+            bar.textContent=`✅ ${tag} 扫到: ${code}`;
             stopCamera();
             showScanResult(code,'camera-scan-result');
             return;
           }
-        }catch(err){
+          if(_scanFrames%5===0){
+            bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ${videoEl.videoWidth}×${videoEl.videoHeight} | 对准框内…`;
+          }
+        }).catch(err=>{
           bdBusy=false;
           const name=err&&err.name?err.name:String(err);
-          if(name!==lastErr){lastErr=name;bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ${name}`;}
-        }
-        if(_scanFrames%10===0){
-          bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
-        }
-        scheduleNext();return;
+          if(name!==lastErr){
+            lastErr=name;
+            bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ${name}: ${err.message||''}`;
+          }
+        });
+        return;
       }
 
-      // 路径 B: jsQR + ZBar + ZXing
+      // 阶段 C: 三路并行 — jsQR(sync) + ZXing(sync) + Quagga2(async,每 3 帧)
+      canvas.width=videoEl.videoWidth;
+      canvas.height=videoEl.videoHeight;
+      ctx.drawImage(videoEl,0,0,canvas.width,canvas.height);
+      _scanFrames++;
       let hit=null;
-      // jsQR 只解 QR 码,矿珍库主要是 CODE128 1D — 每 3 帧跑一次,降低开销
-      if(hasJsQR && _scanFrames%3===0){
+
+      // jsQR — QR 专,sync
+      if(hasJsQR){
         try{
-          const id=roiCtx.getImageData(0,0,targetSide,targetSide);
+          const id=ctx.getImageData(0,0,canvas.width,canvas.height);
           const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
           if(r&&r.data){hit={engine:'jsQR',code:r.data};}
         }catch(_){}
       }
-      // ZBar.wasm 优先 (1D 条码识别率远超 ZXing.js,wasm 未加载时跳过)
-      // 用 Promise.race + 80ms 超时,防止 iOS Safari 偶发卡顿阻塞 tick
-      if(!hit&&window.zbarScanImageData){
-        try{
-          const id=roiCtx.getImageData(0,0,targetSide,targetSide);
-          const results=await Promise.race([
-            window.zbarScanImageData(id),
-            new Promise(r=>setTimeout(()=>r(null),50))
-          ]);
-          if(results&&results.length){
-            hit={engine:'ZBar',code:results[0].decode()};
-          }
-        }catch(_){}
-      }
+
+      // ZXing — 2D+1D 综合,sync
       if(!hit){
-        // 前 20 帧只跑 Hybrid(冷启动快),20 帧后再轮换 Global/Invert
-        const bin = _scanFrames < 20 ? 0 : (_scanFrames % 3);
         try{
-          if(bin===0){
-            const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
-            const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-            const r=innerReader.decode(bmp);
-            if(r) hit={engine:'ZXing-Hybrid',code:r.getText()};
-          }else if(bin===1){
-            const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
-            const bmp=new ZXing.BinaryBitmap(new ZXing.GlobalHistogramBinarizer(src));
-            const r=innerReader.decode(bmp);
-            if(r) hit={engine:'ZXing-Global',code:r.getText()};
-          }else{
-            const id=roiCtx.getImageData(0,0,targetSide,targetSide);
-            for(let i=0;i<id.data.length;i+=4){id.data[i]=255-id.data[i];id.data[i+1]=255-id.data[i+1];id.data[i+2]=255-id.data[i+2];}
-            const inv=document.createElement('canvas');inv.width=targetSide;inv.height=targetSide;
-            inv.getContext('2d').putImageData(id,0,0);
-            const src=new ZXing.HTMLCanvasElementLuminanceSource(inv);
-            const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-            const r=innerReader.decode(bmp);
-            if(r) hit={engine:'ZXing-Invert',code:r.getText()};
-          }
+          const src=new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+          const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+          const result=innerReader.decode(bmp);
+          if(result){hit={engine:'ZXing',code:result.getText()};}
         }catch(err){
           const name=err&&err.name?err.name:String(err);
           if(name!=='NotFoundException'&&name!==lastErr){
@@ -227,170 +145,55 @@ async function startCamera(){
           }
         }
       }
+
       if(hit){
-        bar.textContent=`✅ [${hit.engine}] ${hit.code}`;
+        bar.textContent=`✅ [${hit.engine}] 扫到: ${hit.code}`;
         stopCamera();
         showScanResult(hit.code,'camera-scan-result');
         return;
       }
-      if(_scanFrames%10===0){
-        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
-      }
-      scheduleNext();
-    }
 
-    function scheduleNext(){
-      if(_scanStopFlag)return;
-      // requestVideoFrameCallback 跟着视频帧率走(iOS Safari 15.4+/Chrome 83+)
-      if(typeof videoEl.requestVideoFrameCallback==='function'){
-        _scanRaf=videoEl.requestVideoFrameCallback(()=>tick());
-      }else{
-        _scanRaf=setTimeout(tick,25);
+      // Quagga2 — 1D 专,async,每 3 帧丢一次(decodeSingle 较慢)
+      if(hasQuagga&&!quaggaBusy&&_scanFrames%3===0){
+        quaggaBusy=true;
+        try{
+          Quagga.decodeSingle({
+            src:canvas.toDataURL('image/jpeg',0.8),
+            numOfWorkers:0,
+            inputStream:{size:Math.min(canvas.width,1280)},
+            locator:{patchSize:'medium',halfSample:true},
+            decoder:{readers:['ean_reader','ean_8_reader','code_128_reader','code_39_reader','upc_reader','upc_e_reader','i2of5_reader']},
+            locate:true
+          },(result)=>{
+            quaggaBusy=false;
+            if(!_scanStream)return;
+            if(result&&result.codeResult&&result.codeResult.code){
+              const code=result.codeResult.code;
+              bar.textContent=`✅ [Quagga] 扫到: ${code}`;
+              stopCamera();
+              showScanResult(code,'camera-scan-result');
+            }
+          });
+        }catch(e){quaggaBusy=false;}
       }
-    }
-    tick();
+
+      if(_scanFrames%5===0){
+        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ${canvas.width}×${canvas.height} | 对准框内…`;
+      }
+    },150);
   }catch(e){
-    if(bar){bar.textContent='❌ '+(e.message||e);}
+    bar.textContent='❌ '+(e.message||e);
     toast('摄像头错误: '+(e.message||e));
-    try{stopCamera();}catch(_){}
+    document.getElementById('camera-wrap').style.display='none';
+    document.getElementById('camera-start-wrap').style.display='block';
   }
 }
 function stopCamera(){
-  _scanStopFlag=true;
-  if(_scanRaf){
-    try{
-      const v=document.getElementById('camera-video');
-      if(v&&typeof v.cancelVideoFrameCallback==='function'){v.cancelVideoFrameCallback(_scanRaf);}
-      else clearTimeout(_scanRaf);
-    }catch(_){}
-    _scanRaf=null;
-  }
+  if(_scanLoop){clearInterval(_scanLoop);_scanLoop=null;}
   if(zxingReader){try{zxingReader.reset();}catch(e){}}
   if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
-  _torchOn=false;
-  const _wrap=document.getElementById('camera-wrap');
-  if(_wrap){
-    _wrap.style.display='none';
-    // 还原到原位置
-    if(_wrap.__origParent){
-      try{_wrap.__origParent.insertBefore(_wrap,_wrap.__origNext||null);}catch(_){}
-      _wrap.__origParent=null;_wrap.__origNext=null;
-    }
-  }
+  document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
-  document.body.style.overflow='';
-}
-
-// ===================== 相册选图 → 本地解码 (jsQR + ZXing,不走 AI) =====================
-async function decodeFileImage(file){
-  if(!file)return;
-  const bar=document.getElementById('camera-result-bar');
-  const fileInput=document.getElementById('scan-file-input');
-  if(fileInput)fileInput.value=''; // 让下次选同一张也触发
-  if(bar)bar.textContent='🖼 解码相册图…';
-  try{
-    const url=URL.createObjectURL(file);
-    const img=new Image();
-    img.decoding='async';
-    await new Promise((res,rej)=>{img.onload=res;img.onerror=()=>rej(new Error('图片加载失败'));img.src=url;});
-    URL.revokeObjectURL(url);
-    // 高保真画到 canvas (限制最大 1600 边,避免内存爆炸)
-    const maxSide=1600;
-    const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
-    const w=Math.round(img.naturalWidth*scale);
-    const h=Math.round(img.naturalHeight*scale);
-    const cv=document.createElement('canvas');
-    cv.width=w;cv.height=h;
-    const cx=cv.getContext('2d',{willReadFrequently:true});
-    cx.drawImage(img,0,0,w,h);
-
-    // 路径 1: jsQR (二维码)
-    if(typeof jsQR==='function'){
-      try{
-        const id=cx.getImageData(0,0,w,h);
-        const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
-        if(r&&r.data){
-          if(bar)bar.textContent=`✅ [jsQR] ${r.data}`;
-          stopCamera();
-          showScanResult(r.data,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    // 路径 2: BarcodeDetector (Android Chrome)
-    if('BarcodeDetector' in window){
-      try{
-        const bd=new window.BarcodeDetector({formats:[
-          'qr_code','code_128','code_39','ean_13','ean_8','upc_a','upc_e','itf','data_matrix'
-        ]});
-        const codes=await bd.detect(cv);
-        if(codes&&codes.length){
-          const code=codes[0].rawValue;
-          if(bar)bar.textContent=`✅ [BD] ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    // 路径 2.5: ZBar.wasm (1D 识别率远超 ZXing.js,优先于 ZXing 兜底)
-    if(window.zbarScanImageData){
-      try{
-        const id=cx.getImageData(0,0,w,h);
-        const results=await window.zbarScanImageData(id);
-        if(results&&results.length){
-          const code=results[0].decode();
-          if(bar)bar.textContent=`✅ [ZBar] ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    // 路径 3: ZXing (兜底,iOS Safari 主路径)
-    if(window.ZXing){
-      try{
-        const hints=new Map();
-        const fmt=ZXing.BarcodeFormat;
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[
-          fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,fmt.EAN_13,fmt.EAN_8,
-          fmt.UPC_A,fmt.UPC_E,fmt.ITF,fmt.DATA_MATRIX
-        ]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-        const reader=new ZXing.BrowserMultiFormatReader(hints);
-        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv);
-        const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
-        const result=reader.reader.decode(bmp);
-        if(result){
-          const code=result.getText();
-          if(bar)bar.textContent=`✅ [ZXing] ${code}`;
-          stopCamera();
-          showScanResult(code,'camera-scan-result');
-          return;
-        }
-      }catch(_){}
-    }
-    if(bar)bar.textContent='❌ 图中未识别到条码/QR(可尝试拍照识别走 AI)';
-    toast('图中没找到条码');
-  }catch(e){
-    if(bar)bar.textContent='❌ 相册解码失败: '+(e.message||e);
-    toast('解码失败: '+(e.message||e));
-  }
-}
-
-async function toggleTorch(){
-  if(!_scanStream)return;
-  const track=_scanStream.getVideoTracks()[0];
-  if(!track||!track.applyConstraints)return;
-  try{
-    _torchOn=!_torchOn;
-    await track.applyConstraints({advanced:[{torch:_torchOn}]});
-    const btn=document.getElementById('scan-torch-btn');
-    if(btn)btn.textContent=_torchOn?'💡':'🔦';
-  }catch(e){
-    toast('手电筒不支持: '+(e.message||e));
-    _torchOn=false;
-  }
 }
 
 // ===================== 阶段 D: 拍照让 AI 读条码 =====================
@@ -439,57 +242,32 @@ function showScanResult(code,targetId){
   const parts=code.split('|');
   const sku=parts[0].trim();
   const nameFromQR=parts[1]?parts[1].trim():'';
-  // 优先精确匹配 sku/id/name,失败再用后缀匹配(新标签 barcode 编码 ID 后 8 位)
-  let p=DB.products.find(pr=>pr.sku===sku||pr.id===sku||pr.sku===code||pr.id===code||pr.name===code||(nameFromQR&&pr.name===nameFromQR));
-  if(!p&&sku.length>=6&&sku.length<=12){
-    p=DB.products.find(pr=>(pr.id||'').endsWith(sku)||(pr.sku||'').endsWith(sku));
-  }
+  const p=DB.products.find(pr=>pr.sku===sku||pr.id===sku||pr.sku===code||pr.id===code||pr.name===code||(nameFromQR&&pr.name===nameFromQR));
   const el=document.getElementById(targetId);
   el.style.display='block';
   if(p){
     const showOut=DB.showItems.filter(s=>s.productId===p.id).reduce((a,s)=>a+s.qty,0);
-    const avail=p.qty-showOut;
-    const priceStr=(typeof p.price==='number'&&p.price>0)?` · ${(p.currency||'JPY')==='JPY'?'¥':(p.currency==='CNY'?'¥':(p.currency==='USD'?'$':(p.currency==='EUR'?'€':'')))}${p.price.toLocaleString()}`:'';
-    const thumbHTML=p.photos&&p.photos[0]
-      ? `<img src="${p.photos[0]}" alt="">`
-      : `<span>${catEmoji(p.cat)||'◈'}</span>`;
     el.innerHTML=`
-      <div class="scan-result-banner">
-        <div class="scan-result-icon">✓</div>
-        <div class="scan-result-text">
-          <div class="scan-result-title">识别成功 · 命中商品</div>
-          <div class="scan-result-sub">SKU ${(p.sku||p.id||'').toString().slice(0,16)} · 库存 ${avail}${showOut>0?` · 展会带出 ${showOut}`:''}</div>
+      <div style="background:var(--surface2);border:1px solid var(--jade);border-radius:var(--radius);padding:14px;">
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
+          ${p.photos&&p.photos[0]?`<img src="${p.photos[0]}" style="width:60px;height:60px;object-fit:cover;border-radius:8px;">`:`<div style="width:60px;height:60px;border-radius:8px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;">${catEmoji(p.cat)}</div>`}
+          <div>
+            <div style="font-size:15px;font-weight:500;margin-bottom:4px;">${p.name}</div>
+            <div style="font-size:12px;color:var(--text-muted);">SKU: ${p.sku||'—'} · ${p.cat||'未分类'}</div>
+            <div style="font-size:13px;color:var(--jade-light);margin-top:3px;">库存 ${p.qty-showOut} 件${showOut>0?`（展会带出${showOut}件）`:''}</div>
+          </div>
         </div>
-      </div>
-      <div class="scan-cand">
-        <div class="scan-cand-thumb">
-          <span class="scan-cand-match">100%</span>
-          ${thumbHTML}
-        </div>
-        <div class="scan-cand-info">
-          <div class="scan-cand-name">${p.name||'(未命名)'}</div>
-          <div class="scan-cand-meta">${p.cat||'未分类'} · 库存 ${avail}${priceStr}</div>
-        </div>
-        <div class="scan-cand-actions">
-          <a class="scan-cand-btn in"  href="javascript:void(0)" onclick="openStockInModal('${p.id}')" title="入库">⬆</a>
-          <a class="scan-cand-btn out" href="javascript:void(0)" onclick="quickOutScan('${p.id}','${targetId}')" title="出库">⬇</a>
-          <a class="scan-cand-btn det" href="javascript:void(0)" onclick="openDetail('${p.id}')" title="详情">›</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="openDetail('${p.id}')">详情</button>
+          <button class="btn btn-jade btn-sm" onclick="openStockInModal('${p.id}')">⬆️ 入库</button>
+          <button class="btn btn-rose btn-sm" onclick="quickOutScan('${p.id}','${targetId}')">⬇️ 出库</button>
         </div>
       </div>`;
   }else{
-    el.innerHTML=`
-      <div class="scan-result-banner miss">
-        <div class="scan-result-icon">!</div>
-        <div class="scan-result-text">
-          <div class="scan-result-title">未匹配到商品</div>
-          <div class="scan-result-sub">扫到的码:${(code||'').toString().slice(0,32)}</div>
-        </div>
-      </div>
-      <div class="scan-cand-miss">
-        <div>没有这件商品,或它的 SKU 还没绑这个码</div>
-        <div class="scan-cand-miss-code">${code}</div>
-        <button class="btn btn-gold btn-sm" onclick="openAddModal()">＋ 新建此商品</button>
-      </div>`;
+    el.innerHTML=`<div style="background:var(--surface2);border:1px solid var(--rose);border-radius:var(--radius);padding:14px;">
+      <div style="color:var(--rose);margin-bottom:10px;">❌ 未找到商品「${code}」</div>
+      <button class="btn btn-gold btn-sm" onclick="openAddModal()">新建此商品</button>
+    </div>`;
   }
 }
 async function quickOutScan(pid,targetId){
@@ -508,15 +286,6 @@ async function quickOutScan(pid,targetId){
 // ⚡ 通过 Vercel 后端中转，识别后自动搜索库存
 const AI_API_URL='https://learnmans-inventory.vercel.app/api/ai-recognize';
 let aiProvider='claude'; // 默认Claude（更稳定），可切换为Gemini
-
-// 高级选项折叠区里的 AI 引擎 chip 切换同步
-function _syncAiChip(){
-  const claude=document.getElementById('ai-chip-claude');
-  const gemini=document.getElementById('ai-chip-gemini');
-  if(!claude||!gemini)return;
-  claude.classList.toggle('cur',aiProvider==='claude');
-  gemini.classList.toggle('cur',aiProvider==='gemini');
-}
 
 // 📏 图片压缩：iPhone 原图常 5-10MB，base64 后超 Vercel 4.5MB 限制 + Safari "Load failed"
 // 压到最长边 1600px、JPEG 85% → 大约 200-500KB，又快又稳
@@ -800,80 +569,3 @@ function useAIResult(j){
     }
   }catch(e){openAddModal();}
 }
-
-// ===================== 拍照按钮 → 本地解码 (ZXing 三路 binarizer) =====================
-// HTML #scan-photo-btn(capture=environment) 直拍 4K 后 onchange 调到这里
-async function decodePhotoFile(file){
-  if(!file) return;
-  const bar=document.getElementById('camera-result-bar');
-  if(bar) bar.textContent='📷 解码照片中…';
-  try{
-    const img=new Image();
-    const url=URL.createObjectURL(file);
-    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
-    URL.revokeObjectURL(url);
-
-    const canvas=document.createElement('canvas');
-    canvas.width=img.naturalWidth;
-    canvas.height=img.naturalHeight;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.drawImage(img,0,0);
-
-    if(bar) bar.textContent=`📷 ${img.naturalWidth}×${img.naturalHeight} 解码中…`;
-
-    if(!window.ZXing){
-      if(bar) bar.textContent='❌ ZXing 未加载';
-      return;
-    }
-    if(!zxingReader){
-      const hints=new Map();
-      const fmt=ZXing.BarcodeFormat;
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,fmt.EAN_13,fmt.EAN_8,fmt.UPC_A,fmt.UPC_E,fmt.ITF,fmt.DATA_MATRIX]);
-      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);}
-      catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
-    }
-    const reader=zxingReader.reader;
-
-    const tryBin=(BinCls,cv)=>{
-      try{
-        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv);
-        const bmp=new ZXing.BinaryBitmap(new BinCls(src));
-        return reader.decode(bmp);
-      }catch(_){return null;}
-    };
-    let r=tryBin(ZXing.HybridBinarizer,canvas);
-    if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,canvas);
-    if(!r){
-      try{
-        const id=ctx.getImageData(0,0,canvas.width,canvas.height);
-        for(let i=0;i<id.data.length;i+=4){id.data[i]=255-id.data[i];id.data[i+1]=255-id.data[i+1];id.data[i+2]=255-id.data[i+2];}
-        const inv=document.createElement('canvas');
-        inv.width=canvas.width; inv.height=canvas.height;
-        inv.getContext('2d').putImageData(id,0,0);
-        r=tryBin(ZXing.HybridBinarizer,inv);
-        if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,inv);
-      }catch(_){}
-    }
-
-    if(r){
-      if(bar) bar.textContent=`✅ 拍照识别: ${r.getText()}`;
-      stopCamera();
-      showScanResult(r.getText(),'camera-scan-result');
-    } else {
-      if(bar) bar.textContent='❌ 照片解不出条码,试再拍一张(对准 + 充足光线 + 距离 10-15cm)';
-    }
-  }catch(e){
-    if(bar) bar.textContent='❌ 解码失败: '+(e.message||e);
-  }
-}
-
-// DOMContentLoaded 时绑定拍照/相册按钮(HTML inline onchange 是兜底,这里再保一层)
-document.addEventListener('DOMContentLoaded',function(){
-  const galBtn=document.getElementById('scan-gallery-btn');
-  const galIn=document.getElementById('scan-file-input');
-  if(galBtn&&galIn){
-    galBtn.addEventListener('click',function(e){e.preventDefault();galIn.click();});
-    galIn.addEventListener('change',function(){const f=this.files&&this.files[0];if(f)decodePhotoFile(f);this.value='';});
-  }
-});
