@@ -411,35 +411,43 @@ async function exportLabelsPDF(){
       const fpad=1.2;
 
       // ====== A 面 (上半 0 → 15mm,外侧正向) ======
+      // 布局:左侧 QR 8mm(扫码可靠),右半 17mm 宽分三行:名 / 产地 / 价格
+      const qrSize=8;
+      const qrX=x+fpad;
+      const qrY=y+(halfH-qrSize)/2;
+      try{
+        const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
+        if(qr){
+          pdf.addImage(qr,'PNG',qrX,qrY,qrSize,qrSize);
+        }
+      }catch(e){console.log('foldH qr',e);}
+      // 右半文字区
+      const rxLeft=x+fpad+qrSize+1;       // 右半左边界
+      const rxRight=x+cfg.w-fpad;
+      const rxW=rxRight-rxLeft;
       let acy=y+fpad+cfg.nameSize*0.4;
       if(cfg.showName&&p.name){
         pdf.setFontSize(cfg.nameSize);
         setFont('bold');
         pdf.setTextColor(0);
-        const nameLines=pdf.splitTextToSize(p.name,cfg.w-fpad*2).slice(0,2);
-        pdf.text(nameLines,x+cfg.w/2,acy,{align:'center'});
-        acy+=cfg.nameSize*0.5*nameLines.length;
+        const nameLines=pdf.splitTextToSize(p.name,rxW).slice(0,2);
+        pdf.text(nameLines,rxLeft+rxW/2,acy,{align:'center'});
+        acy+=cfg.nameSize*0.45*nameLines.length;
       }
       if(cfg.showOrigin&&p.origin){
         pdf.setFontSize(cfg.subSize);
         setFont('normal');
         pdf.setTextColor(100);
-        pdf.text(p.origin,x+cfg.w/2,acy+cfg.subSize*0.4,{align:'center'});
+        const oriLines=pdf.splitTextToSize(p.origin,rxW).slice(0,1);
+        pdf.text(oriLines,rxLeft+rxW/2,acy+cfg.subSize*0.4,{align:'center'});
       }
-      // 左下 QR: 3.5mm,贴 A 面底部左侧,给价格更多空间
-      const qrSize=3.5;
-      try{
-        const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
-        if(qr){
-          pdf.addImage(qr,'PNG',x+1,y+11,qrSize,qrSize);
-        }
-      }catch(e){console.log('foldH qr',e);}
-      // 右下 价格(缩小字号,贴 A 面底部更靠下)
+      // 价格:右半底部居中,加粗加大
       if(priceTxt){
-        pdf.setFontSize(cfg.priceSize);
+        const psz=cfg.priceSize+1;
+        pdf.setFontSize(psz);
         setFont('bold');
         pdf.setTextColor(0);
-        pdf.text(priceTxt,x+cfg.w-fpad,y+halfH-fpad-cfg.priceSize*0.05+1,{align:'right'});
+        pdf.text(priceTxt,rxLeft+rxW/2,y+halfH-fpad-0.3,{align:'center'});
       }
 
       // ====== 中间水平折线 ======
