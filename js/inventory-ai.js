@@ -312,6 +312,70 @@ function stopCamera(){
   const dbg=document.getElementById('scan-debug');if(dbg){dbg.textContent='';dbg.style.display='none';}
 }
 
+// 从文件(相册/拍照)解码,三路 binarizer 复用扫码逻辑
+async function decodePhotoFile(file){
+  if(!file) return;
+  const bar=document.getElementById('camera-result-bar');
+  if(bar) bar.textContent='📷 解码照片中…';
+  try{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
+    URL.revokeObjectURL(url);
+
+    const canvas=document.createElement('canvas');
+    canvas.width=img.naturalWidth;
+    canvas.height=img.naturalHeight;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+
+    if(bar) bar.textContent=`📷 ${img.naturalWidth}×${img.naturalHeight} 解码中…`;
+
+    if(!zxingReader){
+      const hints=new Map();
+      const fmt=ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,fmt.EAN_13,fmt.EAN_8,fmt.UPC_A,fmt.UPC_E,fmt.ITF,fmt.DATA_MATRIX]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);}
+      catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
+    }
+    const reader=zxingReader.reader;
+
+    const tryBin=(BinCls,cv)=>{
+      try{
+        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv);
+        const bmp=new ZXing.BinaryBitmap(new BinCls(src));
+        return reader.decode(bmp);
+      }catch(_){return null;}
+    };
+    let r=tryBin(ZXing.HybridBinarizer,canvas);
+    if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,canvas);
+    if(!r){
+      try{
+        const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+        for(let i=0;i<id.data.length;i+=4){id.data[i]=255-id.data[i];id.data[i+1]=255-id.data[i+1];id.data[i+2]=255-id.data[i+2];}
+        const inv=document.createElement('canvas');
+        inv.width=canvas.width; inv.height=canvas.height;
+        inv.getContext('2d').putImageData(id,0,0);
+        r=tryBin(ZXing.HybridBinarizer,inv);
+        if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,inv);
+      }catch(_){}
+    }
+
+    if(r){
+      if(bar) bar.textContent=`✅ 拍照识别: ${r.getText()}`;
+      stopCamera();
+      showScanResult(r.getText(),'camera-scan-result');
+    } else {
+      if(bar) bar.textContent='❌ 照片解不出条码,试再拍一张(对准 + 充足光线 + 距离 10-15cm)';
+    }
+  }catch(e){
+    if(bar) bar.textContent='❌ 解码失败: '+(e.message||e);
+  }
+}
+// 兼容相册按钮的旧 onchange
+function decodeFileImage(file){ return decodePhotoFile(file); }
+
 async function toggleTorch(){
   if(!_scanStream)return;
   const track=_scanStream.getVideoTracks()[0];
