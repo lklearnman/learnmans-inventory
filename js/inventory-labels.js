@@ -159,7 +159,7 @@ function getLabelConfig(){
   const sizes={
     tiny:{w:25,h:15,nameSize:5,priceSize:7,subSize:4,bcW:0.45,bcH:5},
     mini:{w:30,h:20,nameSize:6,priceSize:9,subSize:5,bcW:0.55,bcH:6},
-    'fold-ring':{w:25,h:30,nameSize:6,priceSize:10,subSize:4,bcW:0.5,bcH:9,fold:true},
+    'fold-ring':{w:25,h:30,nameSize:6,priceSize:10,subSize:4,bcW:0.5,bcH:9,fold2side:true},
     // 25×30 竖向,水平折线 y=15,对折后每面 25×15 横放
     // A 面(上半 0-15,外侧客人看): 上方 名+产地, 左下 QR, 右下 价格
     // B 面(下半 15-30,内侧店主扫): 满铺 barcode + SKU,整体旋转 180°(对折后翻上来视觉正向)
