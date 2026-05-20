@@ -89,6 +89,17 @@ async function generateThumbnail(b64){
   });
 }
 
+// ===================== 同步按钮 =====================
+async function doSyncInventory(){
+  toast('☁ 同步中...');
+  try{
+    await loadAll();
+    if(typeof renderInventory==='function')renderInventory();
+    if(typeof renderLogsPage==='function')renderLogsPage();
+    toast('✓ 已同步');
+  }catch(e){toast('⚠️ 同步失败:'+(e&&e.message||e));}
+}
+
 // ===================== SUPABASE CRUD =====================
 async function loadAll(){
   setSyncStatus('syncing');
