@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-scanalt">
+<link rel="stylesheet" href="inventory.css?v=20260520-scandebug">
 
 </head>
 <body>
@@ -273,6 +273,7 @@
     </div>
     <!-- 诊断条 (扫码 v4 调试用,始终可见) -->
     <div class="camera-result-bar" id="camera-result-bar">将条形码或QR码对准框内…</div>
+    <pre id="scan-debug" style="position:absolute;bottom:80px;left:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:6px;border-radius:6px;font-family:monospace;line-height:1.4;z-index:10001;max-height:140px;overflow:auto;white-space:pre-wrap;"></pre>
   </div>
 
   <!-- 主操作:2 张并排卡 (mock screen-5 风格) -->
@@ -756,12 +757,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-scanalt"></script>
-<script src="js/inventory-ui.js?v=20260520-scanalt"></script>
-<script src="js/inventory-logs.js?v=20260520-scanalt"></script>
-<script src="js/inventory-ai.js?v=20260520-scanalt"></script>
-<script src="js/inventory-labels.js?v=20260520-scanalt"></script>
-<script src="js/inventory-search.js?v=20260520-scanalt"></script>
+<script src="js/inventory-core.js?v=20260520-scandebug"></script>
+<script src="js/inventory-ui.js?v=20260520-scandebug"></script>
+<script src="js/inventory-logs.js?v=20260520-scandebug"></script>
+<script src="js/inventory-ai.js?v=20260520-scandebug"></script>
+<script src="js/inventory-labels.js?v=20260520-scandebug"></script>
+<script src="js/inventory-search.js?v=20260520-scandebug"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
