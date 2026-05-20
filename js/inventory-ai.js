@@ -86,6 +86,7 @@ async function startCamera(){
     let cntBD=0,cntJsqr=0,cntZxRoi=0,cntZxFull=0;
     let bdBusy=false;
     const dbgEl=document.getElementById('scan-debug');
+    if(dbgEl)dbgEl.style.display='block';
     function updateDbg(roi,sw,sh){
       if(!dbgEl)return;
       const st=track?track.getSettings():{};
@@ -259,7 +260,7 @@ function stopCamera(){
   _torchOn=false;
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
-  const dbg=document.getElementById('scan-debug');if(dbg)dbg.textContent='';
+  const dbg=document.getElementById('scan-debug');if(dbg){dbg.textContent='';dbg.style.display='none';}
 }
 
 async function toggleTorch(){
