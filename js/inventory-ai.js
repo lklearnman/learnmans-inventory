@@ -81,7 +81,23 @@ async function startCamera(){
 
     _scanFrames=0;
     let lastErr='';
+    let lastZxingErr='';
+    let lastJsqr='null';
+    let cntBD=0,cntJsqr=0,cntZxRoi=0,cntZxFull=0;
     let bdBusy=false;
+    const dbgEl=document.getElementById('scan-debug');
+    function updateDbg(roi,sw,sh){
+      if(!dbgEl)return;
+      const st=track?track.getSettings():{};
+      dbgEl.textContent=
+        `video=${videoEl.videoWidth}x${videoEl.videoHeight} readyState=${videoEl.readyState} paused=${videoEl.paused}\n`+
+        `stream=${st.width||'?'}x${st.height||'?'} @${st.frameRate||'?'}fps\n`+
+        `ROI=sx${roi.sx},sy${roi.sy},sw${roi.sw},sh${roi.sh}\n`+
+        `canvas=${sw}x${sh}\n`+
+        `frames=${_scanFrames} last-zxing-err=${lastZxingErr||'-'}\n`+
+        `last-jsqr=${lastJsqr}\n`+
+        `engines-tried= BD:${useBD?1:0}/${cntBD} jsQR:${cntJsqr} ZXing-ROI:${cntZxRoi} ZXing-full:${cntZxFull}`;
+    }
     bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准黄框…`;
 
     // ROI: 100% 短边正方形,匹配 CSS object-fit:cover + aspect-ratio:1 的视觉黄框
@@ -119,12 +135,14 @@ async function startCamera(){
       _scanFrames++;
       _scanLastFrameAt=Date.now();
       if(_scanFrames%30===0)console.log('[scan tick]',_scanFrames,'frame OK ROI',sw+'×'+sh);
+      if(_scanFrames%10===0)updateDbg(roi,sw,sh);
 
       // 路径 A: BarcodeDetector (async)
       if(useBD){
         if(bdBusy){scheduleNext();return;}
         bdBusy=true;
         try{
+          cntBD++;
           const codes=await bdDetector.detect(roiCanvas);
           bdBusy=false;
           if(codes&&codes.length){
@@ -149,19 +167,23 @@ async function startCamera(){
       let hit=null;
       if(hasJsQR){
         try{
+          cntJsqr++;
           const id=roiCtx.getImageData(0,0,sw,sh);
           const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
+          lastJsqr=(r&&r.data)?('hit:'+r.data.slice(0,20)):'null';
           if(r&&r.data){hit={engine:'jsQR',code:r.data};}
-        }catch(_){}
+        }catch(e){lastJsqr='err:'+(e&&e.name||e);}
       }
       if(!hit){
         try{
+          cntZxRoi++;
           const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
           const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
           const result=innerReader.decode(bmp);
           if(result){hit={engine:'ZXing',code:result.getText()};}
         }catch(err){
           const name=err&&err.name?err.name:String(err);
+          lastZxingErr=name;
           if(name!=='NotFoundException'&&name!==lastErr){
             lastErr=name;
             bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ZXing:${name}`;
@@ -171,6 +193,7 @@ async function startCamera(){
       // 全帧兜底:每 6 帧尝试一次 ZXing 全画面扫描(成本高但覆盖更广)
       if(!hit && innerReader && _scanFrames%6===0){
         try{
+          cntZxFull++;
           const fullCanvas=document.createElement('canvas');
           fullCanvas.width=videoEl.videoWidth;
           fullCanvas.height=videoEl.videoHeight;
@@ -179,7 +202,7 @@ async function startCamera(){
           const bmp2=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src2));
           const r2=innerReader.decode(bmp2);
           if(r2){hit={engine:'ZXing-full',code:r2.getText()};}
-        }catch(_){}
+        }catch(e){const n=e&&e.name?e.name:String(e);if(n!=='NotFoundException')lastZxingErr='full:'+n;}
       }
       if(hit){
         bar.textContent=`✅ [${hit.engine}] ${hit.code}`;
@@ -236,6 +259,7 @@ function stopCamera(){
   _torchOn=false;
   document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
+  const dbg=document.getElementById('scan-debug');if(dbg)dbg.textContent='';
 }
 
 async function toggleTorch(){
