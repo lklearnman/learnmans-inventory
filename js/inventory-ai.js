@@ -43,7 +43,8 @@ async function startCamera(){
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{
         facingMode:{ideal:'environment'},
-        width:{ideal:1920},height:{ideal:1080}
+        width:{ideal:1920},height:{ideal:1080},
+        frameRate:{ideal:60}
       }});
     }catch(e1){
       // 用户 reject / NotAllowedError
@@ -66,7 +67,10 @@ async function startCamera(){
     // 连续对焦 + 手电筒按钮可用性
     const track=stream.getVideoTracks()[0];
     if(track&&track.applyConstraints){
+      // iOS Safari 优化:连续对焦 + 白平衡 + 曝光,逐项尝试避免一个不支持导致全失败
       try{await track.applyConstraints({advanced:[{focusMode:'continuous'}]});}catch(e){}
+      try{await track.applyConstraints({advanced:[{whiteBalanceMode:'continuous'}]});}catch(e){}
+      try{await track.applyConstraints({advanced:[{exposureMode:'continuous'}]});}catch(e){}
     }
     const caps=(track&&track.getCapabilities)?track.getCapabilities():{};
     const torchBtn=document.getElementById('scan-torch-btn');
