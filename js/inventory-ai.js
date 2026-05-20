@@ -7,18 +7,8 @@ let _scanStopFlag=false;
 let _torchOn=false;
 async function startCamera(){
   const bar=document.getElementById('camera-result-bar');
-  try{stopCamera();}catch(_){}
   try{
-    const _wrap=document.getElementById('camera-wrap');
-    // 把 overlay 移到 body 末尾,避免被 .scan-stage(overflow:hidden + border-radius)困住导致 fixed 失效 / video 不显示
-    if(_wrap){
-      if(!_wrap.__origParent && _wrap.parentNode!==document.body){
-        _wrap.__origParent=_wrap.parentNode;
-        _wrap.__origNext=_wrap.nextSibling;
-      }
-      if(_wrap.parentNode!==document.body) document.body.appendChild(_wrap);
-    }
-    _wrap.style.display='flex';
+    document.getElementById('camera-wrap').style.display='flex';
     document.getElementById('camera-start-wrap').style.display='none';
     const _csr=document.getElementById('camera-scan-result');if(_csr)_csr.style.display='none';
     document.body.style.overflow='hidden';
@@ -107,14 +97,8 @@ async function startCamera(){
         fmt.ITF,fmt.DATA_MATRIX
       ]);
       hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-      try{
-        zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);
-      }catch(_){
-        zxingReader=new ZXing.BrowserMultiFormatReader();
-        if(zxingReader.reader && zxingReader.reader.setHints){
-          try{zxingReader.reader.setHints(hints);}catch(_){}
-        }
-      }
+      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);}
+      catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
     }
 
     _scanFrames=0;
@@ -128,10 +112,13 @@ async function startCamera(){
     const innerReader=useBD?null:zxingReader.reader;
 
     function computeROI(){
-      const vw=videoEl.videoWidth, vh=videoEl.videoHeight;
-      // 1D 横向条码:整宽 + 中心 40% 高,确保起止符不被裁
-      const sw=vw, sh=Math.floor(vh*0.4);
-      return {sx:0, sy:Math.floor((vh-sh)/2), sw, sh};
+      const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
+      const side=Math.floor(Math.min(vw,vh)*0.6);
+      return{
+        sx:Math.floor((vw-side)/2),
+        sy:Math.floor((vh-side)/2),
+        sw:side,sh:side
+      };
     }
 
     async function tick(){
@@ -141,12 +128,11 @@ async function startCamera(){
         scheduleNext();return;
       }
       const roi=computeROI();
-      // 解码 canvas:保留横向像素(1D 条码必需),宽限 1280,高按比例
-      const sw=Math.min(roi.sw,1280);
-      const sh=Math.floor(roi.sh * (sw/roi.sw));
-      roiCanvas.width=sw;
-      roiCanvas.height=sh;
-      roiCtx.drawImage(videoEl, roi.sx, roi.sy, roi.sw, roi.sh, 0, 0, sw, sh);
+      // 解码 canvas 缩放到最大 720,平衡分辨率与速度
+      const targetSide=Math.min(roi.sw,720);
+      roiCanvas.width=targetSide;
+      roiCanvas.height=targetSide;
+      roiCtx.drawImage(videoEl,roi.sx,roi.sy,roi.sw,roi.sh,0,0,targetSide,targetSide);
       _scanFrames++;
 
       // 路径 A: BarcodeDetector (async)
@@ -169,7 +155,7 @@ async function startCamera(){
           if(name!==lastErr){lastErr=name;bar.textContent=`⚠️ ${tag} 帧 ${_scanFrames} | ${name}`;}
         }
         if(_scanFrames%10===0){
-          bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${sw}×${sh} | 对准黄框…`;
+          bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
         }
         scheduleNext();return;
       }
@@ -178,8 +164,8 @@ async function startCamera(){
       let hit=null;
       if(hasJsQR){
         try{
-          const id=roiCtx.getImageData(0,0,sw,sh);
-          const r=jsQR(id.data,sw,sh,{inversionAttempts:'attemptBoth'});
+          const id=roiCtx.getImageData(0,0,targetSide,targetSide);
+          const r=jsQR(id.data,id.width,id.height,{inversionAttempts:'attemptBoth'});
           if(r&&r.data){hit={engine:'jsQR',code:r.data};}
         }catch(_){}
       }
@@ -204,7 +190,7 @@ async function startCamera(){
         return;
       }
       if(_scanFrames%10===0){
-        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${sw}×${sh} | 对准黄框…`;
+        bar.textContent=`📹 ${tag} ${resTxt} | 帧 ${_scanFrames} | ROI ${targetSide}² | 对准黄框…`;
       }
       scheduleNext();
     }
@@ -222,12 +208,13 @@ async function startCamera(){
   }catch(e){
     if(bar){bar.textContent='❌ '+(e.message||e);}
     toast('摄像头错误: '+(e.message||e));
-    try{stopCamera();}catch(_){}
+    document.getElementById('camera-wrap').style.display='none';
+    document.getElementById('camera-start-wrap').style.display='block';
+    document.body.style.overflow='';
   }
 }
 function stopCamera(){
   _scanStopFlag=true;
-  _scanFrames=0;
   if(_scanRaf){
     try{
       const v=document.getElementById('camera-video');
@@ -239,15 +226,7 @@ function stopCamera(){
   if(zxingReader){try{zxingReader.reset();}catch(e){}}
   if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
   _torchOn=false;
-  const _wrap=document.getElementById('camera-wrap');
-  if(_wrap){
-    _wrap.style.display='none';
-    // 还原到原位置
-    if(_wrap.__origParent){
-      try{_wrap.__origParent.insertBefore(_wrap,_wrap.__origNext||null);}catch(_){}
-      _wrap.__origParent=null;_wrap.__origNext=null;
-    }
-  }
+  document.getElementById('camera-wrap').style.display='none';
   document.getElementById('camera-start-wrap').style.display='block';
   document.body.style.overflow='';
 }

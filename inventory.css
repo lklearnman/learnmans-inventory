@@ -397,20 +397,37 @@ tr.clickable{cursor:pointer;}
   gap:18px;
   padding:0 14px;
 }
-.scan-fs-video{
-  position:absolute;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  object-fit:cover;
-  z-index:0;
+.scan-fs-frame{
+  width:70vw;
+  max-width:300px;
+  aspect-ratio:1;
+  border:2px solid var(--gold);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
   background:#000;
-  display:block;
 }
-.scan-fs-top, .scan-fs-stage, .scan-fs-bottom{position:relative; z-index:2;}
-/* 全屏扫码:中央取景框/4 角/扫描线全部移除,只剩明亮 camera feed */
-.scan-fs-frame,.scan-fs-corner,.scan-fs-frame .scan-line{display:none !important;}
-.scan-fs-stage{display:none !important;}
+.scan-fs-frame > #camera-video{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.scan-fs-frame .scan-line{
+  position:absolute;
+  left:0;right:0;
+  height:2px;
+  width:100%;
+  top:0;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  box-shadow:0 0 12px var(--gold);
+  animation:scan-fs-line 1.5s ease-in-out infinite alternate;
+}
+@keyframes scan-fs-line{
+  from{top:0;}
+  to{top:calc(100% - 2px);}
+}
 .scan-fs-hint{
   background:rgba(0,0,0,.55);
   color:#fff;
