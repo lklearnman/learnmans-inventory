@@ -5,6 +5,8 @@ let _scanStream=null;
 let _scanRaf=null;
 let _scanStopFlag=false;
 let _torchOn=false;
+let _scanWatchdog=null;
+let _scanLastFrameAt=0;
 async function startCamera(){
   const bar=document.getElementById('camera-result-bar');
   try{
@@ -82,20 +84,21 @@ async function startCamera(){
     let bdBusy=false;
     bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准黄框…`;
 
-    // ROI 裁剪:整宽 × 中心 45% 高,1D 条码横向占满视频宽度像素
+    // ROI: 100% 短边正方形,匹配 CSS object-fit:cover + aspect-ratio:1 的视觉黄框
     const roiCanvas=document.createElement('canvas');
     const roiCtx=roiCanvas.getContext('2d',{willReadFrequently:true});
     const innerReader=useBD?null:zxingReader.reader;
 
     function computeROI(){
       const vw=videoEl.videoWidth,vh=videoEl.videoHeight;
-      const sh=Math.floor(vh*0.45);
+      const side=Math.min(vw,vh);
       return{
-        sx:0,
-        sy:Math.floor((vh-sh)/2),
-        sw:vw,sh:sh
+        sx:Math.floor((vw-side)/2),
+        sy:Math.floor((vh-side)/2),
+        sw:side,sh:side
       };
     }
+    console.log('[scan] video',videoEl.videoWidth+'×'+videoEl.videoHeight,'ROI=',computeROI());
 
     async function tick(){
       if(_scanStopFlag||!_scanStream)return;
@@ -111,6 +114,8 @@ async function startCamera(){
       roiCanvas.height=sh;
       roiCtx.drawImage(videoEl,roi.sx,roi.sy,roi.sw,roi.sh,0,0,sw,sh);
       _scanFrames++;
+      _scanLastFrameAt=Date.now();
+      if(_scanFrames%30===0)console.log('[scan tick]',_scanFrames,'frame OK ROI',sw+'×'+sh);
 
       // 路径 A: BarcodeDetector (async)
       if(useBD){
@@ -194,6 +199,16 @@ async function startCamera(){
         _scanRaf=setTimeout(tick,60);
       }
     }
+    _scanLastFrameAt=Date.now();
+    if(_scanWatchdog)clearInterval(_scanWatchdog);
+    _scanWatchdog=setInterval(()=>{
+      if(_scanStopFlag){clearInterval(_scanWatchdog);_scanWatchdog=null;return;}
+      if(Date.now()-_scanLastFrameAt>5000){
+        console.warn('[scan watchdog] tick 卡死 5s,强制 setTimeout 续');
+        setTimeout(tick,50);
+        _scanLastFrameAt=Date.now();
+      }
+    },1000);
     tick();
   }catch(e){
     bar.textContent='❌ '+(e.message||e);
@@ -204,6 +219,7 @@ async function startCamera(){
 }
 function stopCamera(){
   _scanStopFlag=true;
+  if(_scanWatchdog){clearInterval(_scanWatchdog);_scanWatchdog=null;}
   if(_scanRaf){
     try{
       const v=document.getElementById('camera-video');
