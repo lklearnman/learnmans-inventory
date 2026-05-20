@@ -151,7 +151,7 @@ function getLabelConfig(){
     // 25×30 竖向,水平折线 y=15,对折后每面 25×15 横放
     // A 面(上半 0-15,外侧客人看): 上方 名+产地, 左下 QR, 右下 价格
     // B 面(下半 15-30,内侧店主扫): 满铺 barcode + SKU,整体旋转 180°(对折后翻上来视觉正向)
-    fold25x30:{w:25,h:30,nameSize:7,priceSize:9,subSize:5,bcW:0.45,bcH:9,fold2side:true},
+    fold25x30:{w:25,h:30,nameSize:7,priceSize:7,subSize:5,bcW:0.45,bcH:9,fold2side:true},
     // 旧 key 兼容(以前的 30×25 垂直对折)— 重定向到新布局
     fold30x25:{w:25,h:30,nameSize:7,priceSize:9,subSize:5,bcW:0.45,bcH:9,fold2side:true},
     small:{w:40,h:30,nameSize:8,priceSize:11,subSize:6,bcW:0.6,bcH:8},
@@ -426,20 +426,20 @@ async function exportLabelsPDF(){
         pdf.setTextColor(100);
         pdf.text(p.origin,x+cfg.w/2,acy+cfg.subSize*0.4,{align:'center'});
       }
-      // 左下 QR: 限制在 4mm,贴 A 面底部左侧
-      const qrSize=Math.min(halfH-fpad-6, cfg.w*0.32); // ~4mm
+      // 左下 QR: 缩小到 3mm,贴 A 面底部左侧,给价格更多空间
+      const qrSize=3.0;
       try{
         const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
         if(qr){
-          pdf.addImage(qr,'PNG',x+fpad,y+halfH-fpad-qrSize,qrSize,qrSize);
+          pdf.addImage(qr,'PNG',x+1,y+halfH-fpad-qrSize-0.5,qrSize,qrSize);
         }
       }catch(e){console.log('foldH qr',e);}
-      // 右下 价格(大字加粗,贴 A 面底部右侧)
+      // 右下 价格(缩小字号,贴 A 面底部更靠下)
       if(priceTxt){
         pdf.setFontSize(cfg.priceSize);
         setFont('bold');
         pdf.setTextColor(0);
-        pdf.text(priceTxt,x+cfg.w-fpad,y+halfH-fpad-cfg.priceSize*0.05,{align:'right'});
+        pdf.text(priceTxt,x+cfg.w-fpad,y+halfH-fpad-cfg.priceSize*0.05+1,{align:'right'});
       }
 
       // ====== 中间水平折线 ======
