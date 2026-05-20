@@ -59,10 +59,8 @@ function toggleInventoryView(){
 function setInvSort(mode,el){
   if(['new','qty','price','az'].indexOf(mode)<0)return;
   invSortMode=mode;
-  if(el&&el.parentNode){
-    el.parentNode.querySelectorAll('.inv-sort-btn').forEach(b=>b.classList.remove('cur'));
-    el.classList.add('cur');
-  }
+  const sel=document.getElementById('inv-sort-select');
+  if(sel&&sel.value!==mode)sel.value=mode;
   renderInventory();
 }
 // 商品库存清单 CSV 导出 (mock screen-2 toolbar 📥)
