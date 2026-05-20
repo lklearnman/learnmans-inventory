@@ -753,3 +753,86 @@ function useAIResult(j){
     }
   }catch(e){openAddModal();}
 }
+
+// ===================== 拍照按钮 → 本地解码 (ZXing 三路 binarizer) =====================
+// HTML #scan-photo-btn(capture=environment) 直拍 4K 后 onchange 调到这里
+async function decodePhotoFile(file){
+  if(!file) return;
+  const bar=document.getElementById('camera-result-bar');
+  if(bar) bar.textContent='📷 解码照片中…';
+  try{
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src=url;});
+    URL.revokeObjectURL(url);
+
+    const canvas=document.createElement('canvas');
+    canvas.width=img.naturalWidth;
+    canvas.height=img.naturalHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(img,0,0);
+
+    if(bar) bar.textContent=`📷 ${img.naturalWidth}×${img.naturalHeight} 解码中…`;
+
+    if(!window.ZXing){
+      if(bar) bar.textContent='❌ ZXing 未加载';
+      return;
+    }
+    if(!zxingReader){
+      const hints=new Map();
+      const fmt=ZXing.BarcodeFormat;
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[fmt.QR_CODE,fmt.CODE_128,fmt.CODE_39,fmt.EAN_13,fmt.EAN_8,fmt.UPC_A,fmt.UPC_E,fmt.ITF,fmt.DATA_MATRIX]);
+      hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+      try{zxingReader=new ZXing.BrowserMultiFormatReader(hints,50);}
+      catch(_){zxingReader=new ZXing.BrowserMultiFormatReader();zxingReader.hints=hints;}
+    }
+    const reader=zxingReader.reader;
+
+    const tryBin=(BinCls,cv)=>{
+      try{
+        const src=new ZXing.HTMLCanvasElementLuminanceSource(cv);
+        const bmp=new ZXing.BinaryBitmap(new BinCls(src));
+        return reader.decode(bmp);
+      }catch(_){return null;}
+    };
+    let r=tryBin(ZXing.HybridBinarizer,canvas);
+    if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,canvas);
+    if(!r){
+      try{
+        const id=ctx.getImageData(0,0,canvas.width,canvas.height);
+        for(let i=0;i<id.data.length;i+=4){id.data[i]=255-id.data[i];id.data[i+1]=255-id.data[i+1];id.data[i+2]=255-id.data[i+2];}
+        const inv=document.createElement('canvas');
+        inv.width=canvas.width; inv.height=canvas.height;
+        inv.getContext('2d').putImageData(id,0,0);
+        r=tryBin(ZXing.HybridBinarizer,inv);
+        if(!r) r=tryBin(ZXing.GlobalHistogramBinarizer,inv);
+      }catch(_){}
+    }
+
+    if(r){
+      if(bar) bar.textContent=`✅ 拍照识别: ${r.getText()}`;
+      stopCamera();
+      showScanResult(r.getText(),'camera-scan-result');
+    } else {
+      if(bar) bar.textContent='❌ 照片解不出条码,试再拍一张(对准 + 充足光线 + 距离 10-15cm)';
+    }
+  }catch(e){
+    if(bar) bar.textContent='❌ 解码失败: '+(e.message||e);
+  }
+}
+
+// DOMContentLoaded 时绑定拍照/相册按钮(HTML inline onchange 是兜底,这里再保一层)
+document.addEventListener('DOMContentLoaded',function(){
+  const photoBtn=document.getElementById('scan-photo-btn');
+  const photoIn=document.getElementById('scan-photo-input');
+  if(photoBtn&&photoIn){
+    photoBtn.addEventListener('click',function(e){e.preventDefault();photoIn.click();});
+    photoIn.addEventListener('change',function(){const f=this.files&&this.files[0];if(f)decodePhotoFile(f);this.value='';});
+  }
+  const galBtn=document.getElementById('scan-gallery-btn');
+  const galIn=document.getElementById('scan-file-input');
+  if(galBtn&&galIn){
+    galBtn.addEventListener('click',function(e){e.preventDefault();galIn.click();});
+    galIn.addEventListener('change',function(){const f=this.files&&this.files[0];if(f)decodePhotoFile(f);this.value='';});
+  }
+});
