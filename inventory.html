@@ -243,19 +243,33 @@
         <button class="btn btn-gold btn-sm scan-hint-start" onclick="startCamera()">📷 开启摄像头扫码</button>
       </div>
     </div>
-    <!-- 摄像头运行态 -->
-    <div id="camera-wrap" class="scan-stage-live" style="display:none;">
-      <div class="camera-wrap-inner">
-        <video id="camera-video" autoplay playsinline muted></video>
-        <div class="camera-overlay">
-          <div class="scan-frame"></div>
+    <!-- 摄像头运行态: 全屏 overlay 仿精臣 App 样式 -->
+    <div id="camera-wrap" class="scan-overlay-fs" style="display:none;">
+      <!-- 顶部:返回按钮 -->
+      <div class="scan-fs-top">
+        <button class="scan-fs-back" onclick="stopCamera()" aria-label="返回">‹</button>
+      </div>
+      <!-- 中央:取景框 + 视频 + 扫描线 -->
+      <div class="scan-fs-stage">
+        <div class="scan-fs-frame">
+          <video id="camera-video" autoplay playsinline muted></video>
           <div class="scan-line"></div>
         </div>
+        <div class="scan-fs-hint">扫描包装盒条码 / 商品条码</div>
       </div>
-      <div class="scan-stop-row">
-        <button id="scan-torch-btn" class="btn btn-outline btn-sm" onclick="toggleTorch()" style="display:none;margin-right:8px;">🔦</button>
-        <button class="btn btn-rose btn-sm" onclick="stopCamera()">停止</button>
+      <!-- 底部:圆按钮 + 占位条 -->
+      <div class="scan-fs-bottom">
+        <div class="scan-fs-btn-row">
+          <button id="scan-torch-btn" class="scan-btn-circle" onclick="toggleTorch()" style="display:none;" aria-label="手电筒">🔦</button>
+          <button id="scan-gallery-btn" class="scan-btn-circle" onclick="document.getElementById('scan-file-input').click()" aria-label="相册选图">🖼</button>
+        </div>
+        <div class="scan-fs-preview-bar">
+          <span>扫描商品后</span>
+          <span class="scan-fs-preview-arrow">预览 ▲</span>
+        </div>
       </div>
+      <!-- 隐藏 input: 相册选图解码 -->
+      <input type="file" id="scan-file-input" accept="image/*" style="display:none;" onchange="decodeFileImage(this.files&&this.files[0])">
     </div>
     <!-- 诊断条 (扫码 v4 调试用,始终可见) -->
     <div class="camera-result-bar" id="camera-result-bar">将条形码或QR码对准框内…</div>

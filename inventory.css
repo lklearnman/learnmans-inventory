@@ -355,6 +355,127 @@ tr.clickable{cursor:pointer;}
 .scan-hint-start{margin-top:4px;min-width:200px;}
 .scan-stop-row{padding:10px 0;text-align:center;background:#000;}
 
+/* ========== 全屏扫码 overlay (仿精臣 App) ========== */
+.scan-overlay-fs{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#000;
+  display:flex;
+  flex-direction:column;
+  /* 覆盖 inline display:block 时,由 JS 切到 display:flex */
+}
+.scan-overlay-fs[style*="display: block"],
+.scan-overlay-fs[style*="display:block"]{display:flex !important;}
+.scan-fs-top{
+  flex:0 0 auto;
+  padding:max(env(safe-area-inset-top),14px) 14px 8px;
+  display:flex;
+  align-items:center;
+}
+.scan-fs-back{
+  width:36px;height:36px;
+  border-radius:50%;
+  background:rgba(255,255,255,.18);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:none;
+  color:#fff;
+  font-size:22px;
+  line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  padding:0 0 2px 0;
+}
+.scan-fs-back:active{background:rgba(255,255,255,.32);}
+.scan-fs-stage{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  padding:0 14px;
+}
+.scan-fs-frame{
+  width:70vw;
+  max-width:300px;
+  aspect-ratio:1;
+  border:2px solid var(--gold);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
+  background:#000;
+}
+.scan-fs-frame > #camera-video{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.scan-fs-frame .scan-line{
+  position:absolute;
+  left:0;right:0;
+  height:2px;
+  width:100%;
+  top:0;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  box-shadow:0 0 12px var(--gold);
+  animation:scan-fs-line 1.5s ease-in-out infinite alternate;
+}
+@keyframes scan-fs-line{
+  from{top:0;}
+  to{top:calc(100% - 2px);}
+}
+.scan-fs-hint{
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  font-size:13px;
+  padding:8px 14px;
+  border-radius:999px;
+  letter-spacing:.5px;
+}
+.scan-fs-bottom{
+  flex:0 0 auto;
+  padding:0 24px max(env(safe-area-inset-bottom),18px);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.scan-fs-btn-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 14px;
+}
+.scan-fs-btn-row:has(> :only-child){justify-content:flex-end;}
+.scan-btn-circle{
+  width:56px;height:56px;
+  border-radius:50%;
+  background:rgba(255,255,255,.22);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  border:none;
+  color:#fff;
+  font-size:22px;
+  line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+.scan-btn-circle:active{background:rgba(255,255,255,.38);transform:scale(.94);}
+.scan-fs-preview-bar{
+  background:rgba(255,255,255,.12);
+  color:rgba(255,255,255,.78);
+  border-radius:12px;
+  padding:10px 16px;
+  font-size:13px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.scan-fs-preview-arrow{color:rgba(255,255,255,.5);font-size:12px;}
+
 /* 三主操作卡 */
 .scan-actions{
   display:flex;
