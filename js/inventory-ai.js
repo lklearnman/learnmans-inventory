@@ -8,7 +8,14 @@ let _torchOn=false;
 async function startCamera(){
   const bar=document.getElementById('camera-result-bar');
   try{
-    document.getElementById('camera-wrap').style.display='flex';
+    const _wrap=document.getElementById('camera-wrap');
+    // 把 overlay 移到 body 末尾,避免被 .scan-stage(overflow:hidden + border-radius)困住导致 fixed 失效 / video 不显示
+    if(_wrap&&_wrap.parentNode!==document.body){
+      _wrap.__origParent=_wrap.parentNode;
+      _wrap.__origNext=_wrap.nextSibling;
+      document.body.appendChild(_wrap);
+    }
+    _wrap.style.display='flex';
     document.getElementById('camera-start-wrap').style.display='none';
     const _csr=document.getElementById('camera-scan-result');if(_csr)_csr.style.display='none';
     document.body.style.overflow='hidden';
@@ -208,9 +215,7 @@ async function startCamera(){
   }catch(e){
     if(bar){bar.textContent='❌ '+(e.message||e);}
     toast('摄像头错误: '+(e.message||e));
-    document.getElementById('camera-wrap').style.display='none';
-    document.getElementById('camera-start-wrap').style.display='block';
-    document.body.style.overflow='';
+    try{stopCamera();}catch(_){}
   }
 }
 function stopCamera(){
@@ -226,7 +231,15 @@ function stopCamera(){
   if(zxingReader){try{zxingReader.reset();}catch(e){}}
   if(_scanStream){try{_scanStream.getTracks().forEach(t=>t.stop());}catch(e){}_scanStream=null;}
   _torchOn=false;
-  document.getElementById('camera-wrap').style.display='none';
+  const _wrap=document.getElementById('camera-wrap');
+  if(_wrap){
+    _wrap.style.display='none';
+    // 还原到原位置
+    if(_wrap.__origParent){
+      try{_wrap.__origParent.insertBefore(_wrap,_wrap.__origNext||null);}catch(_){}
+      _wrap.__origParent=null;_wrap.__origNext=null;
+    }
+  }
   document.getElementById('camera-start-wrap').style.display='block';
   document.body.style.overflow='';
 }

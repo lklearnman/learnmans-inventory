@@ -416,7 +416,7 @@ tr.clickable{cursor:pointer;}
   border-radius:8px;
   position:relative;
   /* 周围轻微暗化,中心透出 video */
-  box-shadow:0 0 0 9999px rgba(0,0,0,.4);
+  box-shadow:0 0 0 9999px rgba(0,0,0,.35);
   background:transparent;
 }
 .scan-fs-corner{
