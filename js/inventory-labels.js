@@ -229,36 +229,10 @@ function makeBarcodeDataURL(text,cfg){
 }
 
 function makeQRDataURL(text){
-  // qrcodejs 在 new QRCode(...) 时同步算出 _oQRCode.modules 矩阵,但其内部 canvas
-  // 通过 drawImage(image) 异步绘制,同步立即 toDataURL 会拿到空白图。
-  // 解决:直接读 modules 矩阵,自己在新 canvas 上同步绘制每个模块,绕过异步。
-  if(!text) return null;
-  try{
-    const div=document.createElement('div');
-    const qr=new QRCode(div,{text:String(text),width:120,height:120,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
-    const oq=qr._oQRCode;
-    if(oq&&oq.modules&&oq.modules.length){
-      const mods=oq.modules;
-      const n=mods.length;
-      const cellSize=Math.max(1,Math.floor(120/n));
-      const size=cellSize*n;
-      const cv=document.createElement('canvas');
-      cv.width=size; cv.height=size;
-      const cx=cv.getContext('2d');
-      cx.fillStyle='#fff';
-      cx.fillRect(0,0,size,size);
-      cx.fillStyle='#000';
-      for(let r=0;r<n;r++){
-        for(let c=0;c<n;c++){
-          if(mods[r][c]) cx.fillRect(c*cellSize,r*cellSize,cellSize,cellSize);
-        }
-      }
-      return cv.toDataURL('image/png');
-    }
-    // fallback: 万一 _oQRCode 结构变了,尽量取内部 canvas
-    const canvas=div.querySelector('canvas');
-    return canvas?canvas.toDataURL('image/png'):null;
-  }catch(e){console.warn('makeQRDataURL fail',e);return null;}
+  const div=document.createElement('div');
+  new QRCode(div,{text,width:120,height:120,colorDark:'#000',colorLight:'#fff'});
+  const canvas=div.querySelector('canvas');
+  return canvas?canvas.toDataURL('image/png'):null;
 }
 
 function previewLabels(){
@@ -444,25 +418,20 @@ async function exportLabelsPDF(){
       const fpad=1.2;
 
       // ====== A 面 (上半 0 → 15mm,外侧正向) ======
-      // 布局:cfg.showQR 时左侧 QR 8mm + 右半文字;否则文字区占满
+      // 布局:左侧 QR 8mm(扫码可靠),右半 17mm 宽分三行:名 / 产地 / 价格
       const qrSize=8;
-      let rxLeft, rxRight, rxW;
-      if(cfg.showQR){
-        const qrX=x+fpad;
-        const qrY=y+(halfH-qrSize)/2;
-        try{
-          const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
-          if(qr){
-            pdf.addImage(qr,'PNG',qrX,qrY,qrSize,qrSize);
-          }
-        }catch(e){console.log('foldH qr',e);}
-        rxLeft=x+fpad+qrSize+1;
-        rxRight=x+cfg.w-fpad;
-      }else{
-        rxLeft=x+fpad;
-        rxRight=x+cfg.w-fpad;
-      }
-      rxW=rxRight-rxLeft;
+      const qrX=x+fpad;
+      const qrY=y+(halfH-qrSize)/2;
+      try{
+        const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
+        if(qr){
+          pdf.addImage(qr,'PNG',qrX,qrY,qrSize,qrSize);
+        }
+      }catch(e){console.log('foldH qr',e);}
+      // 右半文字区
+      const rxLeft=x+fpad+qrSize+1;       // 右半左边界
+      const rxRight=x+cfg.w-fpad;
+      const rxW=rxRight-rxLeft;
       let acy=y+fpad+cfg.nameSize*0.4;
       if(cfg.showName&&p.name){
         pdf.setFontSize(cfg.nameSize);
