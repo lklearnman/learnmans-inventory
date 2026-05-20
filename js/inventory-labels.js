@@ -148,7 +148,12 @@ function getLabelConfig(){
     tiny:{w:25,h:15,nameSize:5,priceSize:7,subSize:4,bcW:0.45,bcH:5},
     mini:{w:30,h:20,nameSize:6,priceSize:9,subSize:5,bcW:0.55,bcH:6},
     'fold-ring':{w:25,h:30,nameSize:6,priceSize:10,subSize:4,bcW:0.5,bcH:9,fold:true},
-    fold30x25:{w:30,h:25,nameSize:7,priceSize:8,subSize:6,bcW:0.5,bcH:10,fold2side:true},
+    // 25×30 竖向,水平折线 y=15,对折后每面 25×15 横放
+    // A 面(上半 0-15,外侧客人看): 上方 名+产地, 左下 QR, 右下 价格
+    // B 面(下半 15-30,内侧店主扫): 满铺 barcode + SKU,整体旋转 180°(对折后翻上来视觉正向)
+    fold25x30:{w:25,h:30,nameSize:7,priceSize:9,subSize:5,bcW:0.45,bcH:9,fold2side:true},
+    // 旧 key 兼容(以前的 30×25 垂直对折)— 重定向到新布局
+    fold30x25:{w:25,h:30,nameSize:7,priceSize:9,subSize:5,bcW:0.45,bcH:9,fold2side:true},
     small:{w:40,h:30,nameSize:8,priceSize:11,subSize:6,bcW:0.6,bcH:8},
     medium:{w:60,h:40,nameSize:10,priceSize:14,subSize:7,bcW:0.8,bcH:10},
     large:{w:90,h:60,nameSize:14,priceSize:20,subSize:9,bcW:1.2,bcH:14},
@@ -396,81 +401,95 @@ async function exportLabelsPDF(){
       }
     }
 
-    // 对折 30×25mm 双面:左半 (0-15) 名+产地 正向;右半 (15-30) barcode+价 旋转 180°
-    // 中间虚线折线。对折后两面分别正向阅读:左半在外面正面,右半折过去也变正向
-    // 实现策略:左半用常规绘制;右半把 barcode 的 canvas 预旋转 180° 后 addImage,
-    // 价格文字用 jsPDF angle:180 旋转。旋转 180° 时文字锚点行为:基线翻转,以锚点为中心,
-    // align:'center' 会让文字以锚点为水平中心展开,所以锚点直接放视觉位置的镜像点即可
+    // 对折 25×30mm 双面(水平折线 y=15,上下对折)
+    // A 面(上半 0-15,外侧客人看正向): 上方 名+产地, 左下 QR 4mm, 右下 价格
+    // B 面(下半 15-30,内侧店主扫,绘制时旋转 180°): 满铺 barcode + SKU 文字
+    //   对折后下半翻折上来,所以下半要倒着印才视觉正向
+    // 实现策略:A 面常规绘制;B 面整体画到 offscreen canvas 旋转 180° 后 addImage
     if(cfg.fold2side){
-      const halfW=cfg.w/2; // 15mm
+      const halfH=cfg.h/2; // 15mm
       const fpad=1.2;
-      // === 左半:商品名 + 产地 ===
-      let lcy=y+fpad+cfg.nameSize*0.4;
+
+      // ====== A 面 (上半 0 → 15mm,外侧正向) ======
+      let acy=y+fpad+cfg.nameSize*0.4;
       if(cfg.showName&&p.name){
         pdf.setFontSize(cfg.nameSize);
         setFont('bold');
         pdf.setTextColor(0);
-        const nameLines=pdf.splitTextToSize(p.name,halfW-fpad*2).slice(0,2);
-        pdf.text(nameLines,x+halfW/2,lcy,{align:'center'});
-        lcy+=cfg.nameSize*0.5*nameLines.length+1;
+        const nameLines=pdf.splitTextToSize(p.name,cfg.w-fpad*2).slice(0,2);
+        pdf.text(nameLines,x+cfg.w/2,acy,{align:'center'});
+        acy+=cfg.nameSize*0.5*nameLines.length;
       }
       if(cfg.showOrigin&&p.origin){
         pdf.setFontSize(cfg.subSize);
         setFont('normal');
-        pdf.setTextColor(80);
-        const oLines=pdf.splitTextToSize(p.origin,halfW-fpad*2).slice(0,2);
-        pdf.text(oLines,x+halfW/2,lcy+cfg.subSize*0.4,{align:'center'});
+        pdf.setTextColor(100);
+        pdf.text(p.origin,x+cfg.w/2,acy+cfg.subSize*0.4,{align:'center'});
       }
-
-      // === 中间折线 ===
-      pdf.setDrawColor(150);
-      pdf.setLineDashPattern([0.5,0.5],0);
-      pdf.line(x+halfW,y,x+halfW,y+cfg.h);
-      pdf.setLineDashPattern([],0);
-      pdf.setDrawColor(0);
-
-      // === 右半:barcode(预旋转 PNG) + 价格(angle:180) ===
-      // 修复(2026-05-20):
-      //   - barcode 用 canvas 预旋转 180° 再 addImage,坐标直接放右半正确区域
-      //   - 价格用 jsPDF angle:180,锚点放在视觉位置「镜像点」
-      //     jsPDF angle:180 + align:'center' 时,文字以锚点为中心旋转 180°,
-      //     旋转后文字向锚点的「左上」方向延伸(基线翻转),所以要把锚点
-      //     放在视觉位置(右半下方居中)的镜像点 = 右半上方居中
-      const bcW=halfW-fpad*2;                 // ~12.6mm
-      const bcH=Math.min(cfg.bcH,cfg.h*0.45); // ~10mm
+      // 左下 QR: 限制在 4mm,贴 A 面底部左侧
+      const qrSize=Math.min(halfH-fpad-6, cfg.w*0.32); // ~4mm
       try{
-        const code=getBarcodeContent(p);
-        const srcCanvas=document.createElement('canvas');
-        JsBarcode(srcCanvas,code||'NA',{format:'CODE128',displayValue:false,width:24,height:cfg.bcH*80,margin:10});
-        // 旋转 180° 到新 canvas
-        const rot=document.createElement('canvas');
-        rot.width=srcCanvas.width;rot.height=srcCanvas.height;
-        const rctx=rot.getContext('2d');
-        rctx.translate(rot.width,rot.height);
-        rctx.rotate(Math.PI);
-        rctx.drawImage(srcCanvas,0,0);
-        const rotUrl=rot.toDataURL('image/png');
-        // 右半区域 x∈[x+halfW, x+w]、y∈[y, y+h]。barcode 放右半上部居中。
-        // canvas 已预旋转 180°,addImage 直接放视觉目标位置
-        const bcX=x+halfW+(halfW-bcW)/2;
-        const bcY=y+fpad;
-        pdf.addImage(rotUrl,'PNG',bcX,bcY,bcW,bcH);
-      }catch(e){console.log('fold30 barcode',e);}
-
-      // 价格:jsPDF text angle:180 + align:'center'
-      // 视觉目标:价格在右半底部居中,即视觉锚点 (x+halfW+halfW/2, y+cfg.h-fpad)
-      // 但 angle:180 让字向锚点反方向延伸 → 锚点要放在视觉位置「绕右半中心 180° 镜像」处
-      // 右半中心 = (x+halfW+halfW/2, y+cfg.h/2);视觉位置 y=y+cfg.h-fpad
-      // 镜像 y = 2*(y+cfg.h/2) - (y+cfg.h-fpad) = y+fpad
-      // 镜像 x:中心 x 不变 → x+halfW+halfW/2
+        const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
+        if(qr){
+          pdf.addImage(qr,'PNG',x+fpad,y+halfH-fpad-qrSize,qrSize,qrSize);
+        }
+      }catch(e){console.log('foldH qr',e);}
+      // 右下 价格(大字加粗,贴 A 面底部右侧)
       if(priceTxt){
         pdf.setFontSize(cfg.priceSize);
         setFont('bold');
         pdf.setTextColor(0);
-        const priceX=x+halfW+halfW/2;          // 右半中心 x = 22.5
-        const priceY=y+fpad+cfg.priceSize*0.15; // 右半顶部稍下,旋转 180° 后视觉到底部
-        pdf.text(priceTxt,priceX,priceY,{align:'center',angle:180});
+        pdf.text(priceTxt,x+cfg.w-fpad,y+halfH-fpad-cfg.priceSize*0.05,{align:'right'});
       }
+
+      // ====== 中间水平折线 ======
+      pdf.setDrawColor(150);
+      pdf.setLineDashPattern([0.5,0.5],0);
+      pdf.line(x,y+halfH,x+cfg.w,y+halfH);
+      pdf.setLineDashPattern([],0);
+      pdf.setDrawColor(0);
+
+      // ====== B 面 (下半 15 → 30mm,内侧,整体旋转 180°) ======
+      // 用 offscreen canvas 画 barcode + SKU 文字,然后旋转 180° 后 addImage
+      // canvas 像素尺寸按 mm * scale,scale=30 给打印够锐(25mm*30=750px)
+      try{
+        const code=getBarcodeContent(p);
+        const scale=30;
+        const cvW=Math.round(cfg.w*scale);
+        const cvH=Math.round(halfH*scale);
+        // 先画 barcode 到独立 canvas
+        const bc=document.createElement('canvas');
+        JsBarcode(bc,code||'NA',{format:'CODE128',displayValue:false,width:24,height:cfg.bcH*80,margin:10});
+        // 组合画布: barcode 上方满铺,下方 SKU 文字
+        const comp=document.createElement('canvas');
+        comp.width=cvW;comp.height=cvH;
+        const cctx=comp.getContext('2d');
+        cctx.fillStyle='#fff';cctx.fillRect(0,0,cvW,cvH);
+        const bcMmW=cfg.w-fpad*2;         // 22.6mm 满铺
+        const bcMmH=cfg.bcH;              // 9mm
+        const bcPxX=fpad*scale;
+        const bcPxY=fpad*scale;
+        const bcPxW=bcMmW*scale;
+        const bcPxH=bcMmH*scale;
+        cctx.drawImage(bc,bcPxX,bcPxY,bcPxW,bcPxH);
+        // SKU 文字: barcode 下方居中(B 面正向坐标,旋转后视觉仍在 barcode 下方)
+        const skuTxt=p.sku||p.id||'';
+        const skuPx=Math.round(cfg.subSize*scale*0.9);
+        cctx.fillStyle='#222';
+        cctx.font=`${skuPx}px monospace`;
+        cctx.textAlign='center';
+        cctx.textBaseline='top';
+        cctx.fillText(skuTxt,cvW/2,bcPxY+bcPxH+scale*0.5);
+        // 旋转 180° 到最终 canvas
+        const rot=document.createElement('canvas');
+        rot.width=cvW;rot.height=cvH;
+        const rctx=rot.getContext('2d');
+        rctx.translate(cvW,cvH);
+        rctx.rotate(Math.PI);
+        rctx.drawImage(comp,0,0);
+        pdf.addImage(rot.toDataURL('image/png'),'PNG',x,y+halfH,cfg.w,halfH);
+      }catch(e){console.log('foldH bside',e);}
+
       continue; // 跳过常规渲染
     }
 
