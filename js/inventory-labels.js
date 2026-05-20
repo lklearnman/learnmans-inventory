@@ -288,6 +288,7 @@ function previewLabels(){
     .lbl-barcode img{display:block;width:100%;height:${cfg.bcH*3}px;object-fit:contain;}
     .lbl-qr img{display:block;width:${cfg.h*1.5}px;height:${cfg.h*1.5}px;}
   </style></head><body>
+    <button onclick="window.close();document.body.innerHTML='<p style=\\'text-align:center;padding:40px;font-size:18px;color:#666\\'>请手动关闭这个标签页</p>';" style="position:fixed;top:16px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:0;font-size:22px;cursor:pointer;z-index:9999;display:flex;align-items:center;justify-content:center;" aria-label="关闭">×</button>
     <h3>价格标签预览（${prods.length}个 · ${cfg.w}×${cfg.h}mm）</h3>
     <div class="label-grid">${html}</div>
   </body></html>`);
