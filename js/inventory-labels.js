@@ -450,25 +450,19 @@ async function exportLabelsPDF(){
       const fpad=1.2;
 
       // ====== A 面 (上半 0 → 15mm,外侧正向) ======
-      // 布局:cfg.showQR 时左侧 QR 8mm + 右半文字;否则文字区占满
+      // 布局:左侧 QR 8mm + 右半文字(A 面 QR 是核心布局元素,强制显示,不受 cfg.showQR 影响)
       const qrSize=8;
-      let rxLeft, rxRight, rxW;
-      if(cfg.showQR){
-        const qrX=x+fpad;
-        const qrY=y+(halfH-qrSize)/2;
-        try{
-          const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
-          if(qr){
-            pdf.addImage(qr,'PNG',qrX,qrY,qrSize,qrSize);
-          }
-        }catch(e){console.log('foldH qr',e);}
-        rxLeft=x+fpad+qrSize+1;
-        rxRight=x+cfg.w-fpad;
-      }else{
-        rxLeft=x+fpad;
-        rxRight=x+cfg.w-fpad;
-      }
-      rxW=rxRight-rxLeft;
+      const qrX=x+fpad;
+      const qrY=y+(halfH-qrSize)/2;
+      try{
+        const qr=makeQRDataURL((p.sku||p.id||'')+'|'+(p.name||''));
+        if(qr){
+          pdf.addImage(qr,'PNG',qrX,qrY,qrSize,qrSize);
+        }
+      }catch(e){console.log('foldH qr',e);}
+      const rxLeft=x+fpad+qrSize+1;
+      const rxRight=x+cfg.w-fpad;
+      const rxW=rxRight-rxLeft;
       let acy=y+fpad+cfg.nameSize*0.4;
       if(cfg.showName&&p.name){
         pdf.setFontSize(cfg.nameSize);
