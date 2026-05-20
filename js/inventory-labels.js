@@ -35,6 +35,16 @@ function openLabelModal(presetIds){
   // 默认币种跟随库存页全局币种
   const curSel=document.getElementById('label-currency');
   if(curSel&&typeof inventoryCurrency!=='undefined')curSel.value=inventoryCurrency;
+  // 诊断:首个商品的 price 字段 + 计算后的 priceTxt(F12 看)
+  try{
+    const _first=DB.products.find(p=>selectedLabelIds.has(p.id));
+    if(_first){
+      const _rn=(_first.price!=null&&_first.price!=='')?parseFloat(_first.price):NaN;
+      const _cur=_first.currency||'JPY';
+      const _txt=(!isNaN(_rn)&&typeof fmtPriceRaw==='function')?fmtPriceRaw(_rn,_cur):'(无法格式化)';
+      console.log('[label diag] 首个商品',{id:_first.id,name:_first.name,price:_first.price,currency:_first.currency,parsed:_rn,priceTxt:_txt});
+    }
+  }catch(e){console.warn('label diag err',e);}
   renderLabelList();
   document.getElementById('modal-label').classList.add('open');
 }
@@ -57,10 +67,11 @@ function renderLabelList(){
       :`<div class="label-prod-thumb">${typeof catEmoji==='function'?catEmoji(p.cat):'💎'}</div>`;
     const _rn=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
     const priceTxt=(!isNaN(_rn)&&typeof fmtPriceRaw==='function')?fmtPriceRaw(_rn,p.currency||'JPY'):'';
+    const _dbgPrice=priceTxt||`(无价 price=${JSON.stringify(p.price)})`;
     return`<div class="label-prod-row">
       ${thumb}
       <span class="label-prod-name">${p.name||'未命名'}</span>
-      <span class="label-prod-price">${priceTxt}</span>
+      <span class="label-prod-price" style="color:${priceTxt?'#000':'#c00'};">${_dbgPrice}</span>
       <button class="label-prod-remove" onclick="removeFromLabelSelection('${p.id}')" title="从打印列表移除">×</button>
     </div>`;
   }).join('');
@@ -248,8 +259,10 @@ function previewLabels(){
 function renderLabelHTML(p,cfg){
   const pCur=p.currency||'JPY';
   // 同 PDF 路径同款防御性逻辑:数值化 + 降级 + console.warn
+  // P0 强力修复(2026-05-20):忽略 cfg.showPrice 开关,只要 price 字段能 parseFloat 就显示。
+  // 用户实测说预览/PDF 都拿不到价格,先无条件渲染,定位是数据空还是格式化坏。
   let priceTxt='';
-  if(cfg.showPrice){
+  {
     const rawNum=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
     if(!isNaN(rawNum)){
       let t='';
@@ -261,6 +274,8 @@ function renderLabelHTML(p,cfg){
       }
       if(t&&t!=='—')priceTxt=t;
       else console.warn('[label preview] 价格格式化为空',{id:p.id,price:p.price,pCur,labelCur:cfg.labelCurrency});
+    }else if(p.price!=null&&p.price!==''){
+      console.warn('[label preview] price 非数字',{id:p.id,price:p.price});
     }
   }
   // 镜像 PDF 布局:
@@ -354,9 +369,10 @@ async function exportLabelsPDF(){
     // 1) 数值化 price,只要能 parseFloat 成功就显示,不被空白/类型问题挡掉
     // 2) labelCurrency 路径若 fmtPrice 返回 '—'(汇率缺失/异常),回退 fmtPriceRaw
     // 3) 若仍拿不到价格但 showPrice=true,console.warn 让 F12 可见,而不是无声失败
+    // P0 强力修复(2026-05-20):无条件计算价格,不再被 cfg.showPrice 开关挡掉
     let priceTxt='';
     let priceW=0;
-    if(cfg.showPrice){
+    {
       const rawNum=(p.price!=null&&p.price!=='')?parseFloat(p.price):NaN;
       if(!isNaN(rawNum)){
         pdf.setFontSize(cfg.priceSize);
@@ -375,6 +391,8 @@ async function exportLabelsPDF(){
         else console.warn('[label] 价格格式化为空',{id:p.id,price:p.price,pCur,labelCur:cfg.labelCurrency,t});
       }else if(p.price!=null&&p.price!==''){
         console.warn('[label] price 非数字,跳过显示',{id:p.id,price:p.price});
+      }else{
+        console.warn('[label] price 为空',{id:p.id,name:p.name});
       }
     }
 
