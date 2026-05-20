@@ -83,7 +83,7 @@ async function startCamera(){
     let lastErr='';
     let lastZxingErr='';
     let lastJsqr='null';
-    let cntBD=0,cntJsqr=0,cntZxRoi=0,cntZxFull=0;
+    let cntBD=0,cntJsqr=0,cntZxRoi=0,cntZxFull=0,cntZxHybrid=0,cntZxGlobal=0,cntZxInvert=0;
     let bdBusy=false;
     const dbgEl=document.getElementById('scan-debug');
     if(dbgEl)dbgEl.style.display='block';
@@ -97,7 +97,8 @@ async function startCamera(){
         `canvas=${sw}x${sh}\n`+
         `frames=${_scanFrames} last-zxing-err=${lastZxingErr||'-'}\n`+
         `last-jsqr=${lastJsqr}\n`+
-        `engines-tried= BD:${useBD?1:0}/${cntBD} jsQR:${cntJsqr} ZXing-ROI:${cntZxRoi} ZXing-full:${cntZxFull}`;
+        `engines-tried= BD:${useBD?1:0}/${cntBD} jsQR:${cntJsqr} ZXing-ROI:${cntZxRoi} ZXing-full:${cntZxFull}\n`+
+        `zxing-bin= Hybrid:${cntZxHybrid} Global:${cntZxGlobal} Invert:${cntZxInvert}`;
     }
     bar.textContent=`📹 ${tag} ${resTxt} | 帧 0 | 对准黄框…`;
 
@@ -176,14 +177,48 @@ async function startCamera(){
         }catch(e){lastJsqr='err:'+(e&&e.name||e);}
       }
       if(!hit){
+        cntZxRoi++;
+        // 多 binarizer 串行尝试,提高识别率
+        let zxErr=null;
+        // 1. HybridBinarizer(默认)
         try{
-          cntZxRoi++;
+          cntZxHybrid++;
           const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
           const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
           const result=innerReader.decode(bmp);
-          if(result){hit={engine:'ZXing',code:result.getText()};}
-        }catch(err){
-          const name=err&&err.name?err.name:String(err);
+          if(result){hit={engine:'ZXing-Hybrid',code:result.getText()};}
+        }catch(err){zxErr=err;}
+        // 2. GlobalHistogramBinarizer(对比度低的情况更好)
+        if(!hit && ZXing.GlobalHistogramBinarizer){
+          try{
+            cntZxGlobal++;
+            const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
+            const bmp=new ZXing.BinaryBitmap(new ZXing.GlobalHistogramBinarizer(src));
+            const result=innerReader.decode(bmp);
+            if(result){hit={engine:'ZXing-Global',code:result.getText()};}
+          }catch(err){zxErr=err;}
+        }
+        // 3. invert canvas 后再 HybridBinarizer(白底黑条 vs 黑底白条)
+        if(!hit){
+          try{
+            cntZxInvert++;
+            const id2=roiCtx.getImageData(0,0,sw,sh);
+            for(let i=0;i<id2.data.length;i+=4){
+              id2.data[i]=255-id2.data[i];
+              id2.data[i+1]=255-id2.data[i+1];
+              id2.data[i+2]=255-id2.data[i+2];
+            }
+            const invCanvas=document.createElement('canvas');
+            invCanvas.width=sw; invCanvas.height=sh;
+            invCanvas.getContext('2d').putImageData(id2,0,0);
+            const src=new ZXing.HTMLCanvasElementLuminanceSource(invCanvas);
+            const bmp=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(src));
+            const result=innerReader.decode(bmp);
+            if(result){hit={engine:'ZXing-Invert',code:result.getText()};}
+          }catch(err){zxErr=err;}
+        }
+        if(!hit && zxErr){
+          const name=zxErr&&zxErr.name?zxErr.name:String(zxErr);
           lastZxingErr=name;
           if(name!=='NotFoundException'&&name!==lastErr){
             lastErr=name;
