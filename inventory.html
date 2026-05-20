@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-roi90">
+<link rel="stylesheet" href="inventory.css?v=20260520-scanfull">
 
 </head>
 <body>
@@ -245,14 +245,19 @@
     </div>
     <!-- 摄像头运行态: 全屏 overlay 仿精臣 App 样式 -->
     <div id="camera-wrap" class="scan-overlay-fs" style="display:none;">
+      <!-- 全屏摄像头画面(铺底) -->
+      <video id="camera-video" class="scan-fs-video" autoplay playsinline muted></video>
       <!-- 顶部:返回按钮 -->
       <div class="scan-fs-top">
         <button class="scan-fs-back" onclick="stopCamera()" aria-label="返回">‹</button>
       </div>
-      <!-- 中央:取景框 + 视频 + 扫描线 -->
+      <!-- 中央:仅 4 角 corner bracket + 扫描线 -->
       <div class="scan-fs-stage">
         <div class="scan-fs-frame">
-          <video id="camera-video" autoplay playsinline muted></video>
+          <span class="scan-fs-corner tl"></span>
+          <span class="scan-fs-corner tr"></span>
+          <span class="scan-fs-corner bl"></span>
+          <span class="scan-fs-corner br"></span>
           <div class="scan-line"></div>
         </div>
         <div class="scan-fs-hint">扫描包装盒条码 / 商品条码</div>
@@ -756,12 +761,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-roi90"></script>
-<script src="js/inventory-ui.js?v=20260520-roi90"></script>
-<script src="js/inventory-logs.js?v=20260520-roi90"></script>
-<script src="js/inventory-ai.js?v=20260520-roi90"></script>
-<script src="js/inventory-labels.js?v=20260520-roi90"></script>
-<script src="js/inventory-search.js?v=20260520-roi90"></script>
+<script src="js/inventory-core.js?v=20260520-scanfull"></script>
+<script src="js/inventory-ui.js?v=20260520-scanfull"></script>
+<script src="js/inventory-logs.js?v=20260520-scanfull"></script>
+<script src="js/inventory-ai.js?v=20260520-scanfull"></script>
+<script src="js/inventory-labels.js?v=20260520-scanfull"></script>
+<script src="js/inventory-search.js?v=20260520-scanfull"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){

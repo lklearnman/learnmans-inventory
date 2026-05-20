@@ -397,23 +397,38 @@ tr.clickable{cursor:pointer;}
   gap:18px;
   padding:0 14px;
 }
+.scan-fs-video{
+  position:absolute;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  object-fit:cover;
+  z-index:0;
+  background:#000;
+  display:block;
+}
+.scan-fs-top, .scan-fs-stage, .scan-fs-bottom{position:relative; z-index:2;}
 .scan-fs-frame{
   width:70vw;
   max-width:300px;
   aspect-ratio:1;
-  border:2px solid var(--gold);
+  border:none;
   border-radius:8px;
-  overflow:hidden;
   position:relative;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.55);
-  background:#000;
+  /* 周围轻微暗化,中心透出 video */
+  box-shadow:0 0 0 9999px rgba(0,0,0,.4);
+  background:transparent;
 }
-.scan-fs-frame > #camera-video{
-  width:100%;
-  height:100%;
-  display:block;
-  object-fit:cover;
+.scan-fs-corner{
+  position:absolute;
+  width:26px;height:26px;
+  border:3px solid var(--gold);
+  pointer-events:none;
 }
+.scan-fs-corner.tl{top:-2px;left:-2px;border-right:none;border-bottom:none;border-top-left-radius:8px;}
+.scan-fs-corner.tr{top:-2px;right:-2px;border-left:none;border-bottom:none;border-top-right-radius:8px;}
+.scan-fs-corner.bl{bottom:-2px;left:-2px;border-right:none;border-top:none;border-bottom-left-radius:8px;}
+.scan-fs-corner.br{bottom:-2px;right:-2px;border-left:none;border-top:none;border-bottom-right-radius:8px;}
 .scan-fs-frame .scan-line{
   position:absolute;
   left:0;right:0;
