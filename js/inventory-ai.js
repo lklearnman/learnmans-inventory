@@ -188,7 +188,7 @@ async function startCamera(){
           const id=roiCtx.getImageData(0,0,targetSide,targetSide);
           const results=await Promise.race([
             window.zbarScanImageData(id),
-            new Promise(r=>setTimeout(()=>r(null),80))
+            new Promise(r=>setTimeout(()=>r(null),50))
           ]);
           if(results&&results.length){
             hit={engine:'ZBar',code:results[0].decode()};
@@ -196,8 +196,8 @@ async function startCamera(){
         }catch(_){}
       }
       if(!hit){
-        // 三 binarizer 轮换:每帧只跑 1 个,3 帧覆盖一周(Hybrid/Global/Invert)
-        const bin=_scanFrames%3;
+        // 前 20 帧只跑 Hybrid(冷启动快),20 帧后再轮换 Global/Invert
+        const bin = _scanFrames < 20 ? 0 : (_scanFrames % 3);
         try{
           if(bin===0){
             const src=new ZXing.HTMLCanvasElementLuminanceSource(roiCanvas);
@@ -245,7 +245,7 @@ async function startCamera(){
       if(typeof videoEl.requestVideoFrameCallback==='function'){
         _scanRaf=videoEl.requestVideoFrameCallback(()=>tick());
       }else{
-        _scanRaf=setTimeout(tick,40);
+        _scanRaf=setTimeout(tick,25);
       }
     }
     tick();
