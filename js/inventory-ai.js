@@ -610,6 +610,9 @@ function expandSynonyms(word){
   return [word];
 }
 
+// 通用词黑名单：IDF 过低，单独命中不算疑似
+const COMMON_WORDS = new Set(['吊坠','项链','戒指','耳环','手链','手镯','宝石','矿物','矿石','元石','陨石','化石','水晶','其他','未分类','摆件','标本','石头','石','吊','坠','坠子','克','mm','cm','jewelry','gem','gemstone','crystal']);
+
 // 搜索库存匹配商品
 function searchByAIResult(parsed){
   const keywords=[parsed.name,parsed.cat,parsed.origin].filter(Boolean).join(' ');
@@ -617,28 +620,38 @@ function searchByAIResult(parsed){
   const rawWords=keywords.replace(/[，,、。！？\s]+/g,' ').split(' ').filter(w=>w.length>=2);
   // 展开同义词
   const expandedWords=[...new Set(rawWords.flatMap(w=>expandSynonyms(w)))];
-  
-  const matches=DB.products.filter(p=>{
-    const target=(p.name+' '+(p.cat||'')+' '+(p.origin||'')+' '+(p.note||'')).toLowerCase();
-    return expandedWords.some(w=>w.length>=2&&target.includes(w.toLowerCase()));
-  });
-  
+  // 过滤通用词和过短词
+  const filteredWords=expandedWords.filter(w=>w.length>=2 && !COMMON_WORDS.has(w.toLowerCase()));
+
+  // AI 返回的原始 name（精确匹配置顶用）
+  const aiName=(parsed.name||'').trim().toLowerCase();
+
   // 按匹配分数排序，匹配越多越靠前
   const calcScore=(p)=>{
     const name=(p.name||'').toLowerCase();
     const cat=(p.cat||'').toLowerCase();
     const origin=(p.origin||'').toLowerCase();
     const note=(p.note||'').toLowerCase();
-    return expandedWords.filter(w=>w.length>=2).reduce((score,w)=>{
+    let score=filteredWords.reduce((s,w)=>{
       const wl=w.toLowerCase();
-      if(name.includes(wl)) score+=3;       // 名称匹配权重最高
-      if(cat.includes(wl)) score+=2;        // 类别次之
-      if(origin.includes(wl)) score+=1;     // 产地
-      if(note.includes(wl)) score+=1;       // 备注
-      return score;
+      if(name.includes(wl)) s+=3;       // 名称匹配权重最高
+      if(cat.includes(wl)) s+=2;        // 类别次之
+      if(origin.includes(wl)) s+=1;     // 产地
+      if(note.includes(wl)) s+=1;       // 备注
+      return s;
     },0);
+    // AI name 完整字符串出现在 DB name 里 → 直接置顶
+    if(aiName && aiName.length>=2 && name.includes(aiName)) score+=10;
+    return score;
   };
-  matches.sort((a,b)=>calcScore(b)-calcScore(a));
+
+  // 阈值 >=3：至少命中 1 个名称关键词，或多个次要字段
+  const matches=DB.products
+    .map(p=>({p,score:calcScore(p)}))
+    .filter(x=>x.score>=3)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,5)
+    .map(x=>x.p);
   return matches;
 }
 
