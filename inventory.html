@@ -32,7 +32,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260520-zbar">
+<link rel="stylesheet" href="inventory.css?v=20260520-fast">
 
 </head>
 <body>
@@ -273,9 +273,6 @@
           <button id="scan-torch-btn" class="scan-btn-circle" onclick="toggleTorch()" style="display:none;" aria-label="手电筒">🔦</button>
           <button id="scan-gallery-btn" class="scan-btn-circle" onclick="document.getElementById('scan-file-input').click()" aria-label="相册选图">🖼</button>
         </div>
-        <!-- 拍照按钮: iOS 原生相机 4K 照片 → ZXing -->
-        <button id="scan-photo-btn" onclick="document.getElementById('scan-photo-input').click()" aria-label="拍照识别" style="position:absolute;bottom:120px;left:50%;transform:translateX(-50%);width:72px;height:72px;border-radius:50%;background:var(--gold);border:4px solid #fff;color:#1a1410;font-size:28px;cursor:pointer;z-index:10001;box-shadow:0 4px 16px rgba(0,0,0,0.4);">📷</button>
-        <input type="file" id="scan-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="decodePhotoFile(this.files&&this.files[0]); this.value='';">
         <div class="scan-fs-preview-bar">
           <span>扫描商品后</span>
           <span class="scan-fs-preview-arrow">预览 ▲</span>
@@ -770,12 +767,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260520-zbar"></script>
-<script src="js/inventory-ui.js?v=20260520-zbar"></script>
-<script src="js/inventory-logs.js?v=20260520-zbar"></script>
-<script src="js/inventory-ai.js?v=20260520-zbar"></script>
-<script src="js/inventory-labels.js?v=20260520-zbar"></script>
-<script src="js/inventory-search.js?v=20260520-zbar"></script>
+<script src="js/inventory-core.js?v=20260520-fast"></script>
+<script src="js/inventory-ui.js?v=20260520-fast"></script>
+<script src="js/inventory-logs.js?v=20260520-fast"></script>
+<script src="js/inventory-ai.js?v=20260520-fast"></script>
+<script src="js/inventory-labels.js?v=20260520-fast"></script>
+<script src="js/inventory-search.js?v=20260520-fast"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
