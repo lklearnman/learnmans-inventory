@@ -920,11 +920,13 @@ tr.clickable{cursor:pointer;}
 /* ============================================ */
 .inv-overview{
   padding:12px 14px;
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
   background:linear-gradient(135deg,#1a1410 0%,var(--surface) 100%);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
   display:flex;align-items:center;justify-content:space-between;
   margin-bottom:14px;
+  position:sticky;bottom:0;z-index:50;
 }
 .inv-overview-main{display:flex;align-items:baseline;gap:6px;}
 .inv-overview-num{

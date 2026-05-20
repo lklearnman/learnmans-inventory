@@ -524,6 +524,12 @@ function _renderStockioModal(preId){
   initPriceCurrency('si-currency');
   document.getElementById('si-note').value='';
   const cpEl=document.getElementById('si-counterparty');if(cpEl)cpEl.value='';
+  // prefill size/material/weight/unit 从当前商品(2026-05-20)
+  const _prefP=preId?getProduct(preId):null;
+  const sSize=document.getElementById('si-size');if(sSize)sSize.value=_prefP?.size||'';
+  const sMat=document.getElementById('si-material');if(sMat)sMat.value=_prefP?.material||'';
+  const sW=document.getElementById('si-weight');if(sW)sW.value=(_prefP&&_prefP.weight!=null)?_prefP.weight:'';
+  const sU=document.getElementById('si-unit');if(sU)sU.value=_prefP?.unit||'';
   // 出库默认带入商品售价
   if(stockioMode==='out'&&preId){
     const p=getProduct(preId);
@@ -597,6 +603,12 @@ function renderStockioPreview(){
 
 function updateStockInInfo(){
   const p=getProduct(document.getElementById('si-product').value);
+  if(p&&stockioMode==='in'){
+    const sSize=document.getElementById('si-size');if(sSize)sSize.value=p.size||'';
+    const sMat=document.getElementById('si-material');if(sMat)sMat.value=p.material||'';
+    const sW=document.getElementById('si-weight');if(sW)sW.value=(p.weight!=null)?p.weight:'';
+    const sU=document.getElementById('si-unit');if(sU)sU.value=p.unit||'';
+  }
   const el=document.getElementById('si-current-info');
   if(p){el.style.display='block';el.textContent=`当前库存 ${p.qty} 件${p.price?' · 价格：'+fmtPriceRaw(p.price,p.currency||'CNY'):''}`;}
   else el.style.display='none';
@@ -640,6 +652,15 @@ async function doStockIn(){
   if(qty<=0){toast('数量需大于0');return;}
   const p=getProduct(pid);
   p.qty+=qty;
+  // 边入库边补 size/material/weight/unit 到 products(2026-05-20)
+  const _siSize=document.getElementById('si-size')?.value.trim();
+  const _siMat=document.getElementById('si-material')?.value.trim();
+  const _siW=document.getElementById('si-weight')?.value.trim();
+  const _siU=document.getElementById('si-unit')?.value||'';
+  if(_siSize)p.size=_siSize;
+  if(_siMat)p.material=_siMat;
+  if(_siW!==''&&_siW!=null)p.weight=parseFloat(_siW);
+  if(_siU)p.unit=_siU;
   const fxRate=(typeof getFxRate==='function')?getFxRate(currency,'JPY'):null;
   const basePrice=(price&&fxRate)?Math.round(parseFloat(price)*fxRate):null;
   const log={
@@ -794,7 +815,7 @@ async function openDetail(id){
   // 主图区
   const photos=p.photos&&p.photos.length?p.photos:[];
   const photoMain=photos[0]
-    ? `<img src="${photos[0]}" onclick="viewPhoto('${photos[0]}')" id="detail-photo-main">`
+    ? `<img src="${photos[0]}" onclick="viewPhoto(detailPhotos,0)" id="detail-photo-main">`
     : `<div class="d3-photo-empty">${catEmojiSafe(p.cat)}</div>`;
   const dots=photos.length>1
     ? `<div class="d3-photo-dots">${photos.map((_,i)=>`<div class="d3-photo-dot${i===0?' cur':''}" onclick="d3SwitchPhoto(${i})"></div>`).join('')}</div>`
@@ -910,7 +931,7 @@ async function openDetail(id){
     else if(!main){
       // 之前是 emoji,现在有图,重新渲染照片区
       const wrap=document.getElementById('detail-photos');
-      if(wrap)wrap.innerHTML=`<img id="detail-photo-main" src="${p.photos[0]}" onclick="viewPhoto('${p.photos[0]}')">`;
+      if(wrap)wrap.innerHTML=`<img id="detail-photo-main" src="${p.photos[0]}" onclick="viewPhoto(detailPhotos,0)">`;
     }
   });
   detailPhotos=p.photos||[];
@@ -933,7 +954,7 @@ function d3SwitchPhoto(i){
   const main=document.getElementById('detail-photo-main');
   if(main&&main.tagName==='IMG'){
     main.src=detailPhotos[i];
-    main.onclick=()=>viewPhoto(detailPhotos[i]);
+    main.onclick=()=>viewPhoto(detailPhotos,i);
   }
   document.querySelectorAll('#modal-detail .d3-photo-dot').forEach((d,j)=>d.classList.toggle('cur',j===i));
   const cur=document.getElementById('d3-photo-cur');if(cur)cur.textContent=i+1;
@@ -970,7 +991,56 @@ async function deleteFromDetail(){
     }
   });
 }
-function viewPhoto(src){const w=window.open();w.document.write(`<img src="${src}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;">`);}
+let _photoFsList=[],_photoFsIdx=0;
+function viewPhoto(arg,idx){
+  // 兼容 (src) 旧签名
+  let list,i;
+  if(Array.isArray(arg)){list=arg;i=idx||0;}
+  else if(typeof arg==='string'){list=(detailPhotos&&detailPhotos.length)?detailPhotos:[arg];i=Math.max(0,list.indexOf(arg));if(i<0)i=0;}
+  else return;
+  if(!list||!list.length)return;
+  _photoFsList=list;_photoFsIdx=i;
+  let el=document.getElementById('photo-fs');
+  if(!el){
+    el=document.createElement('div');
+    el.id='photo-fs';
+    el.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;';
+    el.innerHTML=`
+      <img id="photo-fs-img" style="max-width:96vw;max-height:92vh;object-fit:contain;display:block;">
+      <button id="photo-fs-prev" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);color:#fff;border:0;border-radius:50%;width:44px;height:44px;font-size:24px;cursor:pointer;">‹</button>
+      <button id="photo-fs-next" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.1);color:#fff;border:0;border-radius:50%;width:44px;height:44px;font-size:24px;cursor:pointer;">›</button>
+      <div id="photo-fs-counter" style="position:absolute;top:14px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;font-family:'DM Mono',monospace;background:rgba(0,0,0,0.4);padding:4px 10px;border-radius:12px;"></div>
+      <button id="photo-fs-close" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);color:#fff;border:0;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;">✕</button>
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('click',(e)=>{if(e.target===el)closeViewPhoto();});
+    document.getElementById('photo-fs-prev').addEventListener('click',(e)=>{e.stopPropagation();viewPhotoNav(-1);});
+    document.getElementById('photo-fs-next').addEventListener('click',(e)=>{e.stopPropagation();viewPhotoNav(1);});
+    document.getElementById('photo-fs-close').addEventListener('click',(e)=>{e.stopPropagation();closeViewPhoto();});
+    document.addEventListener('keydown',_photoFsKey);
+  }
+  _photoFsRender();
+  el.style.display='flex';
+}
+function _photoFsRender(){
+  const img=document.getElementById('photo-fs-img');if(img)img.src=_photoFsList[_photoFsIdx]||'';
+  const c=document.getElementById('photo-fs-counter');if(c)c.textContent=`${_photoFsIdx+1} / ${_photoFsList.length}`;
+  const showNav=_photoFsList.length>1;
+  const prev=document.getElementById('photo-fs-prev');if(prev)prev.style.display=showNav?'block':'none';
+  const next=document.getElementById('photo-fs-next');if(next)next.style.display=showNav?'block':'none';
+}
+function viewPhotoNav(d){
+  if(!_photoFsList.length)return;
+  _photoFsIdx=(_photoFsIdx+d+_photoFsList.length)%_photoFsList.length;
+  _photoFsRender();
+}
+function closeViewPhoto(){const el=document.getElementById('photo-fs');if(el)el.style.display='none';}
+function _photoFsKey(e){
+  const el=document.getElementById('photo-fs');if(!el||el.style.display==='none')return;
+  if(e.key==='Escape')closeViewPhoto();
+  else if(e.key==='ArrowLeft')viewPhotoNav(-1);
+  else if(e.key==='ArrowRight')viewPhotoNav(1);
+}
 // 详情卡 → 流水 tab 并按商品名筛选
 function jumpToLogsForProduct(name){
   closeModal('modal-detail');
