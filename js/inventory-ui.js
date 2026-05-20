@@ -895,6 +895,17 @@ async function openDetail(id){
     </div>
 
     <div class="d3-sec">
+      <div class="d3-sec-title">商品信息</div>
+      <div class="d3-card d3-info-card">
+        <div class="d3-info-row"><div class="d3-info-l">产地</div><div class="d3-info-v">${p.origin||'—'}</div></div>
+        <div class="d3-info-row"><div class="d3-info-l">原产国</div><div class="d3-info-v">${p.country||'—'}</div></div>
+        <div class="d3-info-row"><div class="d3-info-l">尺寸</div><div class="d3-info-v">${p.size||'—'}</div></div>
+        <div class="d3-info-row"><div class="d3-info-l">材质</div><div class="d3-info-v">${p.material||'—'}</div></div>
+        <div class="d3-info-row"><div class="d3-info-l">重量</div><div class="d3-info-v">${(p.weight!=null&&p.weight!=='')?(p.weight+(p.unit||'')):'—'}</div></div>
+      </div>
+    </div>
+
+    <div class="d3-sec">
       <div class="d3-sec-title">销售概况</div>
       <div class="d3-card">
         <div class="d3-sales-stats">

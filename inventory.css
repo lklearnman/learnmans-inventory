@@ -1463,6 +1463,11 @@ tr.clickable{cursor:pointer;}
   width:12px;height:1px;
   background:var(--gold-dim);
 }
+.d3-info-card{padding:12px 14px;}
+.d3-info-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px dashed var(--border);}
+.d3-info-row:last-child{border-bottom:0;}
+.d3-info-l{font-size:12px;color:var(--text-muted);}
+.d3-info-v{font-size:13px;color:var(--text);text-align:right;max-width:60%;word-break:break-all;}
 .d3-card{
   background:var(--surface);
   border:1px solid var(--border);
