@@ -391,9 +391,9 @@ function openEditModal(id){
   // 编辑模式:隐藏「登录+入库」(无意义)
   const btnStockIn=document.getElementById('btn-save-stockin');
   if(btnStockIn)btnStockIn.style.display='none';
-  // 编辑模式:主按钮文案「修改」
+  // 编辑模式:主按钮文案「变更」
   const btnOnly=document.getElementById('btn-save-only');
-  if(btnOnly)btnOnly.textContent='修改';
+  if(btnOnly)btnOnly.textContent='变更';
   document.getElementById('modal-add').classList.add('open');
 }
 function openAddThenStockIn(){openAddModal();document.getElementById('modal-add').dataset.stockin='1';}
@@ -483,7 +483,7 @@ async function saveProductOnly(){
   if(editingId){
     const idx=DB.products.findIndex(p=>p.id===editingId);
     if(idx>=0)DB.products[idx]=data;
-    toast('✅ 修改完成');
+    toast('✅ 变更完成');
   }else{
     DB.products.unshift(data);
     toast('✅ 商品登录完成（库存0）');
