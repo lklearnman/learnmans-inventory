@@ -334,7 +334,8 @@ function autoGenSku(){
       if(!isNaN(n)&&n>maxN)maxN=n;
     }
   });
-  const num=String(maxN+1).padStart(6,'0');
+  let startBase = code==='MET' ? 100 : 1;
+  const num=String(Math.max(maxN+1, startBase)).padStart(6,'0');
   document.getElementById('f-sku').value=`${prefix}${num}`;
   if(typeof toast==='function')toast('⚡ 已生成 SKU');
 }
