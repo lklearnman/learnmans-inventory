@@ -287,6 +287,12 @@ function previewLabels(){
     <div class="label-grid">${html}</div>
   </body></html>`);
   w.document.close();
+  // 预览 tab 已打开,关本 modal 并回父
+  if(typeof closeLabelAndMaybeReturn==='function'){
+    closeLabelAndMaybeReturn();
+  }else{
+    closeModal('modal-label');
+  }
 }
 
 function renderLabelHTML(p,cfg){
@@ -654,4 +660,10 @@ async function exportLabelsPDF(){
   
   pdf.save(`矿珍库_价格标签_${new Date().toISOString().slice(0,10)}.pdf`);
   toast(`✅ PDF已导出（${prods.length}个标签）`);
+  // 生成完成自动关 modal 并回父画面(详情)
+  if(typeof closeLabelAndMaybeReturn==='function'){
+    closeLabelAndMaybeReturn();
+  }else{
+    closeModal('modal-label');
+  }
 }
