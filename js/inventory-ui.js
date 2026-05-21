@@ -349,6 +349,7 @@ function onAddCurrencyChange(cur){
 }
 function openEditModal(id){
   const p=getProduct(id);if(!p)return;
+  window._returnToDetailId=id;
   editingId=id;pendingPhotos=[...(p.photos||[])];
   document.getElementById('modal-add-title').textContent='编辑商品';
   document.getElementById('f-name').value=p.name||'';
@@ -499,6 +500,9 @@ async function saveProductOnly(){
     }
     closeModal('modal-add');renderInventory();
     toast(editingId?'✅ 变更完成':'✅ 商品登录完成（库存0）');
+    const ret=window._returnToDetailId;
+    window._returnToDetailId=null;
+    if(ret&&typeof openDetail==='function')openDetail(ret);
   }catch(e){
     toast('❌ 保存失败: '+(e.message||e));
   }finally{
