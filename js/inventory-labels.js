@@ -234,35 +234,14 @@ function makeBarcodeDataURL(text,cfg){
 }
 
 function makeQRDataURL(text){
-  // qrcodejs 在 new QRCode(...) 时同步算出 _oQRCode.modules 矩阵,但其内部 canvas
-  // 通过 drawImage(image) 异步绘制,同步立即 toDataURL 会拿到空白图。
-  // 解决:直接读 modules 矩阵,自己在新 canvas 上同步绘制每个模块,绕过异步。
+  // 用 qrcode-generator(纯 JS 同步,无 canvas 异步 race),稳定。
   if(!text) return null;
   try{
-    const div=document.createElement('div');
-    const qr=new QRCode(div,{text:String(text),width:120,height:120,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
-    const oq=qr._oQRCode;
-    if(oq&&oq.modules&&oq.modules.length){
-      const mods=oq.modules;
-      const n=mods.length;
-      const cellSize=Math.max(1,Math.floor(120/n));
-      const size=cellSize*n;
-      const cv=document.createElement('canvas');
-      cv.width=size; cv.height=size;
-      const cx=cv.getContext('2d');
-      cx.fillStyle='#fff';
-      cx.fillRect(0,0,size,size);
-      cx.fillStyle='#000';
-      for(let r=0;r<n;r++){
-        for(let c=0;c<n;c++){
-          if(mods[r][c]) cx.fillRect(c*cellSize,r*cellSize,cellSize,cellSize);
-        }
-      }
-      return cv.toDataURL('image/png');
-    }
-    // fallback: 万一 _oQRCode 结构变了,尽量取内部 canvas
-    const canvas=div.querySelector('canvas');
-    return canvas?canvas.toDataURL('image/png'):null;
+    if(typeof qrcode!=='function') return null; // 库没加载
+    const qr=qrcode(0,'M'); // typeNumber 0 = auto, errorCorrectLevel 'M'
+    qr.addData(String(text));
+    qr.make();
+    return qr.createDataURL(4,0); // cellSize 4px, margin 0
   }catch(e){console.warn('makeQRDataURL fail',e);return null;}
 }
 
