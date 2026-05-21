@@ -270,6 +270,34 @@ async function upsertProduct(p){
   if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');throw error;}
   else setSyncStatus('ok');
 }
+async function mergeProduct(srcId,dstId){
+  if(srcId===dstId)throw new Error('不能合并到自己');
+  const src=DB.products.find(p=>p.id===srcId);
+  const dst=DB.products.find(p=>p.id===dstId);
+  if(!src||!dst)throw new Error('商品不存在');
+  setSyncStatus('syncing');
+  // 1. 迁移 logs (Supabase)
+  const{error:logErr}=await sb.from('logs').update({product_id:dstId}).eq('product_id',srcId);
+  if(logErr){setSyncStatus('error');throw logErr;}
+  // 同步 show_items (展会带出记录) - 否则展会库存不一致
+  const{error:siErr}=await sb.from('show_items').update({product_id:dstId}).eq('product_id',srcId);
+  if(siErr){setSyncStatus('error');throw siErr;}
+  // 本地 DB 同步
+  DB.logs.forEach(l=>{if(l.productId===srcId)l.productId=dstId;});
+  if(DB.showItems)DB.showItems.forEach(s=>{if(s.productId===srcId)s.productId=dstId;});
+  // 2. 累加库存
+  dst.qty=(parseInt(dst.qty)||0)+(parseInt(src.qty)||0);
+  await upsertProduct(dst);
+  // 3. 删除源商品 (Supabase + 本地)
+  const{error:delErr}=await sb.from('products').delete().eq('id',srcId);
+  if(delErr){setSyncStatus('error');throw delErr;}
+  DB.products=DB.products.filter(p=>p.id!==srcId);
+  // 4. 清理可能引用的全局 selection
+  try{if(typeof selectedLabelIds!=='undefined'&&selectedLabelIds&&selectedLabelIds.delete)selectedLabelIds.delete(srcId);}catch(e){}
+  setSyncStatus('ok');
+}
+window.mergeProduct=mergeProduct;
+
 async function deleteProduct(id){
   await sb.from('logs').delete().eq('product_id',id);
   await sb.from('show_items').delete().eq('product_id',id);

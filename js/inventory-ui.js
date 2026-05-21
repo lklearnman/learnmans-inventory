@@ -1088,6 +1088,39 @@ function quickOutFromDetail(){
   closeModal('modal-detail');
   setTimeout(()=>openStockOutModal(detailId),150);
 }
+function openMergePickerFromDetail(){
+  const srcId=detailId;
+  if(typeof openMergePicker==='function')openMergePicker(srcId);
+}
+window.openMergePicker=function(srcId){
+  const src=DB.products.find(p=>p.id===srcId);
+  if(!src){toast('源商品不存在');return;}
+  const kw=prompt(`将「${src.name}」合并到哪个商品?\n输入目标商品名或 SKU 的关键词:`);
+  if(!kw)return;
+  const cands=DB.products.filter(p=>p.id!==srcId&&((p.name||'').toLowerCase().includes(kw.toLowerCase())||(p.sku||'').toLowerCase().includes(kw.toLowerCase())));
+  if(!cands.length){toast('没找到匹配的目标商品');return;}
+  let dst;
+  if(cands.length===1){dst=cands[0];}
+  else{
+    const list=cands.slice(0,10).map((p,i)=>`${i+1}. ${p.name} [${p.sku||'-'}] qty:${p.qty}`).join('\n');
+    const idx=prompt(`找到 ${cands.length} 个,选一个(1-${Math.min(cands.length,10)}):\n${list}`);
+    const n=parseInt(idx,10);
+    if(!n||n<1||n>Math.min(cands.length,10))return;
+    dst=cands[n-1];
+  }
+  const newQty=(parseInt(dst.qty)||0)+(parseInt(src.qty)||0);
+  if(!confirm(`确认合并?\n\n源:${src.name} (qty ${src.qty})\n目标:${dst.name} (qty ${dst.qty})\n\n合并后:\n- 目标 qty=${newQty}\n- 源所有流水/展会记录迁移到目标(note 保留)\n- 源商品被删除`))return;
+  mergeProduct(src.id,dst.id).then(()=>{
+    toast('✅ 合并完成');
+    closeModal('modal-detail');
+    if(typeof renderInventory==='function')renderInventory();
+    if(typeof renderLogsPage==='function')renderLogsPage();
+  }).catch(e=>{
+    console.error('merge failed',e);
+    toast('❌ 合并失败: '+(e.message||e));
+  });
+};
+window.openMergePickerFromDetail=openMergePickerFromDetail;
 async function deleteFromDetail(){
   const p=getProduct(detailId);
   const name=p?p.name:'此商品';
