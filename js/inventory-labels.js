@@ -27,6 +27,8 @@ function loadChineseFontForPDF(pdf){
 function openLabelModal(presetIds){
   if(Array.isArray(presetIds)&&presetIds.length){
     selectedLabelIds=new Set(presetIds);
+    // 从详情页单个商品入口 → 关闭后回详情
+    if(presetIds.length===1)window._returnToDetailId=presetIds[0];
   }
   if(!selectedLabelIds.size){
     toast('请先在库存页勾选要打印的商品');
@@ -47,6 +49,14 @@ function openLabelModal(presetIds){
   }catch(e){console.warn('label diag err',e);}
   renderLabelList();
   document.getElementById('modal-label').classList.add('open');
+}
+
+// 关闭标签 modal,如果是从详情进的 → 回详情
+function closeLabelAndMaybeReturn(){
+  closeModal('modal-label');
+  const ret=window._returnToDetailId;
+  window._returnToDetailId=null;
+  if(ret&&typeof openDetail==='function')openDetail(ret);
 }
 
 // 兼容旧调用
