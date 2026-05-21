@@ -330,7 +330,8 @@ async function openLogDetail(lid){
       ${l.note?`<div class="detail-field full"><label>备注</label><div class="val">${l.note}</div></div>`:''}
       ${p?`<div class="detail-field"><label>商品当前库存</label><div class="val mono">${p.qty} 件</div></div>`:''}
     </div>
-    ${p?`<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="closeModal('modal-log');openDetail('${p.id}')">查看商品详情 →</button>`:''}`;
+    ${p?`<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="closeModal('modal-log');openDetail('${p.id}')">查看商品详情 →</button>`:''}
+    ${l?`<button class="btn btn-rose btn-sm" style="margin-top:14px;display:block;width:100%;" onclick="confirmDeleteLog('${l.id}', event)">🗑 删除此流水</button>`:''}`;
   document.getElementById('modal-log').classList.add('open');
 }
 // ===================== STATS =====================
@@ -973,7 +974,7 @@ async function renderLogsPage(){
                 <span class="logs-item-tag">${tagLabel}</span>
                 <span class="logs-item-qty">×${l.qty}${op>0?` · 单价 ${osym}${op.toLocaleString()} · ${oc}`:''}</span>
               </div>
-              <div>${noHtml}${time}<button class="log-del-btn" onclick="confirmDeleteLog('${l.id}', event)" title="删除并回滚库存">🗑</button></div>
+              <div>${noHtml}${time}</div>
             </div>
             ${noteHtml}
           </div>
@@ -1036,6 +1037,7 @@ async function confirmDeleteLog(logId, ev){
   if(!confirm(`确定删除这笔流水?\n\n商品: ${pname}\n${action} ${qty} 件\n${rollback}\n\n此操作不可撤销。`)) return;
   try{
     await deleteLog(logId);
+    closeModal('modal-log');
     toast(`✅ 已删除流水, ${rollback}`);
     if(typeof renderLogsPage==='function') renderLogsPage();
     if(typeof renderInventory==='function') renderInventory();
