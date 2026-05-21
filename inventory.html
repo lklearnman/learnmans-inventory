@@ -33,7 +33,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260521-editfix">
+<link rel="stylesheet" href="inventory.css?v=20260521-folddef">
 
 </head>
 <body>
@@ -627,9 +627,9 @@
       <option value="tiny">超迷你 25×15mm（戒指/耳钉吊牌，建议勾 QR）</option>
       <option value="mini">迷你 30×20mm（小吊坠/小标本，建议勾 QR）</option>
       <option value="fold-ring">F型珠宝标签 25×30+45mm 对折（精臣 M3/B32/Z401，上半 barcode/下半 名+价）</option>
-      <option value="fold25x30">📑 对折 25×30mm 双面（上 名+产地+QR+价 / 下 barcode 180°，对折后双面 25×15）</option>
+      <option value="fold25x30" selected>📑 对折 25×30mm 双面（上 名+产地+QR+价 / 下 barcode 180°，对折后双面 25×15）</option>
       <option value="small">小标签 40×30mm（一般首饰商品贴）</option>
-      <option value="medium" selected>中标签 60×40mm（站牌/展示牌）</option>
+      <option value="medium">中标签 60×40mm（站牌/展示牌）</option>
       <option value="large">价格牌 90×60mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
       <option value="big">大价格牌 120×80mm（⚠️ 超出精臣 M3 80mm 印宽）</option>
     </select>
@@ -768,12 +768,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260521-editfix"></script>
-<script src="js/inventory-ui.js?v=20260521-editfix"></script>
-<script src="js/inventory-logs.js?v=20260521-editfix"></script>
-<script src="js/inventory-ai.js?v=20260521-editfix"></script>
-<script src="js/inventory-labels.js?v=20260521-editfix"></script>
-<script src="js/inventory-search.js?v=20260521-editfix"></script>
+<script src="js/inventory-core.js?v=20260521-folddef"></script>
+<script src="js/inventory-ui.js?v=20260521-folddef"></script>
+<script src="js/inventory-logs.js?v=20260521-folddef"></script>
+<script src="js/inventory-ai.js?v=20260521-folddef"></script>
+<script src="js/inventory-labels.js?v=20260521-folddef"></script>
+<script src="js/inventory-search.js?v=20260521-folddef"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
