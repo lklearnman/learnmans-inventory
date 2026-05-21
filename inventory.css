@@ -1867,6 +1867,8 @@ tr.clickable{cursor:pointer;}
 }
 .logs-item-qty{font-family:'DM Mono',monospace;color:var(--text-dim);}
 .logs-item-no{font-family:'DM Mono',monospace;color:var(--gold-dim);font-size:10px;opacity:0.7;}
+.log-del-btn{background:transparent;border:0;color:var(--rose);cursor:pointer;font-size:14px;padding:4px 8px;margin-left:6px;border-radius:4px;line-height:1;vertical-align:middle;}
+.log-del-btn:hover{background:rgba(176,90,106,0.15);color:var(--rose-light);}
 .logs-item-note{
   font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.4;
   padding-top:6px;border-top:1px dashed var(--border);

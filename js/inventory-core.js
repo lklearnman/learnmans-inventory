@@ -287,6 +287,25 @@ async function insertLog(l){
   }
   if(error)toast('❌ 流水保存失败：'+error.message);
 }
+async function deleteLog(logId){
+  const log=DB.logs.find(l=>l.id===logId);
+  if(!log) throw new Error('流水不存在');
+  // 回滚库存:in → qty 减;out → qty 加;return / 其它类型不动
+  const prod=DB.products.find(p=>p.id===log.productId);
+  if(prod){
+    if(log.type==='in'){
+      prod.qty=Math.max(0,(prod.qty||0)-(log.qty||0));
+      await upsertProduct(prod);
+    }else if(log.type==='out'){
+      prod.qty=(prod.qty||0)+(log.qty||0);
+      await upsertProduct(prod);
+    }
+  }
+  const {error}=await sb.from('logs').delete().eq('id',logId);
+  if(error) throw error;
+  DB.logs=DB.logs.filter(l=>l.id!==logId);
+}
+window.deleteLog=deleteLog;
 async function upsertShow(s){
   await sb.from('show_items').upsert(showToDb(s));
 }

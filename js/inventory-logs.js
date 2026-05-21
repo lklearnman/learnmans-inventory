@@ -973,7 +973,7 @@ async function renderLogsPage(){
                 <span class="logs-item-tag">${tagLabel}</span>
                 <span class="logs-item-qty">×${l.qty}${op>0?` · 单价 ${osym}${op.toLocaleString()} · ${oc}`:''}</span>
               </div>
-              <div>${noHtml}${time}</div>
+              <div>${noHtml}${time}<button class="log-del-btn" onclick="confirmDeleteLog('${l.id}', event)" title="删除并回滚库存">🗑</button></div>
             </div>
             ${noteHtml}
           </div>
@@ -1021,6 +1021,29 @@ function goLogsPage(n){
   st.page=n;
   renderLogsPage();
 }
+
+async function confirmDeleteLog(logId, ev){
+  if(ev){ev.stopPropagation();ev.preventDefault();}
+  const log=DB.logs.find(l=>l.id===logId);
+  if(!log){toast('❌ 流水不存在');return;}
+  const prod=DB.products.find(p=>p.id===log.productId);
+  const pname=prod?prod.name:'(已删除商品)';
+  const action=log.type==='in'?'入库':(log.type==='out'?'出库':_logTypeLabel(log.type));
+  const qty=log.qty||0;
+  let rollback='库存不变';
+  if(log.type==='in') rollback=`库存将减 ${qty} 件`;
+  else if(log.type==='out') rollback=`库存将加 ${qty} 件`;
+  if(!confirm(`确定删除这笔流水?\n\n商品: ${pname}\n${action} ${qty} 件\n${rollback}\n\n此操作不可撤销。`)) return;
+  try{
+    await deleteLog(logId);
+    toast(`✅ 已删除流水, ${rollback}`);
+    if(typeof renderLogsPage==='function') renderLogsPage();
+    if(typeof renderInventory==='function') renderInventory();
+  }catch(e){
+    toast('❌ 删除失败: '+(e.message||e));
+  }
+}
+window.confirmDeleteLog=confirmDeleteLog;
 
 async function exportLogsAllCSV(){
   await _ensureLogsForTab();
