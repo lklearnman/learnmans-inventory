@@ -267,7 +267,7 @@ async function upsertProduct(p){
     delete payload.currency;
     ({error}=await sb.from('products').upsert(payload));
   }
-  if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');}
+  if(error){toast('❌ 保存失败：'+error.message);setSyncStatus('error');throw error;}
   else setSyncStatus('ok');
 }
 async function deleteProduct(id){

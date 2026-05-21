@@ -421,10 +421,19 @@ async function deleteFromEdit(){
   });
 }
 async function handlePhotos(e){
-  const files=[...e.target.files],rem=5-pendingPhotos.length;
-  if(rem<=0){toast('最多5张');return;}
-  for(const f of files.slice(0,rem))pendingPhotos.push(await compressImage(f));
-  renderPhotoPreviews();e.target.value='';
+  const btn=document.getElementById('btn-save-only');
+  const btn2=document.getElementById('btn-save-stockin');
+  if(btn)btn.dataset.photoBusy='1';
+  if(btn2)btn2.dataset.photoBusy='1';
+  try{
+    const files=[...e.target.files],rem=5-pendingPhotos.length;
+    if(rem<=0){toast('最多5张');return;}
+    for(const f of files.slice(0,rem))pendingPhotos.push(await compressImage(f));
+    renderPhotoPreviews();e.target.value='';
+  }finally{
+    if(btn)btn.dataset.photoBusy='0';
+    if(btn2)btn2.dataset.photoBusy='0';
+  }
 }
 function renderPhotoPreviews(){
   document.getElementById('photo-previews').innerHTML=pendingPhotos.map((s,i)=>`<div class="photo-preview-item"><img src="${s}"><button class="photo-remove" onclick="removePhoto(${i})">✕</button></div>`).join('');
@@ -466,50 +475,61 @@ function buildProduct(){
 }
 async function saveProductOnly(){
   const btn=document.getElementById('btn-save-only');
+  if(btn&&btn.dataset.photoBusy==='1'){toast('照片压缩中,请稍候');return;}
   if(btn)btn.disabled=true;
-  const data=buildProduct();
-  if(!data){if(btn)btn.disabled=false;return;}
-  // 重复名称检查
-  if(!editingId){
-    const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
-    if(dup){
-      toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
-      if(btn)btn.disabled=false;
-      closeModal('modal-add');
-      setTimeout(()=>openDetail(dup.id),600);
-      return;
+  try{
+    const data=buildProduct();
+    if(!data)return;
+    // 重复名称检查
+    if(!editingId){
+      const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
+      if(dup){
+        toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
+        closeModal('modal-add');
+        setTimeout(()=>openDetail(dup.id),600);
+        return;
+      }
     }
+    await upsertProduct(data);
+    if(editingId){
+      const idx=DB.products.findIndex(p=>p.id===editingId);
+      if(idx>=0)DB.products[idx]=data;
+    }else{
+      DB.products.unshift(data);
+    }
+    closeModal('modal-add');renderInventory();
+    toast(editingId?'✅ 变更完成':'✅ 商品登录完成（库存0）');
+  }catch(e){
+    toast('❌ 保存失败: '+(e.message||e));
+  }finally{
+    if(btn)btn.disabled=false;
   }
-  if(editingId){
-    const idx=DB.products.findIndex(p=>p.id===editingId);
-    if(idx>=0)DB.products[idx]=data;
-    toast('✅ 变更完成');
-  }else{
-    DB.products.unshift(data);
-    toast('✅ 商品登录完成（库存0）');
-  }
-  await upsertProduct(data);
-  closeModal('modal-add');renderInventory();
 }
 async function saveProductAndStockIn(){
   if(editingId){saveProductOnly();return;}
   const btn=document.getElementById('btn-save-stockin');
+  if(btn&&btn.dataset.photoBusy==='1'){toast('照片压缩中,请稍候');return;}
   if(btn)btn.disabled=true;
-  const data=buildProduct();
-  if(!data){if(btn)btn.disabled=false;return;}
-  // 重复名称检查
-  const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
-  if(dup){
-    toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
+  try{
+    const data=buildProduct();
+    if(!data)return;
+    // 重复名称检查
+    const dup=DB.products.find(p=>p.name.trim()===data.name.trim());
+    if(dup){
+      toast(`⚠️ "${dup.name}" 已存在！正在打开已有商品，如需新建请修改名称`,5000);
+      closeModal('modal-add');
+      setTimeout(()=>openDetail(dup.id),600);
+      return;
+    }
+    await upsertProduct(data);
+    DB.products.unshift(data);
+    closeModal('modal-add');renderInventory();
+    setTimeout(()=>openStockInModal(data.id),200);
+  }catch(e){
+    toast('❌ 保存失败: '+(e.message||e));
+  }finally{
     if(btn)btn.disabled=false;
-    closeModal('modal-add');
-    setTimeout(()=>openDetail(dup.id),600);
-    return;
   }
-  DB.products.unshift(data);
-  await upsertProduct(data);
-  closeModal('modal-add');renderInventory();
-  setTimeout(()=>openStockInModal(data.id),200);
 }
 
 // ===================== 入库 / 出库(合并 modal) =====================
