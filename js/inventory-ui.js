@@ -1069,6 +1069,18 @@ function catEmojiSafe(cat){
 function escapeHTMLSafe(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+// 关闭详情;如果是从全局搜索进的(_returnSearchKw 不为 null/undefined),关闭后回到搜索 overlay
+function closeDetailAndMaybeReturn(){
+  closeModal('modal-detail');
+  if(detailOpenedFromAI){
+    detailOpenedFromAI=false;
+    const ar=document.getElementById('ai-result');
+    if(ar) ar.style.display='block';
+  }
+  if(typeof window._returnSearchKw==='string' && typeof window.openSearch==='function'){
+    setTimeout(()=>window.openSearch(),120);
+  }
+}
 function editFromDetail(){openEditModal(detailId);}
 function stockInFromDetail(){closeModal('modal-detail');setTimeout(()=>openStockInModal(detailId),150);}
 function printLabelFromDetail(){const id=detailId;closeModal('modal-detail');setTimeout(()=>openLabelModal([id]),150);}

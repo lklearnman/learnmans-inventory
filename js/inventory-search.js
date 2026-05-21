@@ -120,9 +120,11 @@
   };
   window._gsClearRecent=clearRecent;
   window._gsPickProduct=function(id){
-    // 记录关键词
+    // 记录关键词,并保存以便详情关闭后回搜索
     const input=document.getElementById('gsInput');
-    if(input&&input.value.trim()) pushRecent(input.value.trim());
+    const kw=input?input.value.trim():'';
+    if(kw) pushRecent(kw);
+    window._returnSearchKw = kw || ''; // 空串也算"来自搜索"
     closeSearch();
     if(typeof window.openDetail==='function'){
       window.openDetail(id);
@@ -170,8 +172,14 @@
       });
     }
     ov.classList.add('show');
-    gsRender('');
-    setTimeout(()=>{ const i=document.getElementById('gsInput'); if(i){ i.value=''; i.focus(); } }, 50);
+    // 如果有 _returnSearchKw 待恢复(详情关闭后回搜索),先用它
+    const restoreKw = (typeof window._returnSearchKw === 'string') ? window._returnSearchKw : '';
+    window._returnSearchKw = null;
+    gsRender(restoreKw);
+    setTimeout(()=>{
+      const i=document.getElementById('gsInput');
+      if(i){ i.value=restoreKw; i.focus(); }
+    }, 50);
   };
 
   window.closeSearch=function(){
