@@ -33,7 +33,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260521-qrresp">
+<link rel="stylesheet" href="inventory.css?v=20260521-defcard">
 
 </head>
 <body>
@@ -671,7 +671,7 @@
           <div class="label-size-dim">25 × 30+45 mm</div>
           <div class="label-size-tag">精臣 M3</div>
         </div>
-        <div class="label-size-card" data-size="fold25x30" onclick="pickLabelSize('fold25x30')">
+        <div class="label-size-card cur" data-size="fold25x30" onclick="pickLabelSize('fold25x30')">
           <div class="label-size-preview" style="min-height:54px;flex-direction:column;gap:0;padding:0;"><div style="flex:1;border-bottom:1px dashed #1a1410;padding:2px 3px;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;"><div style="text-align:center;"><div class="pname" style="font-size:7px;">商品名</div><div style="font-size:5px;color:#666;">产地</div></div><div style="display:flex;justify-content:space-between;align-items:flex-end;"><div style="width:8px;height:8px;background:#1a1410;"></div><div class="pprice" style="font-size:8px;">¥888</div></div></div><div style="flex:1;padding:3px;display:flex;flex-direction:column;justify-content:center;transform:rotate(180deg);"><div class="pcode" style="font-size:6px;text-align:center;">‖‖‖‖‖‖‖</div><div style="font-size:5px;text-align:center;color:#444;">SKU123</div></div></div>
           <div class="label-size-name">📑 对折双面</div>
           <div class="label-size-dim">25 × 30 mm</div>
@@ -682,7 +682,7 @@
           <div class="label-size-name">小标签</div>
           <div class="label-size-dim">40 × 30 mm</div>
         </div>
-        <div class="label-size-card cur" data-size="medium" onclick="pickLabelSize('medium')">
+        <div class="label-size-card" data-size="medium" onclick="pickLabelSize('medium')">
           <div class="label-size-preview"><div class="pname">商品名</div><div class="pprice">¥ 888</div><div class="pcode">MZ-001</div></div>
           <div class="label-size-name">中标签</div>
           <div class="label-size-dim">60 × 40 mm</div>
@@ -768,12 +768,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260521-qrresp"></script>
-<script src="js/inventory-ui.js?v=20260521-qrresp"></script>
-<script src="js/inventory-logs.js?v=20260521-qrresp"></script>
-<script src="js/inventory-ai.js?v=20260521-qrresp"></script>
-<script src="js/inventory-labels.js?v=20260521-qrresp"></script>
-<script src="js/inventory-search.js?v=20260521-qrresp"></script>
+<script src="js/inventory-core.js?v=20260521-defcard"></script>
+<script src="js/inventory-ui.js?v=20260521-defcard"></script>
+<script src="js/inventory-logs.js?v=20260521-defcard"></script>
+<script src="js/inventory-ai.js?v=20260521-defcard"></script>
+<script src="js/inventory-labels.js?v=20260521-defcard"></script>
+<script src="js/inventory-search.js?v=20260521-defcard"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
