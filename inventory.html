@@ -33,7 +33,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<link rel="stylesheet" href="inventory.css?v=20260521-merge">
+<link rel="stylesheet" href="inventory.css?v=20260521-noorigin">
 
 </head>
 <body>
@@ -640,7 +640,7 @@
     </select>
     <input type="checkbox" id="lbl-name" class="label-hidden" checked aria-hidden="true" tabindex="-1">
     <input type="checkbox" id="lbl-price" class="label-hidden" checked aria-hidden="true" tabindex="-1">
-    <input type="checkbox" id="lbl-origin" class="label-hidden" checked aria-hidden="true" tabindex="-1">
+    <input type="checkbox" id="lbl-origin" class="label-hidden" aria-hidden="true" tabindex="-1">
     <input type="checkbox" id="lbl-sku" class="label-hidden" checked aria-hidden="true" tabindex="-1">
     <input type="checkbox" id="lbl-qr" class="label-hidden" aria-hidden="true" tabindex="-1">
 
@@ -719,7 +719,7 @@
       <div class="label-chips" id="label-show-chips">
         <div class="label-chip cur" data-field="name" onclick="toggleLabelField('name')">商品名称</div>
         <div class="label-chip cur" data-field="price" onclick="toggleLabelField('price')">价格</div>
-        <div class="label-chip cur" data-field="origin" onclick="toggleLabelField('origin')">产地</div>
+        <div class="label-chip" data-field="origin" onclick="toggleLabelField('origin')">产地</div>
         <div class="label-chip cur" data-field="sku" onclick="toggleLabelField('sku')">SKU 条形码</div>
         <div class="label-chip" data-field="qr" onclick="toggleLabelField('qr')">QR 码（扫码查）</div>
       </div>
@@ -769,12 +769,12 @@
 <div class="toast" id="toast"></div>
 <div class="zoom-preview" id="zoom-preview"><img id="zoom-img"><div class="zoom-info" id="zoom-info"></div></div>
 
-<script src="js/inventory-core.js?v=20260521-merge"></script>
-<script src="js/inventory-ui.js?v=20260521-merge"></script>
-<script src="js/inventory-logs.js?v=20260521-merge"></script>
-<script src="js/inventory-ai.js?v=20260521-merge"></script>
-<script src="js/inventory-labels.js?v=20260521-merge"></script>
-<script src="js/inventory-search.js?v=20260521-merge"></script>
+<script src="js/inventory-core.js?v=20260521-noorigin"></script>
+<script src="js/inventory-ui.js?v=20260521-noorigin"></script>
+<script src="js/inventory-logs.js?v=20260521-noorigin"></script>
+<script src="js/inventory-ai.js?v=20260521-noorigin"></script>
+<script src="js/inventory-labels.js?v=20260521-noorigin"></script>
+<script src="js/inventory-search.js?v=20260521-noorigin"></script>
 <script>
 // 覆盖 ai.js 里的旧版 openStockOutModal(它跳 inout tab,但 inout tab 已删除,H 改成 modal)
 window.openStockOutModal=function(preId){
